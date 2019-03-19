@@ -17,18 +17,24 @@
 #********************************************************************************
 from ledgerblue.comm import getDongle
 from ledgerblue.commException import CommException
-from secp256k1 import PublicKey
+import ed25519
 
-textToSign = ""
-while True:
-	data = raw_input("Enter text to sign, end with an empty line : ")
-	if len(data) == 0:
-		break
-	textToSign += data + "\n"
+textToSign = "abc"
 
 dongle = getDongle(True)
-publicKey = dongle.exchange(bytes("8004000000".decode('hex')))
-print "publicKey " + str(publicKey).encode('hex')
+publicKeyBytes = dongle.exchange(bytes("8004000000".decode('hex')))
+
+publicKeyXY = publicKeyBytes[1:]
+publicKeyX = publicKeyXY[0:32][::-1]
+publicKeyY = publicKeyXY[32:][::-1]
+
+## Compute the encoded point of the public key
+publicKey = publicKeyY
+if (publicKeyX[0] & 1) != 0:
+  publicKey[31] |= 0x80
+
+print "Public key:", str(publicKey).encode('hex')
+
 try:
 	offset = 0
 	while offset <> len(textToSign):
@@ -42,11 +48,11 @@ try:
 			p1 = 0x00
 		apdu = bytes("8002".decode('hex')) + chr(p1) + chr(0x00) + chr(len(chunk)) + bytes(chunk)
 		signature = dongle.exchange(apdu)
-		offset += len(chunk)  	
+		offset += len(chunk)
 	print "signature " + str(signature).encode('hex')
-	publicKey = PublicKey(bytes(publicKey), raw=True)
-	signature = publicKey.ecdsa_deserialize(bytes(signature))
-	print "verified " + str(publicKey.ecdsa_verify(bytes(textToSign), signature))
+
+        ed25519.checkvalid(str(signature), textToSign, str(publicKey))
+        print "Verified signature"
 except CommException as comm:
 	if comm.sw == 0x6985:
 		print "Aborted by user"

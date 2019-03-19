@@ -24,7 +24,6 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static unsigned int current_text_pos; // parsing cursor in the text to display
 static unsigned int text_y;           // current location of the displayed text
-static unsigned char hashTainted;     // notification to restart the hash
 
 // UI currently displayed
 enum UI_STATE { UI_IDLE, UI_TEXT, UI_APPROVAL };
@@ -34,8 +33,7 @@ enum UI_STATE uiState;
 ux_state_t ux;
 
 static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e);
-static const bagl_element_t*
-io_seproxyhal_touch_approve(const bagl_element_t *e);
+static const bagl_element_t *io_seproxyhal_touch_approve(const bagl_element_t *e);
 static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e);
 
 static void ui_idle(void);
@@ -56,11 +54,11 @@ static void ui_approval(void);
 
 // private key in flash. const and N_ variable name are mandatory here
 static const cx_ecfp_private_key_t N_privateKey;
+
 // initialization marker in flash. const and N_ variable name are mandatory here
 static const unsigned char N_initialized;
 
 static char lineBuffer[50];
-static cx_sha256_t hash;
 
 #ifdef TARGET_BLUE
 
@@ -417,16 +415,26 @@ static const bagl_element_t *io_seproxyhal_touch_exit(const bagl_element_t *e) {
 static const bagl_element_t*
 io_seproxyhal_touch_approve(const bagl_element_t *e) {
     unsigned int tx = 0;
-    // Update the hash
-    cx_hash(&hash.header, 0, G_io_apdu_buffer + 5, G_io_apdu_buffer[4], NULL);
+
+    unsigned char msg[256];
+    unsigned int msg_len;
+
+    msg_len = (unsigned char) G_io_apdu_buffer[4];
+    os_memmove(&msg[0], G_io_apdu_buffer + 5, msg_len);
+
     if (G_io_apdu_buffer[2] == P1_LAST) {
-        // Hash is finalized, send back the signature
-        unsigned char result[32];
-        cx_hash(&hash.header, CX_LAST, G_io_apdu_buffer, 0, result);
-        tx = cx_ecdsa_sign((void*) &N_privateKey, CX_RND_RFC6979 | CX_LAST,
-                           CX_SHA256, result, sizeof(result), G_io_apdu_buffer, NULL);
-        G_io_apdu_buffer[0] &= 0xF0; // discard the parity information
-        hashTainted = 1;
+        cx_ecfp_private_key_t privateKey;
+        os_memmove(&privateKey, &N_privateKey, sizeof(cx_ecfp_private_key_t));
+        PRINTF("Private key (curve %d): %.*h\n", privateKey.curve, sizeof(privateKey.d), privateKey.d);
+
+        int sig_len;
+        sig_len = cx_eddsa_sign(&privateKey,
+                           0, CX_SHA512,
+                           &msg[0], msg_len,
+                           NULL, 0,
+                           G_io_apdu_buffer, NULL);
+
+        tx = sig_len;
     }
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
@@ -438,7 +446,6 @@ io_seproxyhal_touch_approve(const bagl_element_t *e) {
 }
 
 static const bagl_element_t *io_seproxyhal_touch_deny(const bagl_element_t *e) {
-    hashTainted = 1;
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     // Send back the response, do not restart the event loop
@@ -516,10 +523,6 @@ static void sample_main(void) {
                         (G_io_apdu_buffer[2] != P1_LAST)) {
                         THROW(0x6A86);
                     }
-                    if (hashTainted) {
-                        cx_sha256_init(&hash);
-                        hashTainted = 0;
-                    }
                     // Wait for the UI to be completed
                     current_text_pos = 0;
                     text_y = 60;
@@ -536,8 +539,7 @@ static void sample_main(void) {
                     cx_ecfp_private_key_t privateKey;
                     os_memmove(&privateKey, &N_privateKey,
                                sizeof(cx_ecfp_private_key_t));
-                    cx_ecfp_generate_pair(CX_CURVE_256K1, &publicKey,
-                                          &privateKey, 1);
+                    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, &privateKey, 1);
                     os_memmove(G_io_apdu_buffer, publicKey.W, 65);
                     tx = 65;
                     THROW(0x9000);
@@ -701,7 +703,6 @@ __attribute__((section(".boot"))) int main(void) {
 
     current_text_pos = 0;
     text_y = 60;
-    hashTainted = 1;
     uiState = UI_IDLE;
 
     // ensure exception will work as planned
@@ -718,7 +719,7 @@ __attribute__((section(".boot"))) int main(void) {
                 unsigned char canary;
                 cx_ecfp_private_key_t privateKey;
                 cx_ecfp_public_key_t publicKey;
-                cx_ecfp_generate_pair(CX_CURVE_256K1, &publicKey, &privateKey,
+                cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, &privateKey,
                                       0);
                 nvm_write((void*) &N_privateKey, &privateKey,
                           sizeof(privateKey));
