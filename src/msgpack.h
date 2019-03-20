@@ -1,0 +1,11 @@
+#define FIXINT_0    0x00
+#define FIXINT_127  0x7f
+#define FIXMAP_0    0x80
+#define FIXSTR_0    0xa0
+#define FIXSTR_31   0xbf
+#define BIN8        0xc4
+#define UINT8       0xcc
+#define UINT16      0xcd
+#define UINT32      0xce
+#define UINT64      0xcf
+#define STR8        0xd9
