@@ -23,7 +23,9 @@ txn_approve()
   unsigned char msg[256];
   unsigned int msg_len;
 
-  msg_len = tx_encode(&current_txn, msg, sizeof(msg));
+  msg[0] = 'T';
+  msg[1] = 'X';
+  msg_len = tx_encode(&current_txn, msg+2, sizeof(msg)-2);
 
   cx_ecfp_private_key_t privateKey;
   algorand_private_key(&privateKey);

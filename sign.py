@@ -61,7 +61,7 @@ try:
   signature = dongle.exchange(apdu)
   print "signature " + str(signature).encode('hex')
 
-  ed25519.checkvalid(str(signature), txbytes, str(publicKey))
+  ed25519.checkvalid(str(signature), 'TX' + txbytes, str(publicKey))
   print "Verified signature"
 except CommException as comm:
   if comm.sw == 0x6985:
