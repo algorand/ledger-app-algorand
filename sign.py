@@ -22,7 +22,7 @@ print "Ledger app address:", checksummed(publicKey)
 
 if len(sys.argv) != 3:
   print "Usage: %s infile outfile" % sys.argv[0]
-  os.exit(0)
+  sys.exit(0)
 
 (_, infile, outfile) = sys.argv
 
