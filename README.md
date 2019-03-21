@@ -44,6 +44,12 @@ file to the Algorand network.
 - `./usbtool/usbtool -v 0x2c97 log`
 - Edit `Makefile` to enable `PRINTF` (and edit it back for production to disable `PRINTF`)
 
+To go back to release firmware:
+
+- [Instructions](https://ledger.readthedocs.io/en/latest/userspace/debugging.html)
+- `python -m ledgerblue.loadMCU --targetId 0x01000001 --fileName blup_0.9_misc_m1.hex --nocrc`
+- `python -m ledgerblue.loadMCU --targetId 0x01000001 --fileName mcu_1.7_over_0.9.hex --reverse --nocrc`
+
 ## Python HID debugging
 
 - Pass `debug=True` to `getDongle()` in `sign.py`
