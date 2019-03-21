@@ -9,6 +9,7 @@ import sha512_256
 import sys
 import os
 import struct
+import algomsgpack
 
 def checksummed(pk):
   sum = sha512_256.new(str(pk)).digest()
@@ -27,7 +28,7 @@ if len(sys.argv) != 3:
 
 with open(infile) as f:
   buf = f.read()
-  instx = msgpack.unpackb(buf)
+  instx = msgpack.unpackb(buf, raw=False)
   intx = instx['txn']
 
 try:
@@ -45,7 +46,7 @@ try:
   apdu += struct.pack("<Q", intx.get('fee', 0))
   apdu += struct.pack("<Q", intx.get('fv', 0))
   apdu += struct.pack("<Q", intx.get('lv', 0))
-  apdu += struct.pack("32s", intx.get('gen', ""))
+  apdu += struct.pack("32s", intx.get('gen', u"").encode('ascii'))
 
   # Payment type
   if intx['type'] == 'pay':
@@ -61,6 +62,7 @@ try:
   signature = dongle.exchange(apdu)
   print "signature " + str(signature).encode('hex')
 
+  txbytes = algomsgpack.encoded(intx)
   ed25519.checkvalid(str(signature), 'TX' + txbytes, str(publicKey))
   print "Verified signature"
 except CommException as comm:

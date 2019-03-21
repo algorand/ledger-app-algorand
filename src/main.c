@@ -25,7 +25,9 @@ txn_approve()
 
   msg[0] = 'T';
   msg[1] = 'X';
-  msg_len = tx_encode(&current_txn, msg+2, sizeof(msg)-2);
+  msg_len = 2 + tx_encode(&current_txn, msg+2, sizeof(msg)-2);
+
+  PRINTF("Signing message: %.*h\n", msg_len, msg);
 
   cx_ecfp_private_key_t privateKey;
   algorand_private_key(&privateKey);

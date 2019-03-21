@@ -81,7 +81,7 @@ encode_uint64(uint8_t **p, uint8_t *e, uint64_t i)
 static void
 encode_bin(uint8_t **p, uint8_t *e, uint8_t *bytes, int len)
 {
-  if (len <= (1 << 8)) {
+  if (len < (1 << 8)) {
     put_byte(p, e, BIN8);
     put_byte(p, e, len);
     for (int i = 0; i < len; i++) {
