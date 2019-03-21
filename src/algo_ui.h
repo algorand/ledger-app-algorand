@@ -1,11 +1,3 @@
-enum UI_STATE {
-  UI_IDLE,
-  UI_ADDRESS,
-  UI_TXN,
-  UI_APPROVAL
-};
-
-extern enum UI_STATE uiState;
 extern char lineBuffer[];
 
 void ui_idle();

@@ -51,8 +51,6 @@ bagl_ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_
 void
 ui_address()
 {
-  uiState = UI_ADDRESS;
-
   uint8_t publicKey[32];
   algorand_public_key(publicKey);
 

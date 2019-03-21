@@ -22,6 +22,5 @@ static const ux_menu_entry_t menu_top[] = {
 void
 ui_idle()
 {
-  uiState = UI_IDLE;
   UX_MENU_DISPLAY(0, menu_top, NULL);
 }

@@ -291,7 +291,6 @@ main(void)
 
   // What kind of horrible program loader fails to zero out the BSS?
   lineBuffer[0] = '\0';
-  uiState = UI_IDLE;
 
   // ensure exception will work as planned
   os_boot();
