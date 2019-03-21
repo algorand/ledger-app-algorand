@@ -15,7 +15,7 @@ def checksummed(pk):
   sum = sha512_256.new(str(pk)).digest()
   return base64.b32encode(pk + sum[28:32]).replace("=", "")
 
-dongle = getDongle(True)
+dongle = getDongle(debug=False)
 
 publicKey = dongle.exchange(bytes("8003000000".decode('hex')))
 print "Ledger app address:", checksummed(publicKey)

@@ -42,6 +42,11 @@ file to the Algorand network.
 - `python -m ledgerblue.loadMCU --targetId 0x01000001 --fileName blup_0.9_misc_m1.hex --nocrc`
 - `python -m ledgerblue.loadMCU --targetId 0x01000001 --fileName mcu_1.7-printf_over_0.9.hex --reverse --nocrc`
 - `./usbtool/usbtool -v 0x2c97 log`
+- Edit `Makefile` to enable `PRINTF` (and edit it back for production to disable `PRINTF`)
+
+## Python HID debugging
+
+- Pass `debug=True` to `getDongle()` in `sign.py`
 
 ## Assorted complaints / tricks
 
