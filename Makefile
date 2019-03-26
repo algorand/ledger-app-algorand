@@ -26,6 +26,12 @@ APPNAME = "Algorand"
 APPVERSION = 1.0.0
 APP_LOAD_PARAMS = --appFlags 0x00 $(COMMON_LOAD_PARAMS)
 
+ifeq ($(TARGET_NAME),TARGET_NANOS)
+ICONNAME=glyphs/nanos/app_logo.gif
+else
+ICONNAME=
+endif
+
 # Build configuration
 
 APP_SOURCE_PATH += src

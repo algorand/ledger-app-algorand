@@ -54,6 +54,10 @@ To go back to release firmware:
 
 - Pass `debug=True` to `getDongle()` in `sign.py`
 
+## Glyph/icon
+
+- `convert -crop 200x200+100+100 -resize 16 -colors 2 ...`
+
 ## Assorted complaints / tricks
 
 - Need `volatile` for N_ variables; not correctly done in default example
