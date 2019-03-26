@@ -56,7 +56,7 @@ To go back to release firmware:
 
 ## Glyph/icon
 
-- `convert -resize 16 -colors 2 ...`
+- `convert -resize 12 -extent 16x16 -gravity center -colors 2 ...`
 
 ## Assorted complaints / tricks
 
