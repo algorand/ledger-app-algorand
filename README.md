@@ -1,9 +1,9 @@
 # Algorand App for Ledger Nano S
 
 Run `make load` to build and load the application onto the device. After
-installing and running the application, you can run `sign.py`.  Running
+installing and running the application, you can run `cli/sign.py`.  Running
 without any arguments should print the address corresponding to the
-key on the Ledger device.  To sign a transaction, run `sign.py input.tx
+key on the Ledger device.  To sign a transaction, run `cli/sign.py input.tx
 output.tx`; this will ask the Ledger device to sign the transaction from
 `input.tx`, and put the resulting signed transaction into `output.tx`.
 You can use `goal clerk send .. -o input.tx` to construct an `input.tx`
@@ -52,7 +52,7 @@ To go back to release firmware:
 
 ## Python HID debugging
 
-- Pass `debug=True` to `getDongle()` in `sign.py`
+- Pass `debug=True` to `getDongle()` in `cli/sign.py`
 
 ## Glyph/icon
 
