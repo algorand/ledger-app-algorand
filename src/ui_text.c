@@ -18,6 +18,7 @@ ui_text_more()
   int linePos;
 
   if (text[lineBufferPos] == '\0') {
+    lineBuffer[0] = '\0';
     return 0;
   }
 
