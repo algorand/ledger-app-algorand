@@ -35,9 +35,9 @@ try:
   apdu = "\x80"
 
   if intx['type'] == 'pay':
-    apdu += "\x01"
+    apdu += "\x04"
   elif intx['type'] == 'keyreg':
-    apdu += "\x02"
+    apdu += "\x05"
   else:
     raise Exception("Unknown transaction type %s" % intx['type'])
 
@@ -47,6 +47,7 @@ try:
   apdu += struct.pack("<Q", intx.get('fv', 0))
   apdu += struct.pack("<Q", intx.get('lv', 0))
   apdu += struct.pack("32s", intx.get('gen', u"").encode('ascii'))
+  apdu += struct.pack("32s", intx.get('gh', ""))
 
   # Payment type
   if intx['type'] == 'pay':

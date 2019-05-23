@@ -12,6 +12,8 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define INS_SIGN_PAYMENT    0x01
 #define INS_SIGN_KEYREG     0x02
 #define INS_GET_PUBLIC_KEY  0x03
+#define INS_SIGN_PAYMENT_V2 0x04
+#define INS_SIGN_KEYREG_V2  0x05
 
 struct txn current_txn;
 
@@ -134,6 +136,43 @@ algorand_main(void)
           flags |= IO_ASYNCH_REPLY;
         } break;
 
+        case INS_SIGN_PAYMENT_V2: {
+          os_memset(&current_txn, 0, sizeof(current_txn));
+          uint8_t *p = &G_io_apdu_buffer[2];
+
+          current_txn.type = PAYMENT;
+
+          os_memmove(current_txn.sender, p, 32);
+          p += 32;
+
+          os_memmove(&current_txn.fee, p, 8);
+          p += 8;
+
+          os_memmove(&current_txn.firstValid, p, 8);
+          p += 8;
+
+          os_memmove(&current_txn.lastValid, p, 8);
+          p += 8;
+
+          os_memmove(current_txn.genesisID, p, 32);
+          p += 32;
+
+          os_memmove(current_txn.genesisHash, p, 32);
+          p += 32;
+
+          os_memmove(current_txn.receiver, p, 32);
+          p += 32;
+
+          os_memmove(&current_txn.amount, p, 8);
+          p += 8;
+
+          os_memmove(current_txn.close, p, 32);
+          p += 32;
+
+          ui_txn();
+          flags |= IO_ASYNCH_REPLY;
+        } break;
+
         case INS_SIGN_KEYREG: {
           os_memset(&current_txn, 0, sizeof(current_txn));
           uint8_t *p = &G_io_apdu_buffer[2];
@@ -153,6 +192,40 @@ algorand_main(void)
           p += 8;
 
           os_memmove(current_txn.genesisID, p, 32);
+          p += 32;
+
+          os_memmove(current_txn.votepk, p, 32);
+          p += 32;
+
+          os_memmove(current_txn.vrfpk, p, 32);
+          p += 32;
+
+          ui_txn();
+          flags |= IO_ASYNCH_REPLY;
+        } break;
+
+        case INS_SIGN_KEYREG_V2: {
+          os_memset(&current_txn, 0, sizeof(current_txn));
+          uint8_t *p = &G_io_apdu_buffer[2];
+
+          current_txn.type = KEYREG;
+
+          os_memmove(current_txn.sender, p, 32);
+          p += 32;
+
+          os_memmove(&current_txn.fee, p, 8);
+          p += 8;
+
+          os_memmove(&current_txn.firstValid, p, 8);
+          p += 8;
+
+          os_memmove(&current_txn.lastValid, p, 8);
+          p += 8;
+
+          os_memmove(current_txn.genesisID, p, 32);
+          p += 32;
+
+          os_memmove(current_txn.genesisHash, p, 32);
           p += 32;
 
           os_memmove(current_txn.votepk, p, 32);

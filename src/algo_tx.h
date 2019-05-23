@@ -13,6 +13,7 @@ struct txn {
   uint64_t firstValid;
   uint64_t lastValid;
   char genesisID[33];
+  uint8_t genesisHash[32];
 
   // Payments
   uint8_t receiver[32];

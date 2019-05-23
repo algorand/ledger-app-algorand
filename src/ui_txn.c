@@ -4,6 +4,7 @@
 #include "algo_ui.h"
 #include "algo_tx.h"
 #include "algo_addr.h"
+#include "base64.h"
 
 static char *
 u64str(uint64_t v)
@@ -107,9 +108,9 @@ static unsigned int bagl_ui_vrfpk_nanos_button(unsigned int button_mask, unsigne
 }
 
 static void after_votepk(void) {
-  char checksummed[65];
-  checksummed_addr(current_txn.vrfpk, checksummed);
-  ui_text_put(checksummed);
+  char buf[45];
+  base64_encode((const char*) current_txn.vrfpk, sizeof(current_txn.vrfpk), buf, sizeof(buf));
+  ui_text_put(buf);
   ui_text_more();
   UX_DISPLAY(bagl_ui_vrfpk_nanos, NULL);
 }
@@ -156,7 +157,7 @@ static unsigned int bagl_ui_receiver_nanos_button(unsigned int button_mask, unsi
   DISPLAY_HANDLER(after_receiver)
 }
 
-static void after_genesisID(void) {
+static void after_genesisHash(void) {
   char checksummed[65];
   if (current_txn.type == PAYMENT) {
     checksummed_addr(current_txn.receiver, checksummed);
@@ -164,12 +165,29 @@ static void after_genesisID(void) {
     ui_text_more();
     UX_DISPLAY(bagl_ui_receiver_nanos, NULL);
   } else if (current_txn.type == KEYREG) {
-    checksummed_addr(current_txn.votepk, checksummed);
+    base64_encode((const char*) current_txn.votepk, sizeof(current_txn.votepk), checksummed, sizeof(checksummed));
     ui_text_put(checksummed);
     ui_text_more();
     UX_DISPLAY(bagl_ui_votepk_nanos, NULL);
   } else {
     UX_DISPLAY(bagl_ui_approval_nanos, NULL);
+  }
+}
+
+static const bagl_element_t bagl_ui_genesisHash_nanos[] = DISPLAY_ELEMENTS("Genesis hash");
+static unsigned int bagl_ui_genesisHash_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_genesisHash)
+}
+
+static void after_genesisID(void) {
+  if (all_zero_key(current_txn.genesisHash)) {
+    after_genesisHash();
+  } else {
+    char buf[45];
+    base64_encode((const char*) current_txn.genesisHash, sizeof(current_txn.genesisHash), buf, sizeof(buf));
+    ui_text_put(buf);
+    ui_text_more();
+    UX_DISPLAY(bagl_ui_genesisHash_nanos, NULL);
   }
 }
 
@@ -244,7 +262,8 @@ ui_txn()
   PRINTF("  Fee: %s\n", u64str(current_txn.fee));
   PRINTF("  First valid: %s\n", u64str(current_txn.firstValid));
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
-  PRINTF("  Genesis: %s\n", current_txn.genesisID);
+  PRINTF("  Genesis ID: %s\n", current_txn.genesisID);
+  PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
   PRINTF("  Receiver: %.*h\n", 32, current_txn.receiver);
   PRINTF("  Amount: %s\n", u64str(current_txn.amount));
   PRINTF("  Close to: %.*h\n", 32, current_txn.close);

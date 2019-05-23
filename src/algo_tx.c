@@ -168,6 +168,7 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
   buf[0] += map_kv_uint64(&p, e, "fee", t->fee);
   buf[0] += map_kv_uint64(&p, e, "fv", t->firstValid);
   buf[0] += map_kv_str   (&p, e, "gen", t->genesisID);
+  buf[0] += map_kv_bin   (&p, e, "gh", t->genesisHash, sizeof(t->genesisHash));
   buf[0] += map_kv_uint64(&p, e, "lv", t->lastValid);
   buf[0] += map_kv_bin   (&p, e, "rcv", t->receiver, sizeof(t->receiver));
   buf[0] += map_kv_bin   (&p, e, "selkey", t->vrfpk, sizeof(t->vrfpk));

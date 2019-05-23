@@ -2,6 +2,7 @@
 
 #include "algo_addr.h"
 #include "base32.h"
+#include "base64.h"
 #include "sha512_256.h"
 
 void
