@@ -82,14 +82,13 @@ bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask
     NULL, 0, 0, 0, NULL, NULL, NULL, },                                         \
 }
 
-#define DISPLAY_HANDLER_START                                                   \
+#define DISPLAY_HANDLER(after_func)                                             \
   switch (button_mask) {                                                        \
   case BUTTON_EVT_RELEASED | BUTTON_RIGHT:                                      \
     if (ui_text_more()) {                                                       \
       UX_REDISPLAY();                                                           \
-    } else {
-
-#define DISPLAY_HANDLER_END                                                     \
+    } else {                                                                    \
+      after_func();                                                             \
     }                                                                           \
     break;                                                                      \
   case BUTTON_EVT_RELEASED | BUTTON_LEFT:                                       \
@@ -98,43 +97,40 @@ bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask
   }                                                                             \
   return 0;
 
-static const bagl_element_t bagl_ui_vrfpk_nanos[] = DISPLAY_ELEMENTS("VRF PK");
-static unsigned int bagl_ui_vrfpk_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
+static void after_vrfpk(void) {
   UX_DISPLAY(bagl_ui_approval_nanos, NULL);
-
-  DISPLAY_HANDLER_END
 }
 
-static const bagl_element_t bagl_ui_votepk_nanos[] = DISPLAY_ELEMENTS("Vote PK");
-static unsigned int bagl_ui_votepk_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
+static const bagl_element_t bagl_ui_vrfpk_nanos[] = DISPLAY_ELEMENTS("VRF PK");
+static unsigned int bagl_ui_vrfpk_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_vrfpk)
+}
 
+static void after_votepk(void) {
   char checksummed[65];
   checksummed_addr(current_txn.vrfpk, checksummed);
   ui_text_put(checksummed);
   ui_text_more();
   UX_DISPLAY(bagl_ui_vrfpk_nanos, NULL);
+}
 
-  DISPLAY_HANDLER_END
+static const bagl_element_t bagl_ui_votepk_nanos[] = DISPLAY_ELEMENTS("Vote PK");
+static unsigned int bagl_ui_votepk_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_votepk)
+}
+
+static void after_close(void) {
+  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_close_nanos[] = DISPLAY_ELEMENTS("Close to");
 static unsigned int bagl_ui_close_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
-  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  DISPLAY_HANDLER(after_close)
 }
 
-static const bagl_element_t bagl_ui_amount_nanos[] = DISPLAY_ELEMENTS("Amount");
-static unsigned int bagl_ui_amount_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
+static void after_amount(void) {
   if (all_zero_key(current_txn.close)) {
-    UX_DISPLAY(bagl_ui_approval_nanos, NULL);
+    after_close();
   } else {
     char checksummed[65];
     checksummed_addr(current_txn.close, checksummed);
@@ -142,25 +138,25 @@ static unsigned int bagl_ui_amount_nanos_button(unsigned int button_mask, unsign
     ui_text_more();
     UX_DISPLAY(bagl_ui_close_nanos, NULL);
   }
+}
 
-  DISPLAY_HANDLER_END
+static const bagl_element_t bagl_ui_amount_nanos[] = DISPLAY_ELEMENTS("Amount");
+static unsigned int bagl_ui_amount_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_amount)
+}
+
+static void after_receiver(void) {
+  ui_text_put(u64str(current_txn.amount));
+  ui_text_more();
+  UX_DISPLAY(bagl_ui_amount_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_receiver_nanos[] = DISPLAY_ELEMENTS("Receiver");
 static unsigned int bagl_ui_receiver_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
-  ui_text_put(u64str(current_txn.amount));
-  ui_text_more();
-  UX_DISPLAY(bagl_ui_amount_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  DISPLAY_HANDLER(after_receiver)
 }
 
-static const bagl_element_t bagl_ui_genesisID_nanos[] = DISPLAY_ELEMENTS("Genesis ID");
-static unsigned int bagl_ui_genesisID_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
+static void after_genesisID(void) {
   char checksummed[65];
   if (current_txn.type == PAYMENT) {
     checksummed_addr(current_txn.receiver, checksummed);
@@ -175,65 +171,68 @@ static unsigned int bagl_ui_genesisID_nanos_button(unsigned int button_mask, uns
   } else {
     UX_DISPLAY(bagl_ui_approval_nanos, NULL);
   }
+}
 
-  DISPLAY_HANDLER_END
+static const bagl_element_t bagl_ui_genesisID_nanos[] = DISPLAY_ELEMENTS("Genesis ID");
+static unsigned int bagl_ui_genesisID_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_genesisID)
+}
+
+static void after_lastValid(void) {
+  ui_text_put(current_txn.genesisID);
+  ui_text_more();
+  UX_DISPLAY(bagl_ui_genesisID_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_lastValid_nanos[] = DISPLAY_ELEMENTS("Last valid");
 static unsigned int bagl_ui_lastValid_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
+  DISPLAY_HANDLER(after_lastValid)
+}
 
-  ui_text_put(current_txn.genesisID);
+static void after_firstValid(void) {
+  ui_text_put(u64str(current_txn.lastValid));
   ui_text_more();
-  UX_DISPLAY(bagl_ui_genesisID_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  UX_DISPLAY(bagl_ui_lastValid_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_firstValid_nanos[] = DISPLAY_ELEMENTS("First valid");
 static unsigned int bagl_ui_firstValid_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
+  DISPLAY_HANDLER(after_firstValid)
+}
 
-  ui_text_put(u64str(current_txn.lastValid));
+static void after_fee(void) {
+  ui_text_put(u64str(current_txn.firstValid));
   ui_text_more();
-  UX_DISPLAY(bagl_ui_lastValid_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  UX_DISPLAY(bagl_ui_firstValid_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_fee_nanos[] = DISPLAY_ELEMENTS("Fee");
 static unsigned int bagl_ui_fee_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
+  DISPLAY_HANDLER(after_fee)
+}
 
-  ui_text_put(u64str(current_txn.firstValid));
+static void after_sender(void) {
+  ui_text_put(u64str(current_txn.fee));
   ui_text_more();
-  UX_DISPLAY(bagl_ui_firstValid_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  UX_DISPLAY(bagl_ui_fee_nanos, NULL);
 }
 
 static const bagl_element_t bagl_ui_sender_nanos[] = DISPLAY_ELEMENTS("Sender");
 static unsigned int bagl_ui_sender_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
-  ui_text_put(u64str(current_txn.fee));
-  ui_text_more();
-  UX_DISPLAY(bagl_ui_fee_nanos, NULL);
-
-  DISPLAY_HANDLER_END
+  DISPLAY_HANDLER(after_sender)
 }
 
-static const bagl_element_t bagl_ui_txtype_nanos[] = DISPLAY_ELEMENTS("Txn type");
-static unsigned int bagl_ui_txtype_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  DISPLAY_HANDLER_START
-
+static void after_txtype(void) {
   char checksummed[65];
   checksummed_addr(current_txn.sender, checksummed);
   ui_text_put(checksummed);
   ui_text_more();
   UX_DISPLAY(bagl_ui_sender_nanos, NULL);
+}
 
-  DISPLAY_HANDLER_END
+static const bagl_element_t bagl_ui_txtype_nanos[] = DISPLAY_ELEMENTS("Txn type");
+static unsigned int bagl_ui_txtype_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+  DISPLAY_HANDLER(after_txtype)
 }
 
 void
