@@ -70,6 +70,23 @@ try:
   txbytes = algomsgpack.encoded(intx)
   ed25519.checkvalid(str(signature), 'TX' + txbytes, str(publicKey))
   print "Verified signature"
+
+  foundMsig = False
+  msig = instx['msig']
+  if msig is not None:
+    if msig['v'] != 1:
+      print "Unknown multisig version %d, not filling in multisig" % msig['v']
+    for sub in msig['subsig']:
+      if sub['pk'] == publicKey:
+        sub['s'] = signature
+        foundMsig = True
+  if not foundMsig:
+    instx['sig'] = signature
+
+  with open(outfile, 'w') as f:
+    f.write(algomsgpack.encoded(instx))
+    print "Wrote signed transaction to %s" % outfile
+
 except CommException as comm:
   if comm.sw == 0x6985:
     print "Aborted by user"
