@@ -41,6 +41,10 @@ try:
   else:
     raise Exception("Unknown transaction type %s" % intx['type'])
 
+  # Notes cannot be signed by Ledger app at the moment
+  if 'note' in intx:
+    raise Exception('Cannot sign transaction with note; pass --note "" to goal clerk send')
+
   # Common header fields
   apdu += struct.pack("32s", intx.get('snd', ""))
   apdu += struct.pack("<Q", intx.get('fee', 0))
