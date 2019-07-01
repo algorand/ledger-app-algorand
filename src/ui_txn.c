@@ -141,7 +141,7 @@ static void after_amount(void) {
   }
 }
 
-static const bagl_element_t bagl_ui_amount_nanos[] = DISPLAY_ELEMENTS("Amount");
+static const bagl_element_t bagl_ui_amount_nanos[] = DISPLAY_ELEMENTS("Amount (uAlg)");
 static unsigned int bagl_ui_amount_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   DISPLAY_HANDLER(after_amount)
 }
@@ -224,7 +224,7 @@ static void after_fee(void) {
   UX_DISPLAY(bagl_ui_firstValid_nanos, NULL);
 }
 
-static const bagl_element_t bagl_ui_fee_nanos[] = DISPLAY_ELEMENTS("Fee");
+static const bagl_element_t bagl_ui_fee_nanos[] = DISPLAY_ELEMENTS("Fee (uAlg)");
 static unsigned int bagl_ui_fee_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
   DISPLAY_HANDLER(after_fee)
 }
