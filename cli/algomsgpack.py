@@ -6,6 +6,8 @@ FIXINT_0    = 0x00
 FIXINT_127  = 0x7f
 FIXMAP_0    = 0x80
 FIXMAP_15   = 0x8f
+FIXARR_0    = 0x90
+FIXARR_15   = 0x9f
 FIXSTR_0    = 0xa0
 FIXSTR_31   = 0xbf
 BIN8        = 0xc4
@@ -14,6 +16,8 @@ UINT16      = 0xcd
 UINT32      = 0xce
 UINT64      = 0xcf
 STR8        = 0xd9
+ARR16       = 0xdc
+ARR32       = 0xdd
 
 def encode_str(buf, s):
   l = len(s)
@@ -77,6 +81,9 @@ def is_zero(v):
   if type(v) == dict:
     return all([is_zero(vv) for k, vv in v.items()])
 
+  if type(v) == list:
+    return len(v) == 0
+
   raise Exception("is_zero: unknown type %s for %s" % (type(v), v))
 
 def encode(buf, x):
@@ -100,6 +107,20 @@ def encode(buf, x):
       buf.extend(tmpbuf)
     else:
       raise Exception("Too many map entries (%d) in %s" % (count, x))
+  elif type(x) == list:
+    count = len(x)
+    if count <= FIXARR_15 - FIXARR_0:
+      buf.append(chr(FIXARR_0 + count))
+    elif count < 2**16:
+      buf.append(chr(ARR16))
+      buf.extend(struct.pack(">H", count))
+    elif count < 2**32:
+      buf.append(chr(ARR32))
+      buf.extend(struct.pack(">L", count))
+    else:
+      raise Exception("Too many list entries (%d) in %s" % (count, x))
+    for v in x:
+      encode(buf, v)
   else:
     raise Exception("encode: unknown type %s" % type(x))
 
