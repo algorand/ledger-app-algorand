@@ -81,6 +81,9 @@ def is_zero(v):
   if type(v) == dict:
     return all([is_zero(vv) for k, vv in v.items()])
 
+  if type(v) == bytearray:
+    return all(b == 0 for b in v)
+
   if type(v) == list:
     return len(v) == 0
 
@@ -91,6 +94,8 @@ def encode(buf, x):
     encode_uint(buf, x)
   elif type(x) == str:
     encode_bin(buf, x)
+  elif type(x) == bytearray:
+    encode_bin(buf, [chr(b) for b in x])
   elif type(x) == unicode:
     encode_str(buf, x.encode('ascii'))
   elif type(x) == dict:
