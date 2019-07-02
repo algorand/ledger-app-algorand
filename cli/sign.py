@@ -72,9 +72,9 @@ try:
   print "Verified signature"
 
   foundMsig = False
-  msig = instx['msig']
+  msig = instx.get('msig')
   if msig is not None:
-    if msig['v'] != 1:
+    if msig.get('v') != 1:
       print "Unknown multisig version %d, not filling in multisig" % msig['v']
     for sub in msig['subsig']:
       if sub['pk'] == publicKey:
