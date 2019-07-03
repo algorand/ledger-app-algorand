@@ -26,11 +26,18 @@ DEFINES += APPVERSION=\"$(APPVERSION)\"
 DEFINES += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 
-## Production: no PRINTF
-DEFINES += PRINTF\(...\)=
+# Enabling debug PRINTF
+DEBUG = 0
+ifneq ($(DEBUG),0)
 
-## Development: enable PRINTF
-# DEFINES += HAVE_PRINTF PRINTF=screen_printf
+        ifeq ($(TARGET_NAME),TARGET_NANOX)
+                DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
+        else
+                DEFINES   += HAVE_PRINTF PRINTF=screen_printf
+        endif
+else
+        DEFINES   += PRINTF\(...\)=
+endif
 
 DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
@@ -78,3 +85,7 @@ delete:
 # Import generic rules from the SDK
 
 include $(BOLOS_SDK)/Makefile.rules
+
+
+listvariants:
+	@echo VARIANTS COIN algorand
