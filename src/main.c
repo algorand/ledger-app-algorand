@@ -38,7 +38,9 @@ txn_approve()
                               0, CX_SHA512,
                               &msg[0], msg_len,
                               NULL, 0,
-                              G_io_apdu_buffer, NULL);
+                              G_io_apdu_buffer,
+                              6+2*(32+1), // Formerly from cx_compliance_141.c
+                              NULL);
 
   tx = sig_len;
   G_io_apdu_buffer[tx++] = 0x90;

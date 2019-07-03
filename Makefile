@@ -37,8 +37,6 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64
 WEBUSB_URL = ledger-app.algorand.com
 DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
 
-DEFINES += CX_COMPLIANCE_141
-
 # Compiler, assembler, and linker
 
 ifneq ($(BOLOS_ENV),)
