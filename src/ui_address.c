@@ -24,7 +24,7 @@ bagl_ui_address_nanos[] = {
     NULL,
     0, 0, 0, NULL, NULL, NULL, },
   { {BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-     BAGL_GLYPH_ICON_CHECK},
+     BAGL_GLYPH_ICON_RIGHT},
     NULL,
     0, 0, 0, NULL, NULL, NULL, },
 };
