@@ -19,7 +19,7 @@ endif
 # Build configuration
 
 APP_SOURCE_PATH += src
-SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f
 
 DEFINES += APPVERSION=\"$(APPVERSION)\"
 
@@ -41,8 +41,12 @@ endif
 
 DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
+# Support for WebUSB transport
 WEBUSB_URL = ledger-app.algorand.com
 DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+
+# Support for U2F transport
+DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"algo\" USB_SEGMENT_SIZE=64 BLE_SEGMENT_SIZE=32
 
 # Compiler, assembler, and linker
 
