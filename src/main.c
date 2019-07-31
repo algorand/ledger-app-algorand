@@ -15,6 +15,13 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define INS_SIGN_PAYMENT_V2 0x04
 #define INS_SIGN_KEYREG_V2  0x05
 
+#define OFFSET_CLA             0
+#define OFFSET_INS             1
+#define OFFSET_P1              2
+#define OFFSET_P2              3
+#define OFFSET_LC              4
+#define OFFSET_CDATA           5
+
 struct txn current_txn;
 
 void
@@ -99,14 +106,19 @@ algorand_main(void)
           THROW(0x6982);
         }
 
-        if (G_io_apdu_buffer[0] != CLA) {
+        if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
           THROW(0x6E00);
         }
 
-        switch (G_io_apdu_buffer[1]) {
+        switch (G_io_apdu_buffer[OFFSET_INS]) {
         case INS_SIGN_PAYMENT: {
+          if (G_io_apdu_buffer[OFFSET_LC] != 32 + 8 + 8 + 8 + 32 + 32 + 8 + 32) {
+            THROW(0x6D00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+
+          uint8_t *p = &G_io_apdu_buffer[OFFSET_CDATA];
 
           current_txn.type = PAYMENT;
 
@@ -139,8 +151,13 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_PAYMENT_V2: {
+          if (G_io_apdu_buffer[OFFSET_LC] != 32 + 8 + 8 + 8 + 32 + 32 + 32 + 8 + 32) {
+            THROW(0x6D00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+
+          uint8_t *p = &G_io_apdu_buffer[OFFSET_CDATA];
 
           current_txn.type = PAYMENT;
 
@@ -176,8 +193,13 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_KEYREG: {
+          if (G_io_apdu_buffer[OFFSET_LC] != 32 + 8 + 8 + 8 + 32 + 32 + 32) {
+            THROW(0x6D00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+
+          uint8_t *p = &G_io_apdu_buffer[OFFSET_CDATA];
 
           current_txn.type = KEYREG;
 
@@ -207,8 +229,13 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_KEYREG_V2: {
+          if (G_io_apdu_buffer[OFFSET_LC] != 32 + 8 + 8 + 8 + 32 + 32 + 32 + 32) {
+            THROW(0x6D00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+
+          uint8_t *p = &G_io_apdu_buffer[OFFSET_CDATA];
 
           current_txn.type = KEYREG;
 
@@ -241,7 +268,12 @@ algorand_main(void)
         } break;
 
         case INS_GET_PUBLIC_KEY: {
+          if (G_io_apdu_buffer[OFFSET_LC] != 0) {
+            THROW(0x6D00);
+          }
+
           uint8_t publicKey[32];
+
           algorand_public_key(publicKey);
           os_memmove(G_io_apdu_buffer, publicKey, sizeof(publicKey));
           tx = sizeof(publicKey);
