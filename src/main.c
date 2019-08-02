@@ -67,6 +67,13 @@ txn_deny()
 }
 
 static void
+copy_and_advance(void *dst, uint8_t **p, size_t len)
+{
+  os_memmove(dst, *p, len);
+  *p += len;
+}
+
+static void
 algorand_main(void)
 {
   volatile unsigned int rx = 0;
@@ -109,33 +116,15 @@ algorand_main(void)
           uint8_t *p = &G_io_apdu_buffer[2];
 
           current_txn.type = PAYMENT;
-
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.genesisHash, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.receiver, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.amount, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.close, p, 32);
-          p += 32;
+          copy_and_advance( current_txn.sender,       &p, 32);
+          copy_and_advance(&current_txn.fee,          &p, 8);
+          copy_and_advance(&current_txn.firstValid,   &p, 8);
+          copy_and_advance(&current_txn.lastValid,    &p, 8);
+          copy_and_advance( current_txn.genesisID,    &p, 32);
+          copy_and_advance( current_txn.genesisHash,  &p, 32);
+          copy_and_advance( current_txn.receiver,     &p, 32);
+          copy_and_advance(&current_txn.amount,       &p, 8);
+          copy_and_advance( current_txn.close,        &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
@@ -146,30 +135,14 @@ algorand_main(void)
           uint8_t *p = &G_io_apdu_buffer[2];
 
           current_txn.type = KEYREG;
-
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.genesisHash, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.votepk, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.vrfpk, p, 32);
-          p += 32;
+          copy_and_advance( current_txn.sender,       &p, 32);
+          copy_and_advance(&current_txn.fee,          &p, 8);
+          copy_and_advance(&current_txn.firstValid,   &p, 8);
+          copy_and_advance(&current_txn.lastValid,    &p, 8);
+          copy_and_advance( current_txn.genesisID,    &p, 32);
+          copy_and_advance( current_txn.genesisHash,  &p, 32);
+          copy_and_advance( current_txn.votepk,       &p, 32);
+          copy_and_advance( current_txn.vrfpk,        &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
