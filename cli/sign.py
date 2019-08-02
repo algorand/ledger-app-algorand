@@ -32,14 +32,19 @@ with open(infile) as f:
   intx = instx['txn']
 
 try:
+  # CLA
   apdu = "\x80"
 
+  # INS
   if intx['type'] == 'pay':
-    apdu += "\x04"
+    apdu += "\x06"
   elif intx['type'] == 'keyreg':
-    apdu += "\x05"
+    apdu += "\x07"
   else:
     raise Exception("Unknown transaction type %s" % intx['type'])
+
+  # P1, P2, LC (to be filled in later)
+  apdu += "\x00\x00\x00"
 
   # Notes cannot be signed by Ledger app at the moment
   if 'note' in intx:
@@ -63,6 +68,9 @@ try:
   if intx['type'] == 'keyreg':
     apdu += struct.pack("32s", intx.get('votekey', ""))
     apdu += struct.pack("32s", intx.get('selkey', ""))
+
+  # Fill in the length
+  apdu = apdu[:4] + struct.pack("B", len(apdu) - 5) + apdu[5:]
 
   signature = dongle.exchange(apdu)
   print "signature " + str(signature).encode('hex')

@@ -8,12 +8,21 @@
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+#define OFFSET_CLA    0
+#define OFFSET_INS    1
+#define OFFSET_P1     2
+#define OFFSET_P2     3
+#define OFFSET_LC     4
+#define OFFSET_CDATA  5
+
 #define CLA                 0x80
 #define INS_SIGN_PAYMENT    0x01    // Deprecated, unused
 #define INS_SIGN_KEYREG     0x02    // Deprecated, unused
 #define INS_GET_PUBLIC_KEY  0x03
 #define INS_SIGN_PAYMENT_V2 0x04
 #define INS_SIGN_KEYREG_V2  0x05
+#define INS_SIGN_PAYMENT_V3 0x06
+#define INS_SIGN_KEYREG_V3  0x07
 
 struct txn current_txn;
 
@@ -106,14 +115,22 @@ algorand_main(void)
           THROW(0x6982);
         }
 
-        if (G_io_apdu_buffer[0] != CLA) {
+        if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
           THROW(0x6E00);
         }
 
-        switch (G_io_apdu_buffer[1]) {
-        case INS_SIGN_PAYMENT_V2: {
+        uint8_t ins = G_io_apdu_buffer[OFFSET_INS];
+        switch (ins) {
+        case INS_SIGN_PAYMENT_V2:
+        case INS_SIGN_PAYMENT_V3:
+        {
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+          uint8_t *p;
+          if (ins == INS_SIGN_PAYMENT_V2) {
+            p = &G_io_apdu_buffer[2];
+          } else {
+            p = &G_io_apdu_buffer[OFFSET_CDATA];
+          }
 
           current_txn.type = PAYMENT;
           copy_and_advance( current_txn.sender,       &p, 32);
@@ -130,9 +147,16 @@ algorand_main(void)
           flags |= IO_ASYNCH_REPLY;
         } break;
 
-        case INS_SIGN_KEYREG_V2: {
+        case INS_SIGN_KEYREG_V2:
+        case INS_SIGN_KEYREG_V3:
+        {
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+          uint8_t *p;
+          if (ins == INS_SIGN_KEYREG_V2) {
+            p = &G_io_apdu_buffer[2];
+          } else {
+            p = &G_io_apdu_buffer[OFFSET_CDATA];
+          }
 
           current_txn.type = KEYREG;
           copy_and_advance( current_txn.sender,       &p, 32);
