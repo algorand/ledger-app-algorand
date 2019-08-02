@@ -31,7 +31,8 @@ txn_approve()
 {
   unsigned int tx = 0;
 
-  unsigned char msg[256];
+  // Avoid large stack allocation; there is no reentry into txn_approve().
+  static unsigned char msg[256];
   unsigned int msg_len;
 
   msg[0] = 'T';

@@ -57,7 +57,7 @@ static size_t min(size_t x, size_t y)
  */
 static unsigned char encode_char(unsigned char c)
 {
-	static unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+	static const unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 	return base32[c & 0x1F];  // 0001 1111
 }
 
