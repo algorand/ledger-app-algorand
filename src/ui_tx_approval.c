@@ -1,10 +1,166 @@
-#include "os.h"
-#include "os_io_seproxyhal.h"
-
-#include "algo_ui.h"
-#include "algo_tx.h"
+#include "ui_tx_approval.h"
+#include "ui_idle.h"
 #include "algo_addr.h"
 #include "base64.h"
+
+//------------------------------------------------------------------------------
+
+const bagl_element_t ui_tx_approval_nanos[] = {
+  // type           userid   x    y     w    h       str rad        fill         fg         bg      fid iid  txt   touchparams...       ]
+  {{BAGL_RECTANGLE, 0x00,    0,   0,  128,  32,        0,  0,  BAGL_FILL,  0x000000,  0xFFFFFF,  0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL},
+
+  {{BAGL_ICON,      0x00,    3,  12,    7,   7,        0,  0,          0,  0xFFFFFF,  0x000000,  0,                                                                 BAGL_GLYPH_ICON_CROSS},  NULL,  0,  0,  0,  NULL,  NULL,  NULL},
+  {{BAGL_ICON,      0x00,  117,  13,    8,   6,        0,  0,          0,  0xFFFFFF,  0x000000,  0,                                                                 BAGL_GLYPH_ICON_CHECK},  NULL,  0,  0,  0,  NULL,  NULL,  NULL},
+
+  {{BAGL_LABELINE,  0x01,    0,  12,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,   0}, "Confirm", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE,  0x01,    0,  26,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,   0}, "transaction", 0, 0, 0, NULL, NULL, NULL },
+
+  /*
+  {{BAGL_LABELINE,  0x02,    0,  12,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER,     0}, "WARNING", 0, 0, 0, NULL, NULL, NULL},
+  {{BAGL_LABELINE,  0x02,   23,  26,   82,  12,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,   0}, "Data present", 0, 0, 0, NULL, NULL, NULL},
+
+  {{BAGL_LABELINE,  0x03,    0,  12,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER,     0}, "Amount", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE,  0x03,   23,  26,   82,  12,  0x80|10,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,  26}, (char*)strings.common.fullAmount, 0, 0, 0, NULL, NULL, NULL },
+
+  {{BAGL_LABELINE,  0x04,    0,  12,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER,     0}, "Address", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE,  0x04,   23,  26,   82,  12,  0x80|10,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,  50}, (char*)strings.common.fullAddress, 0, 0, 0, NULL, NULL, NULL },
+
+  {{BAGL_LABELINE,  0x05,    0,  12,  128,  32,        0,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER,     0}, "Maximum fees", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE,  0x05,   23,  26,   82,  12,  0x80|10,  0,          0,  0xFFFFFF,  0x000000,  BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER,  26}, (char*)strings.common.maxFee, 0, 0, 0, NULL, NULL, NULL },
+  */
+};
+
+
+//------------------------------------------------------------------------------
+
+static unsigned char packed_tx[256 + MAX_NOTE_FIELD_SIZE];
+
+//------------------------------------------------------------------------------
+
+static const bagl_element_t*
+ui_tx_approval_nanos_preprocessor(const bagl_element_t* element);
+static unsigned int
+ui_tx_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter);
+static unsigned int
+io_seproxyhal_touch_tx_approval_ok(const bagl_element_t *e);
+static unsigned int
+io_seproxyhal_touch_tx_approval_cancel(const bagl_element_t *e);
+
+//------------------------------------------------------------------------------
+
+void
+ui_show_tx_approval()
+{
+  ux_step = 0;
+  ux_steps_count = 1;
+
+  UX_DISPLAY(ui_tx_approval_nanos, ui_tx_approval_nanos_preprocessor);
+  UX_CALLBACK_SET_INTERVAL(500);
+  return;
+}
+
+static const bagl_element_t*
+ui_tx_approval_nanos_preprocessor(const bagl_element_t* element)
+{
+  unsigned int display = 1;
+
+  if (element->component.userid > 0) {
+    display = (ux_step == element->component.userid - 1);
+    if (display) {
+      UX_CALLBACK_SET_INTERVAL(500);
+      /*
+          switch(element->component.userid) {
+          case 1:
+            UX_CALLBACK_SET_INTERVAL(500);
+            break;
+          case 2:
+            if (dataPresent && !N_storage.contractDetails) {
+              UX_CALLBACK_SET_INTERVAL(500);
+            }
+            else {
+              display = 0;
+              ux_step++; // display the next step
+            }
+            break;
+          case 3:
+            UX_CALLBACK_SET_INTERVAL(MAX(3000, 1000+bagl_label_roundtrip_duration_ms(element, 7)));
+            break;
+          case 4:
+            UX_CALLBACK_SET_INTERVAL(MAX(3000, 1000+bagl_label_roundtrip_duration_ms(element, 7)));
+            break;
+          case 5:
+            UX_CALLBACK_SET_INTERVAL(MAX(3000, 1000+bagl_label_roundtrip_duration_ms(element, 7)));
+            break;
+          }
+        }
+      */
+    }
+  }
+  return element;
+}
+
+static unsigned int
+ui_tx_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter)
+{
+  switch (button_mask) {
+    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
+      io_seproxyhal_touch_tx_approval_cancel(NULL);
+      break;
+
+    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
+      io_seproxyhal_touch_tx_approval_ok(NULL);
+      break;
+  }
+  return 0;
+}
+
+static unsigned int
+io_seproxyhal_touch_tx_approval_ok(const bagl_element_t *e)
+{
+  cx_ecfp_private_key_t privateKey;
+  unsigned int packed_tx_len;
+
+  packed_tx[0] = 'T';
+  packed_tx[1] = 'X';
+  packed_tx_len = 2 + tx_encode(&context.current_tx, packed_tx + 2, sizeof(packed_tx)-2);
+
+  //PRINTF("Signing message: %.*h\n", msg_len, msg);
+
+  algorand_private_key(&privateKey);
+  cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, packed_tx, packed_tx_len, NULL, 0, G_io_apdu_buffer, 64, NULL);
+  os_memset(&privateKey, 0, sizeof(privateKey));
+
+  G_io_apdu_buffer[64] = 0x90;
+  G_io_apdu_buffer[65] = 0x00;
+
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 66);
+
+  // Display back the original UX
+  ui_idle();
+  return 0; // do not redraw the widget
+}
+
+static unsigned int
+io_seproxyhal_touch_tx_approval_cancel(const bagl_element_t *e)
+{
+  G_io_apdu_buffer[0] = 0x69;
+  G_io_apdu_buffer[1] = 0x85;
+
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+
+  // Display back the original UX
+  ui_idle();
+  return 0;
+}
+
+
+
+
+
+
+/*
 
 static char *
 u64str(uint64_t v)
@@ -270,6 +426,8 @@ ui_txn()
   PRINTF("  Vote PK: %.*h\n", 32, current_txn.votepk);
   PRINTF("  VRF PK: %.*h\n", 32, current_txn.vrfpk);
 
+  UX_DISPLAY(bagl_ui_approval_nanos, NULL);
+  / *
   switch (current_txn.type) {
   case PAYMENT:
     ui_text_put("Payment");
@@ -285,3 +443,4 @@ ui_txn()
   ui_text_more();
   UX_DISPLAY(bagl_ui_txtype_nanos, NULL);
 }
+*/

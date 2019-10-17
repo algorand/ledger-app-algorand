@@ -1,7 +1,6 @@
-#include "os.h"
-#include "cx.h"
-
 #include "algo_keys.h"
+
+//------------------------------------------------------------------------------
 
 void
 algorand_private_key(cx_ecfp_private_key_t *privateKey)
@@ -15,11 +14,13 @@ algorand_private_key(cx_ecfp_private_key_t *privateKey)
   bip32Path[0] = 44  | 0x80000000;
   bip32Path[1] = 283 | 0x80000000;
   bip32Path[2] = 0   | 0x80000000;
-  bip32Path[3] = 0;
-  bip32Path[4] = 0;
-  os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), privateKeyData, NULL);
+  bip32Path[3] = 0   | 0x80000000;
+  bip32Path[4] = 0   | 0x80000000;
 
+  os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), privateKeyData, NULL, NULL, 0);
   cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
+
+  return;
 }
 
 void
@@ -45,4 +46,6 @@ algorand_public_key(uint8_t *buf)
 
   PRINTF("Public key (raw): %.*h\n", 65, publicKey.W);
   PRINTF("Public key (compressed): %.*h\n", 32, buf);
+
+  return;
 }

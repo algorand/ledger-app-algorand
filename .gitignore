@@ -1,5 +1,9 @@
+/.vscode
 /bin
+!/bin/.gitkeep
 /debug
 /dep
 /obj
+!/obj/.gitkeep
+/src/glyphs.*
 *.swp

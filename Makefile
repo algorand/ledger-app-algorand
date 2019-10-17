@@ -6,12 +6,11 @@ include $(BOLOS_SDK)/Makefile.defines
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.1
-APP_LOAD_PARAMS = --appFlags 0x00 $(COMMON_LOAD_PARAMS)
-APP_LOAD_PARAMS += --path "44'/283'"
+APPVERSION = 1.0.2
+APP_LOAD_PARAMS = --appFlags 0x40 --path "44'/283'" --curve ed25519 $(COMMON_LOAD_PARAMS)
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-ICONNAME=glyphs/nanos/app_logo.gif
+ICONNAME=nanos_app_algorand.gif
 else
 ICONNAME=
 endif
@@ -40,7 +39,7 @@ else
         DEFINES   += PRINTF\(...\)=
 endif
 
-DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
 # Support for WebUSB transport
 WEBUSB_URL = ledger-app.algorand.com
@@ -76,6 +75,9 @@ AFLAGS +=
 LD := $(GCCPATH)arm-none-eabi-gcc
 LDFLAGS += -O3 -Os
 LDLIBS += -lm -lgcc -lc
+
+# import rules to compile glyphs(/pone)
+include $(BOLOS_SDK)/Makefile.glyphs
 
 # Main rules
 
