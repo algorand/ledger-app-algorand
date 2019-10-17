@@ -298,8 +298,6 @@ handleSignPaymentV3(uint8_t p1, uint8_t p2, uint8_t *dataBuffer, uint16_t dataLe
 
   *flags |= IO_ASYNCH_REPLY;
 
-  context.state = 0;
-
   //show UI to confirm approval
   ui_show_tx_approval();
   return;

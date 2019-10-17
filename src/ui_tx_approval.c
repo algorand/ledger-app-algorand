@@ -136,6 +136,9 @@ io_seproxyhal_touch_tx_approval_ok(const bagl_element_t *e)
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 66);
 
+  //reset context
+  os_memset(&context, 0, sizeof(context));
+
   // Display back the original UX
   ui_idle();
   return 0; // do not redraw the widget
@@ -149,6 +152,9 @@ io_seproxyhal_touch_tx_approval_cancel(const bagl_element_t *e)
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+
+  //reset context
+  os_memset(&context, 0, sizeof(context));
 
   // Display back the original UX
   ui_idle();
