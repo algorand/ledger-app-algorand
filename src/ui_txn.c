@@ -1,3 +1,4 @@
+#include <string.h>
 #include "os.h"
 #include "os_io_seproxyhal.h"
 
@@ -84,7 +85,16 @@ static int step_lastvalid() {
   return 1;
 }
 
+static const char* default_genesisID = "mainnet-v1.0";
+static const uint8_t default_genesisHash[] = {
+  0xc0, 0x61, 0xc4, 0xd8, 0xfc, 0x1d, 0xbd, 0xde, 0xd2, 0xd7, 0x60, 0x4b, 0xe4, 0x56, 0x8e, 0x3f, 0x6d, 0x4, 0x19, 0x87, 0xac, 0x37, 0xbd, 0xe4, 0xb6, 0x20, 0xb5, 0xab, 0x39, 0x24, 0x8a, 0xdf,
+};
+
 static int step_genesisID() {
+  if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
+    return 0;
+  }
+
   ui_text_put(current_txn.genesisID);
   return 1;
 }
@@ -92,6 +102,12 @@ static int step_genesisID() {
 static int step_genesisHash() {
   if (all_zero_key(current_txn.genesisHash)) {
     return 0;
+  }
+
+  if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
+    if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
+      return 0;
+    }
   }
 
   char buf[45];
