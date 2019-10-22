@@ -67,3 +67,4 @@ To go back to release firmware:
 - BSS not actually zeroed out; have to explicitly initialize global variables
 - Can't call PRINTF after UX_DISPLAY
 - Converting `(int)-2` to `(char)` and then back to `(int)` produces 254; the base32 library broke as a result
+- [Weird memory behavior](https://github.com/LedgerHQ/ledger-dev-doc/blob/master/source/userspace/memory.rst)

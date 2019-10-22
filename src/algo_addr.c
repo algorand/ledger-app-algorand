@@ -1,3 +1,4 @@
+#include <string.h>
 #include "os.h"
 
 #include "algo_addr.h"
