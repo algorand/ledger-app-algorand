@@ -17,7 +17,16 @@ algorand_private_key(cx_ecfp_private_key_t *privateKey)
   bip32Path[2] = 0   | 0x80000000;
   bip32Path[3] = 0;
   bip32Path[4] = 0;
+
+  // Based on a bug report by Mauro Leggieri, and these fixes by Ledger folks
+  // to the Stellar app:
+  // https://github.com/LedgerHQ/ledger-app-stellar/commit/ffade96bf8d7dadd4ce4969a4ed5dc9ee2ad002d
+  // https://github.com/LedgerHQ/ledger-app-stellar/commit/17d8a368e3850f82f323d4f621f742d7610ac523
+#ifdef TARGET_BLUE
   os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), privateKeyData, NULL);
+#else
+  os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), privateKeyData, NULL, (unsigned char*) "ed25519 seed", 12);
+#endif
 
   cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, privateKey);
 }
