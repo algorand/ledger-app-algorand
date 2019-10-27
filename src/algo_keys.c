@@ -8,6 +8,8 @@
 // need 32 bytes for cx_ecfp_init_private_key..
 static uint8_t privateKeyData[64];
 
+uint8_t publicKey[32];
+
 void
 algorand_key_derive(void)
 {
@@ -47,7 +49,4 @@ algorand_public_key(uint8_t *buf)
   if (publicKey.W[32] & 1) {
     buf[31] |= 0x80;
   }
-
-  PRINTF("Public key (raw): %.*h\n", 65, publicKey.W);
-  PRINTF("Public key (compressed): %.*h\n", 32, buf);
 }

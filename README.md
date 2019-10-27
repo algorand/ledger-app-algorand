@@ -68,3 +68,4 @@ To go back to release firmware:
 - Can't call PRINTF after UX_DISPLAY
 - Converting `(int)-2` to `(char)` and then back to `(int)` produces 254; the base32 library broke as a result
 - [Weird memory behavior](https://github.com/LedgerHQ/ledger-dev-doc/blob/master/source/userspace/memory.rst)
+- The app gets 4KBytes of SRAM for writable memory and stack.  Look at `debug/app.map` to make sure there's nothing too large in SRAM (look between the `_bss` and `_estack` symbols), and check for large stack use in functions (look for large `sub sp` statements in `debug/app.asm`).

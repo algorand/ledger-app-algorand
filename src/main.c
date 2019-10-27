@@ -16,6 +16,12 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define OFFSET_CDATA  5
 
 #define CLA                 0x80
+
+#define P1_FIRST 0x00
+#define P1_MORE  0x80
+#define P2_LAST  0x00
+#define P2_MORE  0x80
+
 #define INS_SIGN_PAYMENT    0x01    // Deprecated, unused
 #define INS_SIGN_KEYREG     0x02    // Deprecated, unused
 #define INS_GET_PUBLIC_KEY  0x03
@@ -23,30 +29,36 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define INS_SIGN_KEYREG_V2  0x05
 #define INS_SIGN_PAYMENT_V3 0x06
 #define INS_SIGN_KEYREG_V3  0x07
+#define INS_SIGN_MSGPACK    0x08
 
+/* The transaction that we might ask the user to approve. */
 struct txn current_txn;
+
+/* A buffer for collecting msgpack-encoded transaction via APDUs,
+ * as well as for msgpack-encoding transaction prior to signing.
+ */
+static uint8_t msgpack_buf[1024];
+static unsigned int msgpack_next_off;
 
 void
 txn_approve()
 {
   unsigned int tx = 0;
 
-  // Avoid large stack allocation; there is no reentry into txn_approve().
-  static unsigned char msg[256];
   unsigned int msg_len;
 
-  msg[0] = 'T';
-  msg[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msg+2, sizeof(msg)-2);
+  msgpack_buf[0] = 'T';
+  msgpack_buf[1] = 'X';
+  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
 
-  PRINTF("Signing message: %.*h\n", msg_len, msg);
+  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
   cx_ecfp_private_key_t privateKey;
   algorand_private_key(&privateKey);
 
   int sig_len = cx_eddsa_sign(&privateKey,
                               0, CX_SHA512,
-                              &msg[0], msg_len,
+                              &msgpack_buf[0], msg_len,
                               NULL, 0,
                               G_io_apdu_buffer,
                               6+2*(32+1), // Formerly from cx_compliance_141.c
@@ -91,6 +103,9 @@ algorand_main(void)
   volatile unsigned int flags = 0;
 
   algorand_key_derive();
+  algorand_public_key(publicKey);
+
+  msgpack_next_off = 0;
 
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
@@ -175,9 +190,52 @@ algorand_main(void)
           flags |= IO_ASYNCH_REPLY;
         } break;
 
+        case INS_SIGN_MSGPACK: {
+          switch (G_io_apdu_buffer[OFFSET_P1]) {
+          case P1_FIRST:
+            msgpack_next_off = 0;
+            break;
+          case P1_MORE:
+            break;
+          default:
+            THROW(0x6B00);
+          }
+
+          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
+          if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
+            THROW(0x6700);
+          }
+
+          os_memmove(&msgpack_buf[msgpack_next_off], &G_io_apdu_buffer[OFFSET_CDATA], lc);
+          msgpack_next_off += lc;
+
+          switch (G_io_apdu_buffer[OFFSET_P2]) {
+          case P2_LAST:
+            {
+              char *err = tx_decode(msgpack_buf, msgpack_next_off, &current_txn);
+              if (err != NULL) {
+                /* Return error by sending a response length longer than
+                 * the usual ed25519 signature.
+                 */
+                int errlen = strlen(err);
+                os_memset(G_io_apdu_buffer, 0, 65);
+                os_memmove(&G_io_apdu_buffer[65], err, errlen);
+                tx = 65 + errlen;
+                THROW(0x9000);
+              }
+
+              ui_txn();
+              flags |= IO_ASYNCH_REPLY;
+            }
+            break;
+          case P2_MORE:
+            THROW(0x9000);
+          default:
+            THROW(0x6B00);
+          }
+        } break;
+
         case INS_GET_PUBLIC_KEY: {
-          uint8_t publicKey[32];
-          algorand_public_key(publicKey);
           os_memmove(G_io_apdu_buffer, publicKey, sizeof(publicKey));
           tx = sizeof(publicKey);
           THROW(0x9000);

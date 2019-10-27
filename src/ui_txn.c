@@ -58,8 +58,6 @@ static int step_txn_type() {
 }
 
 static int step_sender() {
-  uint8_t publicKey[32];
-  algorand_public_key(publicKey);
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }

@@ -30,6 +30,12 @@ struct txn {
 // of the resulting encoding.
 unsigned int tx_encode(struct txn *t, uint8_t *buf, int buflen);
 
+// tx_decode takes a canonical msgpack encoding of a transaction, and
+// unpacks it into a struct txn.  The return value is NULL for success,
+// or a string describing the error on failure.  Decoding may or may
+// not succeed for a non-canonical encoding.
+char* tx_decode(uint8_t *buf, int buflen, struct txn *t);
+
 // We have a global transaction that is the subject of the current
 // operation, if any.
 extern struct txn current_txn;

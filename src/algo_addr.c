@@ -10,9 +10,7 @@ checksummed_addr(const uint8_t *publicKey, char *out)
 {
   // The SDK does not provide a ready-made SHA512/256, so we set up a SHA512
   // hash context, and then overwrite the IV with the SHA512/256-specific IV.
-  // Use static to avoid large stack allocations; there is no reentry into
-  // this function.
-  static cx_sha512_t h;
+  cx_sha512_t h;
   memset(&h, 0, sizeof(h));
   cx_sha512_init(&h);
 
