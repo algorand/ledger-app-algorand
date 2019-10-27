@@ -90,6 +90,8 @@ algorand_main(void)
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
+  algorand_key_derive();
+
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
 
