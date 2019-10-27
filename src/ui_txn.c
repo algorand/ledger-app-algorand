@@ -51,6 +51,14 @@ static int step_txn_type() {
     ui_text_put("Key reg");
     break;
 
+  case ASSET_XFER:
+    ui_text_put("Asset xfer");
+    break;
+
+  case ASSET_FREEZE:
+    ui_text_put("Asset freeze");
+    break;
+
   default:
     ui_text_put("Unknown");
   }
@@ -182,6 +190,106 @@ static int step_vrfpk() {
   return 1;
 }
 
+static int step_asset_xfer_id() {
+  if (current_txn.type != ASSET_XFER) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.asset_xfer_id));
+  return 1;
+}
+
+static int step_asset_xfer_amount() {
+  if (current_txn.type != ASSET_XFER) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.asset_xfer_amount));
+  return 1;
+}
+
+static int step_asset_xfer_sender() {
+  if (current_txn.type != ASSET_XFER) {
+    return 0;
+  }
+
+  if (all_zero_key(current_txn.asset_xfer_sender)) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.asset_xfer_sender, checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
+static int step_asset_xfer_receiver() {
+  if (current_txn.type != ASSET_XFER) {
+    return 0;
+  }
+
+  if (all_zero_key(current_txn.asset_xfer_receiver)) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.asset_xfer_receiver, checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
+static int step_asset_xfer_close() {
+  if (current_txn.type != ASSET_XFER) {
+    return 0;
+  }
+
+  if (all_zero_key(current_txn.asset_xfer_close)) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.asset_xfer_close, checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
+static int step_asset_freeze_id() {
+  if (current_txn.type != ASSET_FREEZE) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.asset_freeze_id));
+  return 1;
+}
+
+static int step_asset_freeze_account() {
+  if (current_txn.type != ASSET_FREEZE) {
+    return 0;
+  }
+
+  if (all_zero_key(current_txn.asset_freeze_account)) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.asset_freeze_account, checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
+static int step_asset_freeze_flag() {
+  if (current_txn.type != ASSET_FREEZE) {
+    return 0;
+  }
+
+  if (current_txn.asset_freeze_flag) {
+    ui_text_put("Frozen");
+  } else {
+    ui_text_put("Unfrozen");
+  }
+  return 1;
+}
+
 struct ux_step {
   // The display callback returns a non-zero value if it placed information
   // about the associated caption into lineBuffer, which should be displayed.
@@ -205,6 +313,14 @@ static const struct ux_step ux_steps[] = {
   { "Close to",       &step_close },
   { "Vote PK",        &step_votepk },
   { "VRF PK",         &step_vrfpk },
+  { "Asset ID",       &step_asset_xfer_id },
+  { "Asset amt",      &step_asset_xfer_amount },
+  { "Asset src",      &step_asset_xfer_sender },
+  { "Asset dst",      &step_asset_xfer_receiver },
+  { "Asset close",    &step_asset_xfer_close },
+  { "Asset ID",       &step_asset_freeze_id },
+  { "Asset account",  &step_asset_freeze_account },
+  { "Freeze flag",    &step_asset_freeze_flag },
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
