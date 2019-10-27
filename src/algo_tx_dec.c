@@ -85,6 +85,31 @@ decode_bin_fixed(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t reslen)
 }
 
 static void
+decode_bin_var(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t *reslen, size_t reslenmax)
+{
+  uint8_t b = next_byte(bufp, buf_end);
+  if (b != BIN8) {
+    snprintf(decode_err, sizeof(decode_err), "expected bin, found %d", b);
+    THROW(INVALID_PARAMETER);
+  }
+
+  uint8_t bin_len = next_byte(bufp, buf_end);
+  if (bin_len > reslenmax) {
+    snprintf(decode_err, sizeof(decode_err), "expected <= %d bin bytes, found %d", reslenmax, bin_len);
+    THROW(INVALID_PARAMETER);
+  }
+
+  if (*bufp + bin_len > buf_end) {
+    snprintf(decode_err, sizeof(decode_err), "%d-byte bin overruns input", bin_len);
+    THROW(INVALID_PARAMETER);
+  }
+
+  os_memmove(res, *bufp, bin_len);
+  *bufp += bin_len;
+  *reslen = bin_len;
+}
+
+static void
 decode_uint64(uint8_t **bufp, uint8_t *buf_end, uint64_t *res)
 {
   uint8_t b = next_byte(bufp, buf_end);
@@ -154,6 +179,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_string(&buf, buf_end, t->genesisID, sizeof(t->genesisID));
         } else if (!strcmp(key, "gh")) {
           decode_bin_fixed(&buf, buf_end, t->genesisHash, sizeof(t->genesisHash));
+        } else if (!strcmp(key, "note")) {
+          decode_bin_var(&buf, buf_end, t->note, &t->note_len, sizeof(t->note));
         } else if (!strcmp(key, "amt")) {
           decode_uint64(&buf, buf_end, &t->amount);
         } else if (!strcmp(key, "rcv")) {

@@ -15,6 +15,9 @@ struct txn {
   char genesisID[33];
   uint8_t genesisHash[32];
 
+  uint8_t note[32];
+  size_t note_len;
+
   // Payments
   uint8_t receiver[32];
   uint64_t amount;

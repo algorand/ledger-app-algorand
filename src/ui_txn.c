@@ -114,6 +114,17 @@ static int step_genesisHash() {
   return 1;
 }
 
+static int step_note() {
+  if (current_txn.note_len == 0) {
+    return 0;
+  }
+
+  char buf[16];
+  snprintf(buf, sizeof(buf), "%d bytes", current_txn.note_len);
+  ui_text_put(buf);
+  return 1;
+}
+
 static int step_receiver() {
   if (current_txn.type != PAYMENT) {
     return 0;
@@ -188,6 +199,7 @@ static const struct ux_step ux_steps[] = {
   { "Last valid",     &step_lastvalid },
   { "Genesis ID",     &step_genesisID },
   { "Genesis hash",   &step_genesisHash },
+  { "Note",           &step_note },
   { "Receiver",       &step_receiver },
   { "Amount (uAlg)",  &step_amount },
   { "Close to",       &step_close },
