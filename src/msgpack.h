@@ -4,6 +4,8 @@
 #define FIXMAP_15   0x8f
 #define FIXSTR_0    0xa0
 #define FIXSTR_31   0xbf
+#define BOOL_FALSE  0xc2
+#define BOOL_TRUE   0xc3
 #define BIN8        0xc4
 #define UINT8       0xcc
 #define UINT16      0xcd

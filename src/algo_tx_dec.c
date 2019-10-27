@@ -140,6 +140,20 @@ decode_uint64(uint8_t **bufp, uint8_t *buf_end, uint64_t *res)
   }
 }
 
+static void
+decode_bool(uint8_t **bufp, uint8_t *buf_end, uint8_t *res)
+{
+  uint8_t b = next_byte(bufp, buf_end);
+  if (b == BOOL_TRUE) {
+    *res = 1;
+  } else if (b == BOOL_FALSE) {
+    *res = 0;
+  } else {
+    snprintf(decode_err, sizeof(decode_err), "expected bool, found %d", b);
+    THROW(INVALID_PARAMETER);
+  }
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -191,6 +205,22 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_bin_fixed(&buf, buf_end, t->vrfpk, sizeof(t->vrfpk));
         } else if (!strcmp(key, "votekey")) {
           decode_bin_fixed(&buf, buf_end, t->votepk, sizeof(t->votepk));
+        } else if (!strcmp(key, "aamt")) {
+          decode_uint64(&buf, buf_end, &t->asset_xfer_amount);
+        } else if (!strcmp(key, "aclose")) {
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer_close, sizeof(t->asset_xfer_close));
+        } else if (!strcmp(key, "arcv")) {
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer_receiver, sizeof(t->asset_xfer_receiver));
+        } else if (!strcmp(key, "asnd")) {
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer_sender, sizeof(t->asset_xfer_sender));
+        } else if (!strcmp(key, "xaid")) {
+          decode_uint64(&buf, buf_end, &t->asset_xfer_id);
+        } else if (!strcmp(key, "faid")) {
+          decode_uint64(&buf, buf_end, &t->asset_freeze_id);
+        } else if (!strcmp(key, "fadd")) {
+          decode_bin_fixed(&buf, buf_end, t->asset_freeze_account, sizeof(t->asset_freeze_account));
+        } else if (!strcmp(key, "afrz")) {
+          decode_bool(&buf, buf_end, &t->asset_freeze_flag);
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
