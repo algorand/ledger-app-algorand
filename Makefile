@@ -2,6 +2,7 @@ ifeq ($(BOLOS_SDK),)
 $(error BOLOS_SDK is not set)
 endif
 include $(BOLOS_SDK)/Makefile.defines
+include $(BOLOS_SDK)/Makefile.glyphs
 
 # Main app configuration
 
@@ -12,8 +13,10 @@ APP_LOAD_PARAMS += --path "44'/283'"
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 ICONNAME=glyphs/nanos/app_logo.gif
+else ifeq ($(TARGET_NAME),TARGET_NANOX)
+ICONNAME=glyphs/nanox/app_logo.gif
 else
-ICONNAME=
+$(error unknown device TARGET_NAME)
 endif
 
 # Build configuration
@@ -26,6 +29,27 @@ DEFINES += APPVERSION=\"$(APPVERSION)\"
 DEFINES += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
+
+ifeq ($(TARGET_NAME),TARGET_NANOS)
+else ifeq ($(TARGET_NAME),TARGET_NANOX)
+DEFINES       += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
+DEFINES       += HAVE_BLE_APDU
+
+DEFINES       += HAVE_GLO096
+DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+DEFINES       += HAVE_BAGL_ELLIPSIS
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+
+DEFINES += HAVE_UX_LEGACY
+DEFINES += HAVE_UX_FLOW
+
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH  += lib_ux
+else
+$(error unknown device TARGET_NAME)
+endif
 
 # Enabling debug PRINTF
 DEBUG = 0
