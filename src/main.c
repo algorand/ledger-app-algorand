@@ -2,6 +2,7 @@
 #include "cx.h"
 #include "os_io_seproxyhal.h"
 
+#include "algo_addr.h"
 #include "algo_keys.h"
 #include "algo_ui.h"
 #include "algo_tx.h"
@@ -39,6 +40,7 @@ struct txn current_txn;
  */
 static uint8_t msgpack_buf[1024];
 static unsigned int msgpack_next_off;
+char checksummedPublicKey[65];
 
 void
 txn_approve()
@@ -104,11 +106,19 @@ algorand_main(void)
 
   algorand_key_derive();
   algorand_public_key(publicKey);
+  checksummed_addr(publicKey, checksummedPublicKey);
 
   msgpack_next_off = 0;
 
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
+
+  #if defined(TARGET_NANOX)
+  // enable bluetooth on nano x
+  G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+  BLE_power(0, NULL);
+  BLE_power(1, "Nano X");
+  #endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.

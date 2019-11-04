@@ -8,7 +8,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 
 APPNAME = "Algorand"
 APPVERSION = 1.0.2
-APP_LOAD_PARAMS = --appFlags 0x00 $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
 ICONNAME=glyphs/app_logo.gif
