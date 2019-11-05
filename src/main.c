@@ -16,7 +16,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define OFFSET_LC     4
 #define OFFSET_CDATA  5
 
-#define CLA                 0x80
+#define CLA           0x80
 
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
