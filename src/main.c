@@ -374,7 +374,10 @@ main(void)
   os_boot();
 
   UX_INIT();
+
+#if defined(TARGET_NANOS)
   UX_MENU_INIT();
+#endif
 
   BEGIN_TRY {
     TRY {

@@ -1,8 +1,11 @@
 #include "os.h"
 #include "os_io_seproxyhal.h"
 #include "algo_ui.h"
+
+#if defined(TARGET_NANOX)
 #include "algo_keys.h"
 #include "ux.h"
+#endif
 
 #if defined(TARGET_NANOS)
 static const ux_menu_entry_t menu_top[];
@@ -24,18 +27,18 @@ static const ux_menu_entry_t menu_top[] = {
 
 #if defined(TARGET_NANOX)
 UX_STEP_NOCB(ux_idle_flow_1_step, bn, {
-      "Version",
-      "1234",
+  "Version",
+  APPVERSION,
 });
 
 UX_STEP_NOCB(ux_idle_flow_2_step, bnnn_paging, {
-      .title = "Address",
-      .text = checksummedPublicKey,
+  .title = "Address",
+  .text = checksummedPublicKey,
 });
 
 UX_STEP_VALID(ux_idle_flow_3_step, pb, os_sched_exit(-1), {
-      &C_icon_dashboard,
-      "Quit",
+  &C_icon_dashboard,
+  "Quit",
 });
 
 const ux_flow_step_t * const ux_idle_flow [] = {
@@ -50,12 +53,13 @@ void
 ui_idle()
 {
 #if defined(TARGET_NANOX)
-    // reserve a display stack slot if none yet
-    if(G_ux.stack_count == 0) {
-        ux_stack_push();
-    }
-    ux_flow_init(0, ux_idle_flow, NULL);
-#else
-    UX_MENU_DISPLAY(0, menu_top, NULL);
+  // reserve a display stack slot if none yet
+  if(G_ux.stack_count == 0) {
+    ux_stack_push();
+  }
+  ux_flow_init(0, ux_idle_flow, NULL);
+#endif
+#if defined(TARGET_NANOS)
+  UX_MENU_DISPLAY(0, menu_top, NULL);
 #endif
 }
