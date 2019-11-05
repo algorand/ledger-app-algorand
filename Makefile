@@ -11,7 +11,13 @@ APPVERSION = 1.0.2
 APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
-ICONNAME=glyphs/app_logo.gif
+# Choose appropriate icon
+
+ifeq ($(TARGET_NAME),TARGET_NANOS)
+ICONNAME=icons/app_logo_s.gif
+else ifeq ($(TARGET_NAME),TARGET_NANOX)
+ICONNAME=icons/app_logo_x.gif
+endif
 
 # Build configuration
 

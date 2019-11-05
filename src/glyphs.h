@@ -1,13 +1,13 @@
-#ifndef GLYPH_app_logo_BPP
-        #define GLYPH_app_logo_WIDTH 16
-        #define GLYPH_app_logo_HEIGHT 16
-        #define GLYPH_app_logo_BPP 1
-extern unsigned int const C_app_logo_colors[];
-extern unsigned char const C_app_logo_bitmap[];
+#ifndef GLYPH_icon_crossmark_BPP
+        #define GLYPH_icon_crossmark_WIDTH 14
+        #define GLYPH_icon_crossmark_HEIGHT 14
+        #define GLYPH_icon_crossmark_BPP 1
+extern unsigned int const C_icon_crossmark_colors[];
+extern unsigned char const C_icon_crossmark_bitmap[];
 #ifdef OS_IO_SEPROXYHAL
         #include "os_io_seproxyhal.h"
-        extern const bagl_icon_details_t C_app_logo;
-        #endif // GLYPH_app_logo_BPP
+        extern const bagl_icon_details_t C_icon_crossmark;
+        #endif // GLYPH_icon_crossmark_BPP
         #endif // OS_IO_SEPROXYHAL
 #ifndef GLYPH_icon_dashboard_BPP
         #define GLYPH_icon_dashboard_WIDTH 14
@@ -74,4 +74,15 @@ extern unsigned char const C_icon_up_bitmap[];
         #include "os_io_seproxyhal.h"
         extern const bagl_icon_details_t C_icon_up;
         #endif // GLYPH_icon_up_BPP
+        #endif // OS_IO_SEPROXYHAL
+#ifndef GLYPH_icon_validate_14_BPP
+        #define GLYPH_icon_validate_14_WIDTH 14
+        #define GLYPH_icon_validate_14_HEIGHT 14
+        #define GLYPH_icon_validate_14_BPP 1
+extern unsigned int const C_icon_validate_14_colors[];
+extern unsigned char const C_icon_validate_14_bitmap[];
+#ifdef OS_IO_SEPROXYHAL
+        #include "os_io_seproxyhal.h"
+        extern const bagl_icon_details_t C_icon_validate_14;
+        #endif // GLYPH_icon_validate_14_BPP
         #endif // OS_IO_SEPROXYHAL

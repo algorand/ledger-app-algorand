@@ -1,16 +1,16 @@
 #include "glyphs.h"
-unsigned int const C_app_logo_colors[] = {
-  0x00262626,
-  0x00f3f3f3,
+unsigned int const C_icon_crossmark_colors[] = {
+  0x00000000,
+  0x00ffffff,
 };
 
-unsigned char const C_app_logo_bitmap[] = {
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xf9, 0xff, 0xf8, 0x7f, 0xf0, 0x7f, 0xe2, 0x3f, 0xe2, 0x3f, 0xf3,
-  0x9f, 0xe1, 0x9f, 0xe1, 0xcf, 0xe4, 0x47, 0xe4, 0x67, 0xce, 0x33, 0xce, 0xff, 0xff, 0xff, 0xff,
+unsigned char const C_icon_crossmark_bitmap[] = {
+  0x00, 0x80, 0x01, 0xe6, 0xc0, 0x71, 0x38, 0x38, 0x07, 0xfc, 0x00, 0x1e, 0x80, 0x07, 0xf0, 0x03,
+  0xce, 0xc1, 0xe1, 0x38, 0x70, 0x06, 0x18, 0x00, 0x00,
 };
 #ifdef OS_IO_SEPROXYHAL
         #include "os_io_seproxyhal.h"
-        const bagl_icon_details_t C_app_logo = { GLYPH_app_logo_WIDTH, GLYPH_app_logo_HEIGHT, 1, C_app_logo_colors, C_app_logo_bitmap };
+        const bagl_icon_details_t C_icon_crossmark = { GLYPH_icon_crossmark_WIDTH, GLYPH_icon_crossmark_HEIGHT, 1, C_icon_crossmark_colors, C_icon_crossmark_bitmap };
         #endif // OS_IO_SEPROXYHAL
 #include "glyphs.h"
 unsigned int const C_icon_dashboard_colors[] = {
@@ -91,4 +91,18 @@ unsigned char const C_icon_up_bitmap[] = {
 #ifdef OS_IO_SEPROXYHAL
         #include "os_io_seproxyhal.h"
         const bagl_icon_details_t C_icon_up = { GLYPH_icon_up_WIDTH, GLYPH_icon_up_HEIGHT, 1, C_icon_up_colors, C_icon_up_bitmap };
+        #endif // OS_IO_SEPROXYHAL
+#include "glyphs.h"
+unsigned int const C_icon_validate_14_colors[] = {
+  0x00000000,
+  0x00ffffff,
+};
+
+unsigned char const C_icon_validate_14_bitmap[] = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x38, 0x00, 0x67, 0xe0, 0x38, 0x1c, 0x9c, 0x03,
+  0x7e, 0x00, 0x0f, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00,
+};
+#ifdef OS_IO_SEPROXYHAL
+        #include "os_io_seproxyhal.h"
+        const bagl_icon_details_t C_icon_validate_14 = { GLYPH_icon_validate_14_WIDTH, GLYPH_icon_validate_14_HEIGHT, 1, C_icon_validate_14_colors, C_icon_validate_14_bitmap };
         #endif // OS_IO_SEPROXYHAL

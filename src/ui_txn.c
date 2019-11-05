@@ -7,6 +7,7 @@
 #include "algo_addr.h"
 #include "algo_keys.h"
 #include "base64.h"
+#include "glyphs.h"
 
 static char *
 u64str(uint64_t v)
@@ -29,6 +30,7 @@ u64str(uint64_t v)
   return p;
 }
 
+#if defined(TARGET_NANOS)
 static int
 all_zero_key(uint8_t *buf)
 {
@@ -419,6 +421,30 @@ bagl_ui_step_nanos_display()
     ux_current_step++;
   }
 }
+#endif // TARGET_NANOS
+
+#if defined(TARGET_NANOX)
+UX_STEP_VALID(txn_flow_1_step,
+  pb,
+  txn_approve(),
+  {
+    &C_icon_validate_14,
+    "Approve",
+  });
+UX_STEP_VALID(txn_flow_2_step,
+  pb,
+  txn_deny(),
+  {
+    &C_icon_crossmark,
+    "Reject",
+  });
+
+const ux_flow_step_t * const ux_txn_flow [] = {
+  &txn_flow_1_step,
+  &txn_flow_2_step,
+  FLOW_END_STEP,
+};
+#endif
 
 void
 ui_txn()
@@ -437,6 +463,12 @@ ui_txn()
   PRINTF("  Vote PK: %.*h\n", 32, current_txn.votepk);
   PRINTF("  VRF PK: %.*h\n", 32, current_txn.vrfpk);
 
+#if defined(TARGET_NANOS)
   ux_current_step = 0;
   bagl_ui_step_nanos_display();
+#endif
+
+#if defined(TARGET_NANOX)
+  ux_flow_init(0, ux_txn_flow, NULL);
+#endif
 }
