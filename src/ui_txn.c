@@ -30,7 +30,6 @@ u64str(uint64_t v)
   return p;
 }
 
-#if defined(TARGET_NANOS)
 static int
 all_zero_key(uint8_t *buf)
 {
@@ -292,6 +291,61 @@ static int step_asset_freeze_flag() {
   return 1;
 }
 
+#if defined(TARGET_NANOX)
+UX_STEP_NOCB_INIT(txn_flow_1_step, bnnn_paging, step_txn_type(), {"Txn type", text});
+UX_STEP_NOCB_INIT(txn_flow_2_step, bnnn_paging, step_sender(), {"Sender", text});
+UX_STEP_NOCB_INIT(txn_flow_3_step, bnnn_paging, step_fee(), {"Fee (uAlg)", text});
+UX_STEP_NOCB_INIT(txn_flow_4_step, bnnn_paging, step_firstvalid(), {"First valid", text});
+UX_STEP_NOCB_INIT(txn_flow_5_step, bnnn_paging, step_lastvalid(), {"Last valid", text});
+UX_STEP_NOCB_INIT(txn_flow_6_step, bnnn_paging, step_genesisID(), {"Genesis ID", text});
+UX_STEP_NOCB_INIT(txn_flow_7_step, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
+UX_STEP_NOCB_INIT(txn_flow_8_step, bnnn_paging, step_note(), {"Note", text});
+UX_STEP_NOCB_INIT(txn_flow_9_step, bnnn_paging, step_receiver(), {"Receiver", text});
+UX_STEP_NOCB_INIT(txn_flow_10_step, bnnn_paging, step_amount(), {"Amount (uAlg)", text});
+UX_STEP_NOCB_INIT(txn_flow_11_step, bnnn_paging, step_close(), {"Close to", text});
+UX_STEP_NOCB_INIT(txn_flow_12_step, bnnn_paging, step_votepk(), {"Vote PK", text});
+UX_STEP_NOCB_INIT(txn_flow_13_step, bnnn_paging, step_vrfpk(), {"VRF PK", text});
+UX_STEP_NOCB_INIT(txn_flow_14_step, bnnn_paging, step_asset_xfer_id(), {"Asset ID", text});
+UX_STEP_NOCB_INIT(txn_flow_15_step, bnnn_paging, step_asset_xfer_amount(), {"Asset amt", text});
+UX_STEP_NOCB_INIT(txn_flow_16_step, bnnn_paging, step_asset_xfer_sender(), {"Asset src", text});
+UX_STEP_NOCB_INIT(txn_flow_17_step, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst", text});
+UX_STEP_NOCB_INIT(txn_flow_18_step, bnnn_paging, step_asset_xfer_close(), {"Asset close", text});
+UX_STEP_NOCB_INIT(txn_flow_19_step, bnnn_paging, step_asset_freeze_id(), {"Asset ID", text});
+UX_STEP_NOCB_INIT(txn_flow_20_step, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
+UX_STEP_NOCB_INIT(txn_flow_21_step, bnnn_paging, step_asset_freeze_flag(), {"Freeze flag", text});
+
+struct ux_step {
+  const ux_flow_step_t *step;
+  const ux_layout_bnnn_paging_params_t *params;
+  int (*init)(void);
+};
+
+static const struct ux_step ux_steps[21] = {
+  { &txn_flow_1_step, &txn_flow_1_step_val, &step_txn_type },
+  { &txn_flow_2_step, &txn_flow_2_step_val, &step_sender },
+  { &txn_flow_3_step, &txn_flow_3_step_val, &step_fee },
+  { &txn_flow_4_step, &txn_flow_4_step_val, &step_firstvalid },
+  { &txn_flow_5_step, &txn_flow_5_step_val, &step_lastvalid },
+  { &txn_flow_6_step, &txn_flow_6_step_val, &step_genesisID },
+  { &txn_flow_7_step, &txn_flow_7_step_val, &step_genesisHash },
+  { &txn_flow_8_step, &txn_flow_8_step_val, &step_note },
+  { &txn_flow_9_step, &txn_flow_9_step_val, &step_receiver },
+  { &txn_flow_10_step, &txn_flow_10_step_val, &step_amount },
+  { &txn_flow_11_step, &txn_flow_11_step_val, &step_close },
+  { &txn_flow_12_step, &txn_flow_12_step_val, &step_votepk },
+  { &txn_flow_13_step, &txn_flow_13_step_val, &step_vrfpk },
+  { &txn_flow_14_step, &txn_flow_14_step_val, &step_asset_xfer_id },
+  { &txn_flow_15_step, &txn_flow_15_step_val, &step_asset_xfer_amount },
+  { &txn_flow_16_step, &txn_flow_16_step_val, &step_asset_xfer_sender },
+  { &txn_flow_17_step, &txn_flow_17_step_val, &step_asset_xfer_receiver },
+  { &txn_flow_18_step, &txn_flow_18_step_val, &step_asset_xfer_close },
+  { &txn_flow_19_step, &txn_flow_19_step_val, &step_asset_freeze_id },
+  { &txn_flow_20_step, &txn_flow_20_step_val, &step_asset_freeze_account },
+  { &txn_flow_21_step, &txn_flow_21_step_val, &step_asset_freeze_flag },
+};
+#endif // TARGET_NANOX
+
+#if defined(TARGET_NANOS)
 struct ux_step {
   // The display callback returns a non-zero value if it placed information
   // about the associated caption into lineBuffer, which should be displayed.
@@ -300,7 +354,6 @@ struct ux_step {
   int (*display)(void);
 };
 
-static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
   { "Txn type",       &step_txn_type },
   { "Sender",         &step_sender },
@@ -324,6 +377,8 @@ static const struct ux_step ux_steps[] = {
   { "Asset account",  &step_asset_freeze_account },
   { "Freeze flag",    &step_asset_freeze_flag },
 };
+
+static unsigned int ux_current_step;
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
   { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0},
@@ -423,27 +478,10 @@ bagl_ui_step_nanos_display()
 }
 #endif // TARGET_NANOS
 
-#if defined(TARGET_NANOX)
-UX_STEP_VALID(txn_flow_1_step,
-  pb,
-  txn_approve(),
-  {
-    &C_icon_validate_14,
-    "Approve",
-  });
-UX_STEP_VALID(txn_flow_2_step,
-  pb,
-  txn_deny(),
-  {
-    &C_icon_crossmark,
-    "Reject",
-  });
+#define NUM_STEPS (sizeof(ux_steps) / sizeof(ux_steps[0]))
 
-const ux_flow_step_t * const ux_txn_flow [] = {
-  &txn_flow_1_step,
-  &txn_flow_2_step,
-  FLOW_END_STEP,
-};
+#if defined(TARGET_NANOX)
+const ux_flow_step_t * ux_txn_flow [NUM_STEPS + 1];
 #endif
 
 void
@@ -469,6 +507,15 @@ ui_txn()
 #endif
 
 #if defined(TARGET_NANOX)
+  // Skip steps that we don't want to display
+  int step = 0;
+  for (int i = 0; i < NUM_STEPS; i++) {
+    if (ux_steps[i].init()) {
+      ux_txn_flow[step++] = ux_steps[i].step;
+    }
+  }
+  ux_txn_flow[step] = FLOW_END_STEP;
+
   ux_flow_init(0, ux_txn_flow, NULL);
 #endif
 }

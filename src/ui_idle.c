@@ -32,8 +32,8 @@ UX_STEP_NOCB(ux_idle_flow_1_step, bn, {
 });
 
 UX_STEP_NOCB(ux_idle_flow_2_step, bnnn_paging, {
-  .title = "Address",
-  .text = checksummedPublicKey,
+  "Address",
+  checksummedPublicKey,
 });
 
 UX_STEP_VALID(ux_idle_flow_3_step, pb, os_sched_exit(-1), {
