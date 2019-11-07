@@ -316,32 +316,31 @@ UX_STEP_NOCB_INIT(txn_flow_21_step, bnnn_paging, step_asset_freeze_flag(), {"Fre
 
 struct ux_step {
   const ux_flow_step_t *step;
-  const ux_layout_bnnn_paging_params_t *params;
   int (*init)(void);
 };
 
 static const struct ux_step ux_steps[21] = {
-  { &txn_flow_1_step, &txn_flow_1_step_val, &step_txn_type },
-  { &txn_flow_2_step, &txn_flow_2_step_val, &step_sender },
-  { &txn_flow_3_step, &txn_flow_3_step_val, &step_fee },
-  { &txn_flow_4_step, &txn_flow_4_step_val, &step_firstvalid },
-  { &txn_flow_5_step, &txn_flow_5_step_val, &step_lastvalid },
-  { &txn_flow_6_step, &txn_flow_6_step_val, &step_genesisID },
-  { &txn_flow_7_step, &txn_flow_7_step_val, &step_genesisHash },
-  { &txn_flow_8_step, &txn_flow_8_step_val, &step_note },
-  { &txn_flow_9_step, &txn_flow_9_step_val, &step_receiver },
-  { &txn_flow_10_step, &txn_flow_10_step_val, &step_amount },
-  { &txn_flow_11_step, &txn_flow_11_step_val, &step_close },
-  { &txn_flow_12_step, &txn_flow_12_step_val, &step_votepk },
-  { &txn_flow_13_step, &txn_flow_13_step_val, &step_vrfpk },
-  { &txn_flow_14_step, &txn_flow_14_step_val, &step_asset_xfer_id },
-  { &txn_flow_15_step, &txn_flow_15_step_val, &step_asset_xfer_amount },
-  { &txn_flow_16_step, &txn_flow_16_step_val, &step_asset_xfer_sender },
-  { &txn_flow_17_step, &txn_flow_17_step_val, &step_asset_xfer_receiver },
-  { &txn_flow_18_step, &txn_flow_18_step_val, &step_asset_xfer_close },
-  { &txn_flow_19_step, &txn_flow_19_step_val, &step_asset_freeze_id },
-  { &txn_flow_20_step, &txn_flow_20_step_val, &step_asset_freeze_account },
-  { &txn_flow_21_step, &txn_flow_21_step_val, &step_asset_freeze_flag },
+  { &txn_flow_1_step, &step_txn_type },
+  { &txn_flow_2_step, &step_sender },
+  { &txn_flow_3_step, &step_fee },
+  { &txn_flow_4_step, &step_firstvalid },
+  { &txn_flow_5_step, &step_lastvalid },
+  { &txn_flow_6_step, &step_genesisID },
+  { &txn_flow_7_step, &step_genesisHash },
+  { &txn_flow_8_step, &step_note },
+  { &txn_flow_9_step, &step_receiver },
+  { &txn_flow_10_step, &step_amount },
+  { &txn_flow_11_step, &step_close },
+  { &txn_flow_12_step, &step_votepk },
+  { &txn_flow_13_step, &step_vrfpk },
+  { &txn_flow_14_step, &step_asset_xfer_id },
+  { &txn_flow_15_step, &step_asset_xfer_amount },
+  { &txn_flow_16_step, &step_asset_xfer_sender },
+  { &txn_flow_17_step, &step_asset_xfer_receiver },
+  { &txn_flow_18_step, &step_asset_xfer_close },
+  { &txn_flow_19_step, &step_asset_freeze_id },
+  { &txn_flow_20_step, &step_asset_freeze_account },
+  { &txn_flow_21_step, &step_asset_freeze_flag },
 };
 #endif // TARGET_NANOX
 
