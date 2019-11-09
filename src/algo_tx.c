@@ -79,6 +79,16 @@ encode_uint64(uint8_t **p, uint8_t *e, uint64_t i)
 }
 
 static void
+encode_bool(uint8_t **p, uint8_t *e, uint8_t v)
+{
+  if (v) {
+    put_byte(p, e, BOOL_TRUE);
+  } else {
+    put_byte(p, e, BOOL_FALSE);
+  }
+}
+
+static void
 encode_bin(uint8_t **p, uint8_t *e, uint8_t *bytes, int len)
 {
   if (len < (1 << 8)) {
@@ -92,6 +102,18 @@ encode_bin(uint8_t **p, uint8_t *e, uint8_t *bytes, int len)
 
   // Longer binary blobs not suppported
   os_sched_exit(0);
+}
+
+static int
+map_kv_bool(uint8_t **p, uint8_t *e, char *key, uint8_t val)
+{
+  if (val == 0) {
+    return 0;
+  }
+
+  encode_str(p, e, key);
+  encode_bool(p, e, val);
+  return 1;
 }
 
 static int
@@ -163,18 +185,27 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
 
   // Fill in the fields in sorted key order, bumping the
   // number of map elements as we go if they are non-zero.
+  buf[0] += map_kv_uint64(&p, e, "aamt", t->asset_xfer_amount);
+  buf[0] += map_kv_bin   (&p, e, "aclose", t->asset_xfer_close, sizeof(t->asset_xfer_close));
+  buf[0] += map_kv_bool  (&p, e, "afrz", t->asset_freeze_flag);
   buf[0] += map_kv_uint64(&p, e, "amt", t->amount);
+  buf[0] += map_kv_bin   (&p, e, "arcv", t->asset_xfer_receiver, sizeof(t->asset_xfer_receiver));
+  buf[0] += map_kv_bin   (&p, e, "asnd", t->asset_xfer_sender, sizeof(t->asset_xfer_sender));
   buf[0] += map_kv_bin   (&p, e, "close", t->close, sizeof(t->close));
+  buf[0] += map_kv_bin   (&p, e, "fadd", t->asset_freeze_account, sizeof(t->asset_freeze_account));
+  buf[0] += map_kv_uint64(&p, e, "faid", t->asset_freeze_id);
   buf[0] += map_kv_uint64(&p, e, "fee", t->fee);
   buf[0] += map_kv_uint64(&p, e, "fv", t->firstValid);
   buf[0] += map_kv_str   (&p, e, "gen", t->genesisID);
   buf[0] += map_kv_bin   (&p, e, "gh", t->genesisHash, sizeof(t->genesisHash));
   buf[0] += map_kv_uint64(&p, e, "lv", t->lastValid);
+  buf[0] += map_kv_bin   (&p, e, "note", t->note, t->note_len);
   buf[0] += map_kv_bin   (&p, e, "rcv", t->receiver, sizeof(t->receiver));
   buf[0] += map_kv_bin   (&p, e, "selkey", t->vrfpk, sizeof(t->vrfpk));
   buf[0] += map_kv_bin   (&p, e, "snd", t->sender, sizeof(t->sender));
   buf[0] += map_kv_str   (&p, e, "type", typestr);
   buf[0] += map_kv_bin   (&p, e, "votekey", t->votepk, sizeof(t->votepk));
+  buf[0] += map_kv_uint64(&p, e, "xaid", t->asset_xfer_id);
 
   return p-buf;
 }

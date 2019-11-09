@@ -32,42 +32,40 @@ with open(infile) as f:
   intx = instx['txn']
 
 try:
-  apdu = "\x80"
+  txbytes = algomsgpack.encoded(intx)
 
-  if intx['type'] == 'pay':
-    apdu += "\x04"
-  elif intx['type'] == 'keyreg':
-    apdu += "\x05"
-  else:
-    raise Exception("Unknown transaction type %s" % intx['type'])
+  tosend = txbytes
 
-  # Notes cannot be signed by Ledger app at the moment
-  if 'note' in intx:
-    raise Exception('Cannot sign transaction with note; pass --note "" to goal clerk send')
+  p1 = 0
+  p2 = 0x80
+  while p2 == 0x80:
+    thischunk = tosend[:250]
+    if len(thischunk) == len(tosend):
+      p2 = 0
 
-  # Common header fields
-  apdu += struct.pack("32s", intx.get('snd', ""))
-  apdu += struct.pack("<Q", intx.get('fee', 0))
-  apdu += struct.pack("<Q", intx.get('fv', 0))
-  apdu += struct.pack("<Q", intx.get('lv', 0))
-  apdu += struct.pack("32s", intx.get('gen', u"").encode('ascii'))
-  apdu += struct.pack("32s", intx.get('gh', ""))
+    # CLA
+    apdu = "\x80"
 
-  # Payment type
-  if intx['type'] == 'pay':
-    apdu += struct.pack("32s", intx.get('rcv', ""))
-    apdu += struct.pack("<Q", intx.get('amt', 0))
-    apdu += struct.pack("32s", intx.get('close', ""))
+    # INS_SIGN_MSGPACK
+    apdu += "\x08"
 
-  # Keyreg type
-  if intx['type'] == 'keyreg':
-    apdu += struct.pack("32s", intx.get('votekey', ""))
-    apdu += struct.pack("32s", intx.get('selkey', ""))
+    # P1, P2, LC
+    apdu += struct.pack("B", p1)
+    apdu += struct.pack("B", p2)
+    apdu += struct.pack("B", len(thischunk))
 
-  signature = dongle.exchange(apdu)
+    apdu += thischunk
+
+    signature = dongle.exchange(apdu)
+
+    tosend = tosend[len(thischunk):]
+    p1 = 0x80
+
+  if len(signature) > 64:
+    raise Exception("Error: %s" % signature[65:])
+
   print "signature " + str(signature).encode('hex')
 
-  txbytes = algomsgpack.encoded(intx)
   ed25519.checkvalid(str(signature), 'TX' + txbytes, str(publicKey))
   print "Verified signature"
 
@@ -91,4 +89,4 @@ except CommException as comm:
   if comm.sw == 0x6985:
     print "Aborted by user"
   else:
-    print "Invalid status " + comm.sw
+    print comm
