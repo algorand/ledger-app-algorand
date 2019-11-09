@@ -8,35 +8,57 @@
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+#define OFFSET_CLA    0
+#define OFFSET_INS    1
+#define OFFSET_P1     2
+#define OFFSET_P2     3
+#define OFFSET_LC     4
+#define OFFSET_CDATA  5
+
 #define CLA                 0x80
-#define INS_SIGN_PAYMENT    0x01
-#define INS_SIGN_KEYREG     0x02
+
+#define P1_FIRST 0x00
+#define P1_MORE  0x80
+#define P2_LAST  0x00
+#define P2_MORE  0x80
+
+#define INS_SIGN_PAYMENT    0x01    // Deprecated, unused
+#define INS_SIGN_KEYREG     0x02    // Deprecated, unused
 #define INS_GET_PUBLIC_KEY  0x03
 #define INS_SIGN_PAYMENT_V2 0x04
 #define INS_SIGN_KEYREG_V2  0x05
+#define INS_SIGN_PAYMENT_V3 0x06
+#define INS_SIGN_KEYREG_V3  0x07
+#define INS_SIGN_MSGPACK    0x08
 
+/* The transaction that we might ask the user to approve. */
 struct txn current_txn;
+
+/* A buffer for collecting msgpack-encoded transaction via APDUs,
+ * as well as for msgpack-encoding transaction prior to signing.
+ */
+static uint8_t msgpack_buf[1024];
+static unsigned int msgpack_next_off;
 
 void
 txn_approve()
 {
   unsigned int tx = 0;
 
-  unsigned char msg[256];
   unsigned int msg_len;
 
-  msg[0] = 'T';
-  msg[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msg+2, sizeof(msg)-2);
+  msgpack_buf[0] = 'T';
+  msgpack_buf[1] = 'X';
+  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
 
-  PRINTF("Signing message: %.*h\n", msg_len, msg);
+  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
   cx_ecfp_private_key_t privateKey;
   algorand_private_key(&privateKey);
 
   int sig_len = cx_eddsa_sign(&privateKey,
                               0, CX_SHA512,
-                              &msg[0], msg_len,
+                              &msgpack_buf[0], msg_len,
                               NULL, 0,
                               G_io_apdu_buffer,
                               6+2*(32+1), // Formerly from cx_compliance_141.c
@@ -67,11 +89,23 @@ txn_deny()
 }
 
 static void
+copy_and_advance(void *dst, uint8_t **p, size_t len)
+{
+  os_memmove(dst, *p, len);
+  *p += len;
+}
+
+static void
 algorand_main(void)
 {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
+
+  algorand_key_derive();
+  algorand_public_key(publicKey);
+
+  msgpack_next_off = 0;
 
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
@@ -99,150 +133,109 @@ algorand_main(void)
           THROW(0x6982);
         }
 
-        if (G_io_apdu_buffer[0] != CLA) {
+        if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
           THROW(0x6E00);
         }
 
-        switch (G_io_apdu_buffer[1]) {
-        case INS_SIGN_PAYMENT: {
+        uint8_t ins = G_io_apdu_buffer[OFFSET_INS];
+        switch (ins) {
+        case INS_SIGN_PAYMENT_V2:
+        case INS_SIGN_PAYMENT_V3:
+        {
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+          uint8_t *p;
+          if (ins == INS_SIGN_PAYMENT_V2) {
+            p = &G_io_apdu_buffer[2];
+          } else {
+            p = &G_io_apdu_buffer[OFFSET_CDATA];
+          }
 
           current_txn.type = PAYMENT;
-
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.receiver, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.amount, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.close, p, 32);
-          p += 32;
+          copy_and_advance( current_txn.sender,       &p, 32);
+          copy_and_advance(&current_txn.fee,          &p, 8);
+          copy_and_advance(&current_txn.firstValid,   &p, 8);
+          copy_and_advance(&current_txn.lastValid,    &p, 8);
+          copy_and_advance( current_txn.genesisID,    &p, 32);
+          copy_and_advance( current_txn.genesisHash,  &p, 32);
+          copy_and_advance( current_txn.receiver,     &p, 32);
+          copy_and_advance(&current_txn.amount,       &p, 8);
+          copy_and_advance( current_txn.close,        &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
         } break;
 
-        case INS_SIGN_PAYMENT_V2: {
+        case INS_SIGN_KEYREG_V2:
+        case INS_SIGN_KEYREG_V3:
+        {
           os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
-
-          current_txn.type = PAYMENT;
-
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.genesisHash, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.receiver, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.amount, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.close, p, 32);
-          p += 32;
-
-          ui_txn();
-          flags |= IO_ASYNCH_REPLY;
-        } break;
-
-        case INS_SIGN_KEYREG: {
-          os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+          uint8_t *p;
+          if (ins == INS_SIGN_KEYREG_V2) {
+            p = &G_io_apdu_buffer[2];
+          } else {
+            p = &G_io_apdu_buffer[OFFSET_CDATA];
+          }
 
           current_txn.type = KEYREG;
-
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
-
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.votepk, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.vrfpk, p, 32);
-          p += 32;
+          copy_and_advance( current_txn.sender,       &p, 32);
+          copy_and_advance(&current_txn.fee,          &p, 8);
+          copy_and_advance(&current_txn.firstValid,   &p, 8);
+          copy_and_advance(&current_txn.lastValid,    &p, 8);
+          copy_and_advance( current_txn.genesisID,    &p, 32);
+          copy_and_advance( current_txn.genesisHash,  &p, 32);
+          copy_and_advance( current_txn.votepk,       &p, 32);
+          copy_and_advance( current_txn.vrfpk,        &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
         } break;
 
-        case INS_SIGN_KEYREG_V2: {
-          os_memset(&current_txn, 0, sizeof(current_txn));
-          uint8_t *p = &G_io_apdu_buffer[2];
+        case INS_SIGN_MSGPACK: {
+          switch (G_io_apdu_buffer[OFFSET_P1]) {
+          case P1_FIRST:
+            msgpack_next_off = 0;
+            break;
+          case P1_MORE:
+            break;
+          default:
+            THROW(0x6B00);
+          }
 
-          current_txn.type = KEYREG;
+          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
+          if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
+            THROW(0x6700);
+          }
 
-          os_memmove(current_txn.sender, p, 32);
-          p += 32;
+          os_memmove(&msgpack_buf[msgpack_next_off], &G_io_apdu_buffer[OFFSET_CDATA], lc);
+          msgpack_next_off += lc;
 
-          os_memmove(&current_txn.fee, p, 8);
-          p += 8;
+          switch (G_io_apdu_buffer[OFFSET_P2]) {
+          case P2_LAST:
+            {
+              char *err = tx_decode(msgpack_buf, msgpack_next_off, &current_txn);
+              if (err != NULL) {
+                /* Return error by sending a response length longer than
+                 * the usual ed25519 signature.
+                 */
+                int errlen = strlen(err);
+                os_memset(G_io_apdu_buffer, 0, 65);
+                os_memmove(&G_io_apdu_buffer[65], err, errlen);
+                tx = 65 + errlen;
+                THROW(0x9000);
+              }
 
-          os_memmove(&current_txn.firstValid, p, 8);
-          p += 8;
-
-          os_memmove(&current_txn.lastValid, p, 8);
-          p += 8;
-
-          os_memmove(current_txn.genesisID, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.genesisHash, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.votepk, p, 32);
-          p += 32;
-
-          os_memmove(current_txn.vrfpk, p, 32);
-          p += 32;
-
-          ui_txn();
-          flags |= IO_ASYNCH_REPLY;
+              ui_txn();
+              flags |= IO_ASYNCH_REPLY;
+            }
+            break;
+          case P2_MORE:
+            THROW(0x9000);
+          default:
+            THROW(0x6B00);
+          }
         } break;
 
         case INS_GET_PUBLIC_KEY: {
-          uint8_t publicKey[32];
-          algorand_public_key(publicKey);
           os_memmove(G_io_apdu_buffer, publicKey, sizeof(publicKey));
           tx = sizeof(publicKey);
           THROW(0x9000);
