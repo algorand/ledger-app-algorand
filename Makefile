@@ -6,7 +6,7 @@ include $(BOLOS_SDK)/Makefile.defines
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.2
+APPVERSION = 1.0.3
 APP_LOAD_PARAMS = --appFlags 0x00 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
