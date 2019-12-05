@@ -177,6 +177,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
             t->type = PAYMENT;
           } else if (!strcmp(tbuf, "keyreg")) {
             t->type = KEYREG;
+          } else if (!strcmp(tbuf, "axfer")) {
+            t->type = ASSET_XFER;
+          } else if (!strcmp(tbuf, "afrz")) {
+            t->type = ASSET_FREEZE;
           } else {
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
