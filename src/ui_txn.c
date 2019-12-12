@@ -9,6 +9,24 @@
 #include "base64.h"
 #include "glyphs.h"
 
+// Used to skip irrelevant steps
+#if defined(TARGET_NANOX)
+int skipempty(void) {
+  if (G_button_mask & BUTTON_LEFT) {
+    ux_flow_prev();
+  } else {
+    ux_flow_next();
+  }
+  return 0;
+}
+#endif // TARGET_NANOX
+
+#if defined(TARGET_NANOS)
+int skipempty(void) {
+  return 0;
+}
+#endif // TARGET_NANOS
+
 static char *
 u64str(uint64_t v)
 {
@@ -68,7 +86,7 @@ static int step_txn_type() {
 
 static int step_sender() {
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -99,7 +117,7 @@ static const uint8_t default_genesisHash[] = {
 
 static int step_genesisID() {
   if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
-    return 0;
+    return skipempty();
   }
 
   ui_text_put(current_txn.genesisID);
@@ -108,12 +126,12 @@ static int step_genesisID() {
 
 static int step_genesisHash() {
   if (all_zero_key(current_txn.genesisHash)) {
-    return 0;
+    return skipempty();
   }
 
   if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
     if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
-      return 0;
+      return skipempty();
     }
   }
 
@@ -125,7 +143,7 @@ static int step_genesisHash() {
 
 static int step_note() {
   if (current_txn.note_len == 0) {
-    return 0;
+    return skipempty();
   }
 
   char buf[16];
@@ -136,7 +154,7 @@ static int step_note() {
 
 static int step_receiver() {
   if (current_txn.type != PAYMENT) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -147,7 +165,7 @@ static int step_receiver() {
 
 static int step_amount() {
   if (current_txn.type != PAYMENT) {
-    return 0;
+    return skipempty();
   }
 
   ui_text_put(u64str(current_txn.amount));
@@ -156,11 +174,11 @@ static int step_amount() {
 
 static int step_close() {
   if (current_txn.type != PAYMENT) {
-    return 0;
+    return skipempty();
   }
 
   if (all_zero_key(current_txn.close)) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -171,7 +189,7 @@ static int step_close() {
 
 static int step_votepk() {
   if (current_txn.type != KEYREG) {
-    return 0;
+    return skipempty();
   }
 
   char buf[45];
@@ -182,7 +200,7 @@ static int step_votepk() {
 
 static int step_vrfpk() {
   if (current_txn.type != KEYREG) {
-    return 0;
+    return skipempty();
   }
 
   char buf[45];
@@ -193,7 +211,7 @@ static int step_vrfpk() {
 
 static int step_asset_xfer_id() {
   if (current_txn.type != ASSET_XFER) {
-    return 0;
+    return skipempty();
   }
 
   ui_text_put(u64str(current_txn.asset_xfer_id));
@@ -202,7 +220,7 @@ static int step_asset_xfer_id() {
 
 static int step_asset_xfer_amount() {
   if (current_txn.type != ASSET_XFER) {
-    return 0;
+    return skipempty();
   }
 
   ui_text_put(u64str(current_txn.asset_xfer_amount));
@@ -211,11 +229,11 @@ static int step_asset_xfer_amount() {
 
 static int step_asset_xfer_sender() {
   if (current_txn.type != ASSET_XFER) {
-    return 0;
+    return skipempty();
   }
 
   if (all_zero_key(current_txn.asset_xfer_sender)) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -226,11 +244,11 @@ static int step_asset_xfer_sender() {
 
 static int step_asset_xfer_receiver() {
   if (current_txn.type != ASSET_XFER) {
-    return 0;
+    return skipempty();
   }
 
   if (all_zero_key(current_txn.asset_xfer_receiver)) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -241,11 +259,11 @@ static int step_asset_xfer_receiver() {
 
 static int step_asset_xfer_close() {
   if (current_txn.type != ASSET_XFER) {
-    return 0;
+    return skipempty();
   }
 
   if (all_zero_key(current_txn.asset_xfer_close)) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -256,7 +274,7 @@ static int step_asset_xfer_close() {
 
 static int step_asset_freeze_id() {
   if (current_txn.type != ASSET_FREEZE) {
-    return 0;
+    return skipempty();
   }
 
   ui_text_put(u64str(current_txn.asset_freeze_id));
@@ -265,11 +283,11 @@ static int step_asset_freeze_id() {
 
 static int step_asset_freeze_account() {
   if (current_txn.type != ASSET_FREEZE) {
-    return 0;
+    return skipempty();
   }
 
   if (all_zero_key(current_txn.asset_freeze_account)) {
-    return 0;
+    return skipempty();
   }
 
   char checksummed[65];
@@ -280,7 +298,7 @@ static int step_asset_freeze_account() {
 
 static int step_asset_freeze_flag() {
   if (current_txn.type != ASSET_FREEZE) {
-    return 0;
+    return skipempty();
   }
 
   if (current_txn.asset_freeze_flag) {
