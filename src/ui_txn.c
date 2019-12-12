@@ -310,28 +310,28 @@ static int step_asset_freeze_flag() {
 }
 
 #if defined(TARGET_NANOX)
-UX_STEP_NOCB_INIT(txn_flow_1_step, bnnn_paging, step_txn_type(), {"Txn type", text});
+UX_STEP_NOCB_INIT(txn_flow_1_step, bn, step_txn_type(), {"Txn type", text});
 UX_STEP_NOCB_INIT(txn_flow_2_step, bnnn_paging, step_sender(), {"Sender", text});
-UX_STEP_NOCB_INIT(txn_flow_3_step, bnnn_paging, step_fee(), {"Fee (uAlg)", text});
-UX_STEP_NOCB_INIT(txn_flow_4_step, bnnn_paging, step_firstvalid(), {"First valid", text});
-UX_STEP_NOCB_INIT(txn_flow_5_step, bnnn_paging, step_lastvalid(), {"Last valid", text});
-UX_STEP_NOCB_INIT(txn_flow_6_step, bnnn_paging, step_genesisID(), {"Genesis ID", text});
+UX_STEP_NOCB_INIT(txn_flow_3_step, bn, step_fee(), {"Fee (uAlg)", text});
+UX_STEP_NOCB_INIT(txn_flow_4_step, bn, step_firstvalid(), {"First valid", text});
+UX_STEP_NOCB_INIT(txn_flow_5_step, bn, step_lastvalid(), {"Last valid", text});
+UX_STEP_NOCB_INIT(txn_flow_6_step, bn, step_genesisID(), {"Genesis ID", text});
 UX_STEP_NOCB_INIT(txn_flow_7_step, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
-UX_STEP_NOCB_INIT(txn_flow_8_step, bnnn_paging, step_note(), {"Note", text});
+UX_STEP_NOCB_INIT(txn_flow_8_step, bn, step_note(), {"Note", text});
 UX_STEP_NOCB_INIT(txn_flow_9_step, bnnn_paging, step_receiver(), {"Receiver", text});
-UX_STEP_NOCB_INIT(txn_flow_10_step, bnnn_paging, step_amount(), {"Amount (uAlg)", text});
+UX_STEP_NOCB_INIT(txn_flow_10_step, bn, step_amount(), {"Amount (uAlg)", text});
 UX_STEP_NOCB_INIT(txn_flow_11_step, bnnn_paging, step_close(), {"Close to", text});
 UX_STEP_NOCB_INIT(txn_flow_12_step, bnnn_paging, step_votepk(), {"Vote PK", text});
 UX_STEP_NOCB_INIT(txn_flow_13_step, bnnn_paging, step_vrfpk(), {"VRF PK", text});
-UX_STEP_NOCB_INIT(txn_flow_14_step, bnnn_paging, step_asset_xfer_id(), {"Asset ID", text});
-UX_STEP_NOCB_INIT(txn_flow_15_step, bnnn_paging, step_asset_xfer_amount(), {"Asset amt", text});
+UX_STEP_NOCB_INIT(txn_flow_14_step, bn, step_asset_xfer_id(), {"Asset ID", text});
+UX_STEP_NOCB_INIT(txn_flow_15_step, bn, step_asset_xfer_amount(), {"Asset amt", text});
 UX_STEP_NOCB_INIT(txn_flow_16_step, bnnn_paging, step_asset_xfer_sender(), {"Asset src", text});
 UX_STEP_NOCB_INIT(txn_flow_17_step, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst", text});
 UX_STEP_NOCB_INIT(txn_flow_18_step, bnnn_paging, step_asset_xfer_close(), {"Asset close", text});
 UX_STEP_NOCB_INIT(txn_flow_19_step, bnnn_paging, step_asset_freeze_id(), {"Asset ID", text});
 UX_STEP_NOCB_INIT(txn_flow_20_step, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
-UX_STEP_NOCB_INIT(txn_flow_21_step, bnnn_paging, step_asset_freeze_flag(), {"Freeze flag", text});
-UX_STEP_VALID(txn_flow_22_step, pbb, txn_approve(), {&C_icon_validate_14, "Sign", "message"});
+UX_STEP_NOCB_INIT(txn_flow_21_step, bn, step_asset_freeze_flag(), {"Freeze flag", text});
+UX_STEP_VALID(txn_flow_22_step, pbb, txn_approve(), {&C_icon_validate_14, "Sign", "transaction"});
 UX_STEP_VALID(txn_flow_23_step, pbb, txn_deny(), {&C_icon_crossmark, "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
