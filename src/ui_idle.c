@@ -26,20 +26,11 @@ static const ux_menu_entry_t menu_top[] = {
 #endif
 
 #if defined(TARGET_NANOX)
-UX_STEP_NOCB(ux_idle_flow_1_step, bn, {
-  "Version",
-  APPVERSION,
-});
+UX_STEP_NOCB(ux_idle_flow_1_step, bn, {"Version", APPVERSION});
 
-UX_STEP_NOCB(ux_idle_flow_2_step, bnnn_paging, {
-  "Address",
-  checksummedPublicKey,
-});
+UX_STEP_NOCB(ux_idle_flow_2_step, bnnn_paging, {"Address", checksummedPublicKey});
 
-UX_STEP_VALID(ux_idle_flow_3_step, pb, os_sched_exit(-1), {
-  &C_icon_dashboard,
-  "Quit",
-});
+UX_STEP_VALID(ux_idle_flow_3_step, pb, os_sched_exit(-1), {&C_icon_dashboard, "Quit"});
 
 const ux_flow_step_t * const ux_idle_flow [] = {
   &ux_idle_flow_1_step,
