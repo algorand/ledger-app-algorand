@@ -313,34 +313,34 @@ UX_STEP_NOCB_INIT(txn_flow_18_step, bnnn_paging, step_asset_xfer_close(), {"Asse
 UX_STEP_NOCB_INIT(txn_flow_19_step, bnnn_paging, step_asset_freeze_id(), {"Asset ID", text});
 UX_STEP_NOCB_INIT(txn_flow_20_step, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
 UX_STEP_NOCB_INIT(txn_flow_21_step, bnnn_paging, step_asset_freeze_flag(), {"Freeze flag", text});
+UX_STEP_VALID(txn_flow_22_step, pbb, txn_approve(), {&C_icon_validate_14, "Sign", "message"});
+UX_STEP_VALID(txn_flow_23_step, pbb, txn_deny(), {&C_icon_crossmark, "Cancel", "signature"});
 
-struct ux_step {
-  const ux_flow_step_t *step;
-  int (*init)(void);
-};
-
-static const struct ux_step ux_steps[21] = {
-  { &txn_flow_1_step, &step_txn_type },
-  { &txn_flow_2_step, &step_sender },
-  { &txn_flow_3_step, &step_fee },
-  { &txn_flow_4_step, &step_firstvalid },
-  { &txn_flow_5_step, &step_lastvalid },
-  { &txn_flow_6_step, &step_genesisID },
-  { &txn_flow_7_step, &step_genesisHash },
-  { &txn_flow_8_step, &step_note },
-  { &txn_flow_9_step, &step_receiver },
-  { &txn_flow_10_step, &step_amount },
-  { &txn_flow_11_step, &step_close },
-  { &txn_flow_12_step, &step_votepk },
-  { &txn_flow_13_step, &step_vrfpk },
-  { &txn_flow_14_step, &step_asset_xfer_id },
-  { &txn_flow_15_step, &step_asset_xfer_amount },
-  { &txn_flow_16_step, &step_asset_xfer_sender },
-  { &txn_flow_17_step, &step_asset_xfer_receiver },
-  { &txn_flow_18_step, &step_asset_xfer_close },
-  { &txn_flow_19_step, &step_asset_freeze_id },
-  { &txn_flow_20_step, &step_asset_freeze_account },
-  { &txn_flow_21_step, &step_asset_freeze_flag },
+const ux_flow_step_t * const ux_txn_flow [] = {
+  &txn_flow_1_step,
+  &txn_flow_2_step,
+  &txn_flow_3_step,
+  &txn_flow_4_step,
+  &txn_flow_5_step,
+  &txn_flow_6_step,
+  &txn_flow_7_step,
+  &txn_flow_8_step,
+  &txn_flow_9_step,
+  &txn_flow_10_step,
+  &txn_flow_11_step,
+  &txn_flow_12_step,
+  &txn_flow_13_step,
+  &txn_flow_14_step,
+  &txn_flow_15_step,
+  &txn_flow_16_step,
+  &txn_flow_17_step,
+  &txn_flow_18_step,
+  &txn_flow_19_step,
+  &txn_flow_20_step,
+  &txn_flow_21_step,
+  &txn_flow_22_step,
+  &txn_flow_23_step,
+  FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
 
@@ -477,12 +477,6 @@ bagl_ui_step_nanos_display()
 }
 #endif // TARGET_NANOS
 
-#define NUM_STEPS (sizeof(ux_steps) / sizeof(ux_steps[0]))
-
-#if defined(TARGET_NANOX)
-const ux_flow_step_t * ux_txn_flow [NUM_STEPS + 1];
-#endif
-
 void
 ui_txn()
 {
@@ -506,15 +500,9 @@ ui_txn()
 #endif
 
 #if defined(TARGET_NANOX)
-  // Skip steps that we don't want to display
-  int step = 0;
-  for (int i = 0; i < NUM_STEPS; i++) {
-    if (ux_steps[i].init()) {
-      ux_txn_flow[step++] = ux_steps[i].step;
-    }
+  if (G_ux.stack_count == 0) {
+    ux_stack_push();
   }
-  ux_txn_flow[step] = FLOW_END_STEP;
-
   ux_flow_init(0, ux_txn_flow, NULL);
 #endif
 }
