@@ -46,9 +46,9 @@ ui_text_more()
 }
 
 void
-ui_text_put(const char *msg)
+ui_text_putn(const char *msg, size_t maxlen)
 {
-  for (unsigned int i = 0; i < sizeof(text); i++) {
+  for (unsigned int i = 0; i < sizeof(text) && i < maxlen; i++) {
     text[i] = msg[i];
 
     if (msg[i] == '\0') {
@@ -59,7 +59,15 @@ ui_text_put(const char *msg)
   text[sizeof(text)-1] = '\0';
   lineBufferPos = 0;
 
-  PRINTF("ui_text_put: text %s\n", &text[0]);
+  PRINTF("ui_text_putn: text %s\n", &text[0]);
+
+  /* Caller should invoke ui_text_more() after ui_text_putn(). */
+}
+
+void
+ui_text_put(const char *msg)
+{
+  ui_text_putn(msg, SIZE_MAX);
 
   /* Caller should invoke ui_text_more() after ui_text_put(). */
 }
