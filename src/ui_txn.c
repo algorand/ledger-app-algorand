@@ -59,6 +59,10 @@ static int step_txn_type() {
     ui_text_put("Asset freeze");
     break;
 
+  case ASSET_CONFIG:
+    ui_text_put("Asset config");
+    break;
+
   default:
     ui_text_put("Unknown");
   }
@@ -101,6 +105,10 @@ static int step_genesisID() {
     return 0;
   }
 
+  if (current_txn.genesisID[0] == '\0') {
+    return 0;
+  }
+
   ui_text_putn(current_txn.genesisID, sizeof(current_txn.genesisID));
   return 1;
 }
@@ -110,7 +118,8 @@ static int step_genesisHash() {
     return 0;
   }
 
-  if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0) {
+  if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0 ||
+      current_txn.genesisID[0] == '\0') {
     if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
       return 0;
     }
@@ -240,7 +249,7 @@ static int step_asset_freeze_flag() {
 
 static int step_asset_config_id() {
   if (current_txn.asset_config.id == 0) {
-    ui_text_put("Allocating");
+    ui_text_put("Alloc");
   } else {
     ui_text_put(u64str(current_txn.asset_config.id));
   }
@@ -270,7 +279,7 @@ static int step_asset_config_default_frozen() {
 }
 
 static int step_asset_config_unitname() {
-  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.unitname[0] == '\0') {
+  if (current_txn.asset_config.params.unitname[0] == '\0') {
     return 0;
   }
 
@@ -279,7 +288,7 @@ static int step_asset_config_unitname() {
 }
 
 static int step_asset_config_decimals() {
-  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.decimals == 0) {
+  if (current_txn.asset_config.params.decimals == 0) {
     return 0;
   }
 
@@ -288,7 +297,7 @@ static int step_asset_config_decimals() {
 }
 
 static int step_asset_config_assetname() {
-  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.assetname[0] == '\0') {
+  if (current_txn.asset_config.params.assetname[0] == '\0') {
     return 0;
   }
 
@@ -297,7 +306,7 @@ static int step_asset_config_assetname() {
 }
 
 static int step_asset_config_url() {
-  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.url[0] == '\0') {
+  if (current_txn.asset_config.params.url[0] == '\0') {
     return 0;
   }
 
@@ -306,7 +315,7 @@ static int step_asset_config_url() {
 }
 
 static int step_asset_config_metadata_hash() {
-  if (current_txn.asset_config.id != 0 && all_zero_key(current_txn.asset_config.params.metadata_hash)) {
+  if (all_zero_key(current_txn.asset_config.params.metadata_hash)) {
     return 0;
   }
 
