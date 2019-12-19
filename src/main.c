@@ -151,15 +151,15 @@ algorand_main(void)
           }
 
           current_txn.type = PAYMENT;
-          copy_and_advance( current_txn.sender,       &p, 32);
-          copy_and_advance(&current_txn.fee,          &p, 8);
-          copy_and_advance(&current_txn.firstValid,   &p, 8);
-          copy_and_advance(&current_txn.lastValid,    &p, 8);
-          copy_and_advance( current_txn.genesisID,    &p, 32);
-          copy_and_advance( current_txn.genesisHash,  &p, 32);
-          copy_and_advance( current_txn.receiver,     &p, 32);
-          copy_and_advance(&current_txn.amount,       &p, 8);
-          copy_and_advance( current_txn.close,        &p, 32);
+          copy_and_advance( current_txn.sender,           &p, 32);
+          copy_and_advance(&current_txn.fee,              &p, 8);
+          copy_and_advance(&current_txn.firstValid,       &p, 8);
+          copy_and_advance(&current_txn.lastValid,        &p, 8);
+          copy_and_advance( current_txn.genesisID,        &p, 32);
+          copy_and_advance( current_txn.genesisHash,      &p, 32);
+          copy_and_advance( current_txn.payment.receiver, &p, 32);
+          copy_and_advance(&current_txn.payment.amount,   &p, 8);
+          copy_and_advance( current_txn.payment.close,    &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
@@ -177,14 +177,14 @@ algorand_main(void)
           }
 
           current_txn.type = KEYREG;
-          copy_and_advance( current_txn.sender,       &p, 32);
-          copy_and_advance(&current_txn.fee,          &p, 8);
-          copy_and_advance(&current_txn.firstValid,   &p, 8);
-          copy_and_advance(&current_txn.lastValid,    &p, 8);
-          copy_and_advance( current_txn.genesisID,    &p, 32);
-          copy_and_advance( current_txn.genesisHash,  &p, 32);
-          copy_and_advance( current_txn.votepk,       &p, 32);
-          copy_and_advance( current_txn.vrfpk,        &p, 32);
+          copy_and_advance( current_txn.sender,        &p, 32);
+          copy_and_advance(&current_txn.fee,           &p, 8);
+          copy_and_advance(&current_txn.firstValid,    &p, 8);
+          copy_and_advance(&current_txn.lastValid,     &p, 8);
+          copy_and_advance( current_txn.genesisID,     &p, 32);
+          copy_and_advance( current_txn.genesisHash,   &p, 32);
+          copy_and_advance( current_txn.keyreg.votepk, &p, 32);
+          copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;

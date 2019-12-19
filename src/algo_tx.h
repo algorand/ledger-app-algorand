@@ -8,6 +8,31 @@ enum TXTYPE {
   ASSET_FREEZE,
 };
 
+struct txn_payment {
+  uint8_t receiver[32];
+  uint64_t amount;
+  uint8_t close[32];
+};
+
+struct txn_keyreg {
+  uint8_t votepk[32];
+  uint8_t vrfpk[32];
+};
+
+struct txn_asset_xfer {
+  uint64_t id;
+  uint64_t amount;
+  uint8_t sender[32];
+  uint8_t receiver[32];
+  uint8_t close[32];
+};
+
+struct txn_asset_freeze {
+  uint64_t id;
+  uint8_t account[32];
+  uint8_t flag;
+};
+
 struct txn {
   enum TXTYPE type;
 
@@ -22,26 +47,13 @@ struct txn {
   uint8_t note[32];
   size_t note_len;
 
-  // Payments
-  uint8_t receiver[32];
-  uint64_t amount;
-  uint8_t close[32];
-
-  // Keyreg
-  uint8_t votepk[32];
-  uint8_t vrfpk[32];
-
-  // Asset transfer
-  uint64_t asset_xfer_id;
-  uint64_t asset_xfer_amount;
-  uint8_t asset_xfer_sender[32];
-  uint8_t asset_xfer_receiver[32];
-  uint8_t asset_xfer_close[32];
-
-  // Asset freeze
-  uint64_t asset_freeze_id;
-  uint8_t asset_freeze_account[32];
-  uint8_t asset_freeze_flag;
+  // Fields for specific tx types
+  union {
+    struct txn_payment payment;
+    struct txn_keyreg keyreg;
+    struct txn_asset_xfer asset_xfer;
+    struct txn_asset_freeze asset_freeze;
+  };
 };
 
 // tx_encode produces a canonical msgpack encoding of a transaction.
