@@ -168,6 +168,43 @@ decode_bool(uint8_t **bufp, uint8_t *buf_end, uint8_t *res)
   }
 }
 
+static void
+decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
+{
+  uint8_t map_count = decode_fixsz(bufp, buf_end, FIXMAP_0, FIXMAP_15);
+  for (int i = 0; i < map_count; i++) {
+    char key[32];
+    decode_string_nullterm(bufp, buf_end, key, sizeof(key));
+
+    if (!strcmp(key, "t")) {
+      decode_uint64(bufp, buf_end, &res->total);
+    } else if (!strcmp(key, "dc")) {
+      decode_uint64(bufp, buf_end, &res->decimals);
+    } else if (!strcmp(key, "df")) {
+      decode_bool(bufp, buf_end, &res->default_frozen);
+    } else if (!strcmp(key, "un")) {
+      decode_string(bufp, buf_end, res->unitname, sizeof(res->unitname));
+    } else if (!strcmp(key, "an")) {
+      decode_string(bufp, buf_end, res->assetname, sizeof(res->assetname));
+    } else if (!strcmp(key, "au")) {
+      decode_string(bufp, buf_end, res->url, sizeof(res->url));
+    } else if (!strcmp(key, "am")) {
+      decode_bin_fixed(bufp, buf_end, res->metadata_hash, sizeof(res->metadata_hash));
+    } else if (!strcmp(key, "m")) {
+      decode_bin_fixed(bufp, buf_end, res->manager, sizeof(res->manager));
+    } else if (!strcmp(key, "r")) {
+      decode_bin_fixed(bufp, buf_end, res->reserve, sizeof(res->reserve));
+    } else if (!strcmp(key, "f")) {
+      decode_bin_fixed(bufp, buf_end, res->freeze, sizeof(res->freeze));
+    } else if (!strcmp(key, "c")) {
+      decode_bin_fixed(bufp, buf_end, res->clawback, sizeof(res->clawback));
+    } else {
+      snprintf(decode_err, sizeof(decode_err), "unknown params field %s", key);
+      THROW(INVALID_PARAMETER);
+    }
+  }
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -247,6 +284,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_bin_fixed(&buf, buf_end, t->asset_freeze.account, sizeof(t->asset_freeze.account));
         } else if (!strcmp(key, "afrz")) {
           decode_bool(&buf, buf_end, &t->asset_freeze.flag);
+        } else if (!strcmp(key, "caid")) {
+          decode_uint64(&buf, buf_end, &t->asset_config.id);
+        } else if (!strcmp(key, "apar")) {
+          decode_asset_params(&buf, buf_end, &t->asset_config.params);
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
