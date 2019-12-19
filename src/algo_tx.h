@@ -6,6 +6,7 @@ enum TXTYPE {
   KEYREG,
   ASSET_XFER,
   ASSET_FREEZE,
+  ALL_TYPES,
 };
 
 struct txn_payment {

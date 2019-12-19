@@ -134,10 +134,6 @@ static int step_note() {
 }
 
 static int step_receiver() {
-  if (current_txn.type != PAYMENT) {
-    return 0;
-  }
-
   char checksummed[65];
   checksummed_addr(current_txn.payment.receiver, checksummed);
   ui_text_put(checksummed);
@@ -145,19 +141,11 @@ static int step_receiver() {
 }
 
 static int step_amount() {
-  if (current_txn.type != PAYMENT) {
-    return 0;
-  }
-
   ui_text_put(u64str(current_txn.payment.amount));
   return 1;
 }
 
 static int step_close() {
-  if (current_txn.type != PAYMENT) {
-    return 0;
-  }
-
   if (all_zero_key(current_txn.payment.close)) {
     return 0;
   }
@@ -169,10 +157,6 @@ static int step_close() {
 }
 
 static int step_votepk() {
-  if (current_txn.type != KEYREG) {
-    return 0;
-  }
-
   char buf[45];
   base64_encode((const char*) current_txn.keyreg.votepk, sizeof(current_txn.keyreg.votepk), buf, sizeof(buf));
   ui_text_put(buf);
@@ -180,10 +164,6 @@ static int step_votepk() {
 }
 
 static int step_vrfpk() {
-  if (current_txn.type != KEYREG) {
-    return 0;
-  }
-
   char buf[45];
   base64_encode((const char*) current_txn.keyreg.vrfpk, sizeof(current_txn.keyreg.vrfpk), buf, sizeof(buf));
   ui_text_put(buf);
@@ -191,28 +171,16 @@ static int step_vrfpk() {
 }
 
 static int step_asset_xfer_id() {
-  if (current_txn.type != ASSET_XFER) {
-    return 0;
-  }
-
   ui_text_put(u64str(current_txn.asset_xfer.id));
   return 1;
 }
 
 static int step_asset_xfer_amount() {
-  if (current_txn.type != ASSET_XFER) {
-    return 0;
-  }
-
   ui_text_put(u64str(current_txn.asset_xfer.amount));
   return 1;
 }
 
 static int step_asset_xfer_sender() {
-  if (current_txn.type != ASSET_XFER) {
-    return 0;
-  }
-
   if (all_zero_key(current_txn.asset_xfer.sender)) {
     return 0;
   }
@@ -224,10 +192,6 @@ static int step_asset_xfer_sender() {
 }
 
 static int step_asset_xfer_receiver() {
-  if (current_txn.type != ASSET_XFER) {
-    return 0;
-  }
-
   if (all_zero_key(current_txn.asset_xfer.receiver)) {
     return 0;
   }
@@ -239,10 +203,6 @@ static int step_asset_xfer_receiver() {
 }
 
 static int step_asset_xfer_close() {
-  if (current_txn.type != ASSET_XFER) {
-    return 0;
-  }
-
   if (all_zero_key(current_txn.asset_xfer.close)) {
     return 0;
   }
@@ -254,19 +214,11 @@ static int step_asset_xfer_close() {
 }
 
 static int step_asset_freeze_id() {
-  if (current_txn.type != ASSET_FREEZE) {
-    return 0;
-  }
-
   ui_text_put(u64str(current_txn.asset_freeze.id));
   return 1;
 }
 
 static int step_asset_freeze_account() {
-  if (current_txn.type != ASSET_FREEZE) {
-    return 0;
-  }
-
   if (all_zero_key(current_txn.asset_freeze.account)) {
     return 0;
   }
@@ -278,10 +230,6 @@ static int step_asset_freeze_account() {
 }
 
 static int step_asset_freeze_flag() {
-  if (current_txn.type != ASSET_FREEZE) {
-    return 0;
-  }
-
   if (current_txn.asset_freeze.flag) {
     ui_text_put("Frozen");
   } else {
@@ -293,34 +241,36 @@ static int step_asset_freeze_flag() {
 struct ux_step {
   // The display callback returns a non-zero value if it placed information
   // about the associated caption into lineBuffer, which should be displayed.
-  // If it returns 0, the approval flow moves on to the next step.
+  // If it returns 0, the approval flow moves on to the next step.  The
+  // callback is invoked only if the transaction type matches txtype.
+  int txtype;
   const char *caption;
   int (*display)(void);
 };
 
 static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
-  { "Txn type",       &step_txn_type },
-  { "Sender",         &step_sender },
-  { "Fee (uAlg)",     &step_fee },
-  { "First valid",    &step_firstvalid },
-  { "Last valid",     &step_lastvalid },
-  { "Genesis ID",     &step_genesisID },
-  { "Genesis hash",   &step_genesisHash },
-  { "Note",           &step_note },
-  { "Receiver",       &step_receiver },
-  { "Amount (uAlg)",  &step_amount },
-  { "Close to",       &step_close },
-  { "Vote PK",        &step_votepk },
-  { "VRF PK",         &step_vrfpk },
-  { "Asset ID",       &step_asset_xfer_id },
-  { "Asset amt",      &step_asset_xfer_amount },
-  { "Asset src",      &step_asset_xfer_sender },
-  { "Asset dst",      &step_asset_xfer_receiver },
-  { "Asset close",    &step_asset_xfer_close },
-  { "Asset ID",       &step_asset_freeze_id },
-  { "Asset account",  &step_asset_freeze_account },
-  { "Freeze flag",    &step_asset_freeze_flag },
+  { ALL_TYPES,    "Txn type",       &step_txn_type },
+  { ALL_TYPES,    "Sender",         &step_sender },
+  { ALL_TYPES,    "Fee (uAlg)",     &step_fee },
+  { ALL_TYPES,    "First valid",    &step_firstvalid },
+  { ALL_TYPES,    "Last valid",     &step_lastvalid },
+  { ALL_TYPES,    "Genesis ID",     &step_genesisID },
+  { ALL_TYPES,    "Genesis hash",   &step_genesisHash },
+  { ALL_TYPES,    "Note",           &step_note },
+  { PAYMENT,      "Receiver",       &step_receiver },
+  { PAYMENT,      "Amount (uAlg)",  &step_amount },
+  { PAYMENT,      "Close to",       &step_close },
+  { KEYREG,       "Vote PK",        &step_votepk },
+  { KEYREG,       "VRF PK",         &step_vrfpk },
+  { ASSET_XFER,   "Asset ID",       &step_asset_xfer_id },
+  { ASSET_XFER,   "Asset amt",      &step_asset_xfer_amount },
+  { ASSET_XFER,   "Asset src",      &step_asset_xfer_sender },
+  { ASSET_XFER,   "Asset dst",      &step_asset_xfer_receiver },
+  { ASSET_XFER,   "Asset close",    &step_asset_xfer_close },
+  { ASSET_FREEZE, "Asset ID",       &step_asset_freeze_id },
+  { ASSET_FREEZE, "Asset account",  &step_asset_freeze_account },
+  { ASSET_FREEZE, "Freeze flag",    &step_asset_freeze_flag },
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
@@ -407,13 +357,16 @@ bagl_ui_step_nanos_display()
       return;
     }
 
-    const char* step_caption = (const char*) PIC(ux_steps[ux_current_step].caption);
-    int (*step_display)(void) = (int (*)(void)) PIC(ux_steps[ux_current_step].display);
-    if (step_display()) {
-      snprintf(captionBuffer, sizeof(captionBuffer), "%s", step_caption);
-      ui_text_more();
-      UX_DISPLAY(bagl_ui_step_nanos, NULL);
-      return;
+    int txtype = ux_steps[ux_current_step].txtype;
+    if (txtype == ALL_TYPES || txtype == current_txn.type) {
+      const char* step_caption = (const char*) PIC(ux_steps[ux_current_step].caption);
+      int (*step_display)(void) = (int (*)(void)) PIC(ux_steps[ux_current_step].display);
+      if (step_display()) {
+        snprintf(captionBuffer, sizeof(captionBuffer), "%s", step_caption);
+        ui_text_more();
+        UX_DISPLAY(bagl_ui_step_nanos, NULL);
+        return;
+      }
     }
 
     ux_current_step++;
