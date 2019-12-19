@@ -16,7 +16,7 @@ struct txn {
   uint64_t fee;
   uint64_t firstValid;
   uint64_t lastValid;
-  char genesisID[33];
+  char genesisID[32];
   uint8_t genesisHash[32];
 
   uint8_t note[32];

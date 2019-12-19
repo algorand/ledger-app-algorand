@@ -45,7 +45,7 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
     THROW(INVALID_PARAMETER);
   }
 
-  if (str_len >= strbuflen) {
+  if (str_len > strbuflen) {
     snprintf(decode_err, sizeof(decode_err), "%d-byte string too big for %d-byte buf", str_len, strbuflen);
     THROW(INVALID_PARAMETER);
   }
@@ -56,8 +56,22 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
   }
 
   os_memmove(strbuf, *bufp, str_len);
-  strbuf[str_len] = 0;
+  if (str_len < strbuflen) {
+    strbuf[str_len] = 0;
+  }
   *bufp += str_len;
+}
+
+static void
+decode_string_nullterm(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
+{
+  if (strbuflen == 0) {
+    snprintf(decode_err, sizeof(decode_err), "decode_string_nullterm: zero strbuflen");
+    THROW(INVALID_PARAMETER);
+  }
+
+  decode_string(bufp, buf_end, strbuf, strbuflen-1);
+  strbuf[strbuflen-1] = '\0';
 }
 
 static void
@@ -167,11 +181,11 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
       uint8_t map_count = decode_fixsz(&buf, buf_end, FIXMAP_0, FIXMAP_15);
       for (int i = 0; i < map_count; i++) {
         char key[32];
-        decode_string(&buf, buf_end, key, sizeof(key));
+        decode_string_nullterm(&buf, buf_end, key, sizeof(key));
 
         if (!strcmp(key, "type")) {
           char tbuf[16];
-          decode_string(&buf, buf_end, tbuf, sizeof(tbuf));
+          decode_string_nullterm(&buf, buf_end, tbuf, sizeof(tbuf));
 
           if (!strcmp(tbuf, "pay")) {
             t->type = PAYMENT;

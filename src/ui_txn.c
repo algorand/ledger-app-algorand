@@ -97,11 +97,11 @@ static const uint8_t default_genesisHash[] = {
 };
 
 static int step_genesisID() {
-  if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
+  if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0) {
     return 0;
   }
 
-  ui_text_put(current_txn.genesisID);
+  ui_text_putn(current_txn.genesisID, sizeof(current_txn.genesisID));
   return 1;
 }
 
@@ -110,7 +110,7 @@ static int step_genesisHash() {
     return 0;
   }
 
-  if (strcmp(current_txn.genesisID, default_genesisID) == 0) {
+  if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0) {
     if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
       return 0;
     }
@@ -429,7 +429,7 @@ ui_txn()
   PRINTF("  Fee: %s\n", u64str(current_txn.fee));
   PRINTF("  First valid: %s\n", u64str(current_txn.firstValid));
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
-  PRINTF("  Genesis ID: %s\n", current_txn.genesisID);
+  PRINTF("  Genesis ID: %.*s\n", 32, current_txn.genesisID);
   PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
   PRINTF("  Receiver: %.*h\n", 32, current_txn.receiver);
   PRINTF("  Amount: %s\n", u64str(current_txn.amount));
