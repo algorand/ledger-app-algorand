@@ -139,7 +139,7 @@ static int step_receiver() {
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.receiver, checksummed);
+  checksummed_addr(current_txn.payment.receiver, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -149,7 +149,7 @@ static int step_amount() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.amount));
+  ui_text_put(u64str(current_txn.payment.amount));
   return 1;
 }
 
@@ -158,12 +158,12 @@ static int step_close() {
     return 0;
   }
 
-  if (all_zero_key(current_txn.close)) {
+  if (all_zero_key(current_txn.payment.close)) {
     return 0;
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.close, checksummed);
+  checksummed_addr(current_txn.payment.close, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -174,7 +174,7 @@ static int step_votepk() {
   }
 
   char buf[45];
-  base64_encode((const char*) current_txn.votepk, sizeof(current_txn.votepk), buf, sizeof(buf));
+  base64_encode((const char*) current_txn.keyreg.votepk, sizeof(current_txn.keyreg.votepk), buf, sizeof(buf));
   ui_text_put(buf);
   return 1;
 }
@@ -185,7 +185,7 @@ static int step_vrfpk() {
   }
 
   char buf[45];
-  base64_encode((const char*) current_txn.vrfpk, sizeof(current_txn.vrfpk), buf, sizeof(buf));
+  base64_encode((const char*) current_txn.keyreg.vrfpk, sizeof(current_txn.keyreg.vrfpk), buf, sizeof(buf));
   ui_text_put(buf);
   return 1;
 }
@@ -195,7 +195,7 @@ static int step_asset_xfer_id() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.asset_xfer_id));
+  ui_text_put(u64str(current_txn.asset_xfer.id));
   return 1;
 }
 
@@ -204,7 +204,7 @@ static int step_asset_xfer_amount() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.asset_xfer_amount));
+  ui_text_put(u64str(current_txn.asset_xfer.amount));
   return 1;
 }
 
@@ -213,12 +213,12 @@ static int step_asset_xfer_sender() {
     return 0;
   }
 
-  if (all_zero_key(current_txn.asset_xfer_sender)) {
+  if (all_zero_key(current_txn.asset_xfer.sender)) {
     return 0;
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer_sender, checksummed);
+  checksummed_addr(current_txn.asset_xfer.sender, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -228,12 +228,12 @@ static int step_asset_xfer_receiver() {
     return 0;
   }
 
-  if (all_zero_key(current_txn.asset_xfer_receiver)) {
+  if (all_zero_key(current_txn.asset_xfer.receiver)) {
     return 0;
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer_receiver, checksummed);
+  checksummed_addr(current_txn.asset_xfer.receiver, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -243,12 +243,12 @@ static int step_asset_xfer_close() {
     return 0;
   }
 
-  if (all_zero_key(current_txn.asset_xfer_close)) {
+  if (all_zero_key(current_txn.asset_xfer.close)) {
     return 0;
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer_close, checksummed);
+  checksummed_addr(current_txn.asset_xfer.close, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -258,7 +258,7 @@ static int step_asset_freeze_id() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.asset_freeze_id));
+  ui_text_put(u64str(current_txn.asset_freeze.id));
   return 1;
 }
 
@@ -267,12 +267,12 @@ static int step_asset_freeze_account() {
     return 0;
   }
 
-  if (all_zero_key(current_txn.asset_freeze_account)) {
+  if (all_zero_key(current_txn.asset_freeze.account)) {
     return 0;
   }
 
   char checksummed[65];
-  checksummed_addr(current_txn.asset_freeze_account, checksummed);
+  checksummed_addr(current_txn.asset_freeze.account, checksummed);
   ui_text_put(checksummed);
   return 1;
 }
@@ -282,7 +282,7 @@ static int step_asset_freeze_flag() {
     return 0;
   }
 
-  if (current_txn.asset_freeze_flag) {
+  if (current_txn.asset_freeze.flag) {
     ui_text_put("Frozen");
   } else {
     ui_text_put("Unfrozen");
@@ -431,11 +431,15 @@ ui_txn()
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
   PRINTF("  Genesis ID: %.*s\n", 32, current_txn.genesisID);
   PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
-  PRINTF("  Receiver: %.*h\n", 32, current_txn.receiver);
-  PRINTF("  Amount: %s\n", u64str(current_txn.amount));
-  PRINTF("  Close to: %.*h\n", 32, current_txn.close);
-  PRINTF("  Vote PK: %.*h\n", 32, current_txn.votepk);
-  PRINTF("  VRF PK: %.*h\n", 32, current_txn.vrfpk);
+  if (current_txn.type == PAYMENT) {
+    PRINTF("  Receiver: %.*h\n", 32, current_txn.payment.receiver);
+    PRINTF("  Amount: %s\n", u64str(current_txn.payment.amount));
+    PRINTF("  Close to: %.*h\n", 32, current_txn.payment.close);
+  }
+  if (current_txn.type == KEYREG) {
+    PRINTF("  Vote PK: %.*h\n", 32, current_txn.keyreg.votepk);
+    PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
+  }
 
   ux_current_step = 0;
   bagl_ui_step_nanos_display();
