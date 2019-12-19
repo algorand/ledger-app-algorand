@@ -238,6 +238,111 @@ static int step_asset_freeze_flag() {
   return 1;
 }
 
+static int step_asset_config_id() {
+  if (current_txn.asset_config.id == 0) {
+    ui_text_put("Allocating");
+  } else {
+    ui_text_put(u64str(current_txn.asset_config.id));
+  }
+  return 1;
+}
+
+static int step_asset_config_total() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.total == 0) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.asset_config.params.total));
+  return 1;
+}
+
+static int step_asset_config_default_frozen() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.default_frozen == 0) {
+    return 0;
+  }
+
+  if (current_txn.asset_config.params.default_frozen) {
+    ui_text_put("Frozen");
+  } else {
+    ui_text_put("Unfrozen");
+  }
+  return 1;
+}
+
+static int step_asset_config_unitname() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.unitname[0] == '\0') {
+    return 0;
+  }
+
+  ui_text_putn(current_txn.asset_config.params.unitname, sizeof(current_txn.asset_config.params.unitname));
+  return 1;
+}
+
+static int step_asset_config_decimals() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.decimals == 0) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.asset_config.params.decimals));
+  return 1;
+}
+
+static int step_asset_config_assetname() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.assetname[0] == '\0') {
+    return 0;
+  }
+
+  ui_text_putn(current_txn.asset_config.params.assetname, sizeof(current_txn.asset_config.params.assetname));
+  return 1;
+}
+
+static int step_asset_config_url() {
+  if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.url[0] == '\0') {
+    return 0;
+  }
+
+  ui_text_putn(current_txn.asset_config.params.url, sizeof(current_txn.asset_config.params.url));
+  return 1;
+}
+
+static int step_asset_config_metadata_hash() {
+  if (current_txn.asset_config.id != 0 && all_zero_key(current_txn.asset_config.params.metadata_hash)) {
+    return 0;
+  }
+
+  char buf[45];
+  base64_encode((const char*) current_txn.asset_config.params.metadata_hash, sizeof(current_txn.asset_config.params.metadata_hash), buf, sizeof(buf));
+  ui_text_put(buf);
+  return 1;
+}
+
+static int step_asset_config_addr_helper(uint8_t *addr) {
+  if (all_zero_key(addr)) {
+    ui_text_put("Zero");
+  } else {
+    char checksummed[65];
+    checksummed_addr(addr, checksummed);
+    ui_text_put(checksummed);
+  }
+  return 1;
+}
+
+static int step_asset_config_manager() {
+  return step_asset_config_addr_helper(current_txn.asset_config.params.manager);
+}
+
+static int step_asset_config_reserve() {
+  return step_asset_config_addr_helper(current_txn.asset_config.params.reserve);
+}
+
+static int step_asset_config_freeze() {
+  return step_asset_config_addr_helper(current_txn.asset_config.params.freeze);
+}
+
+static int step_asset_config_clawback() {
+  return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
+}
+
 struct ux_step {
   // The display callback returns a non-zero value if it placed information
   // about the associated caption into lineBuffer, which should be displayed.
@@ -271,6 +376,18 @@ static const struct ux_step ux_steps[] = {
   { ASSET_FREEZE, "Asset ID",       &step_asset_freeze_id },
   { ASSET_FREEZE, "Asset account",  &step_asset_freeze_account },
   { ASSET_FREEZE, "Freeze flag",    &step_asset_freeze_flag },
+  { ASSET_CONFIG, "Asset ID",       &step_asset_config_id },
+  { ASSET_CONFIG, "Total units",    &step_asset_config_total },
+  { ASSET_CONFIG, "Default frozen", &step_asset_config_default_frozen },
+  { ASSET_CONFIG, "Unit name",      &step_asset_config_unitname },
+  { ASSET_CONFIG, "Decimals",       &step_asset_config_decimals },
+  { ASSET_CONFIG, "Asset name",     &step_asset_config_assetname },
+  { ASSET_CONFIG, "URL",            &step_asset_config_url },
+  { ASSET_CONFIG, "Metadata hash",  &step_asset_config_metadata_hash },
+  { ASSET_CONFIG, "Manager",        &step_asset_config_manager },
+  { ASSET_CONFIG, "Reserve",        &step_asset_config_reserve },
+  { ASSET_CONFIG, "Freezer",        &step_asset_config_freeze },
+  { ASSET_CONFIG, "Clawback",       &step_asset_config_clawback },
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {

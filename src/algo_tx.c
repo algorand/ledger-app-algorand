@@ -173,6 +173,18 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
     typestr = "keyreg";
     break;
 
+  case ASSET_XFER:
+    typestr = "axfer";
+    break;
+
+  case ASSET_FREEZE:
+    typestr = "afrz";
+    break;
+
+  case ASSET_CONFIG:
+    typestr = "acfg";
+    break;
+
   default:
     PRINTF("Unknown transaction type %d\n", t->type);
     typestr = "unknown";

@@ -6,7 +6,22 @@ enum TXTYPE {
   KEYREG,
   ASSET_XFER,
   ASSET_FREEZE,
+  ASSET_CONFIG,
   ALL_TYPES,
+};
+
+struct asset_params {
+  uint64_t total;
+  uint64_t decimals;
+  uint8_t default_frozen;
+  char unitname[8];
+  char assetname[32];
+  char url[32];
+  uint8_t metadata_hash[32];
+  uint8_t manager[32];
+  uint8_t reserve[32];
+  uint8_t freeze[32];
+  uint8_t clawback[32];
 };
 
 struct txn_payment {
@@ -34,6 +49,11 @@ struct txn_asset_freeze {
   uint8_t flag;
 };
 
+struct txn_asset_config {
+  uint64_t id;
+  struct asset_params params;
+};
+
 struct txn {
   enum TXTYPE type;
 
@@ -54,6 +74,7 @@ struct txn {
     struct txn_keyreg keyreg;
     struct txn_asset_xfer asset_xfer;
     struct txn_asset_freeze asset_freeze;
+    struct txn_asset_config asset_config;
   };
 };
 

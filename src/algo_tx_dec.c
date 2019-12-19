@@ -201,6 +201,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
             t->type = ASSET_XFER;
           } else if (!strcmp(tbuf, "afrz")) {
             t->type = ASSET_FREEZE;
+          } else if (!strcmp(tbuf, "acfg")) {
+            t->type = ASSET_CONFIG;
           } else {
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
