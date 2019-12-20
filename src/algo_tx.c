@@ -169,6 +169,12 @@ map_kv_params(uint8_t **p, uint8_t *e, char *key, struct asset_params *params)
   encode_str(p, e, key, SIZE_MAX);
 
   uint8_t *mapbase = *p;
+  if (*p >= e) {
+    // We need to access mapbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
   put_byte(p, e, FIXMAP_0);
 
   mapbase[0] += map_kv_bin   (p, e, "am", params->metadata_hash, sizeof(params->metadata_hash));
