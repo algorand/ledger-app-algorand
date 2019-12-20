@@ -169,7 +169,7 @@ map_kv_params(uint8_t **p, uint8_t *e, char *key, struct asset_params *params)
   encode_str(p, e, key, SIZE_MAX);
 
   uint8_t *mapbase = *p;
-  *((*p)++) = FIXMAP_0;
+  put_byte(p, e, FIXMAP_0);
 
   mapbase[0] += map_kv_bin   (p, e, "am", params->metadata_hash, sizeof(params->metadata_hash));
   mapbase[0] += map_kv_str   (p, e, "an", params->assetname, sizeof(params->assetname));
