@@ -249,7 +249,7 @@ static int step_asset_freeze_flag() {
 
 static int step_asset_config_id() {
   if (current_txn.asset_config.id == 0) {
-    ui_text_put("Alloc");
+    ui_text_put("Create");
   } else {
     ui_text_put(u64str(current_txn.asset_config.id));
   }
