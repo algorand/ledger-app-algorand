@@ -449,6 +449,7 @@ struct ux_step {
   int (*display)(void);
 };
 
+static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
   { ALL_TYPES,    "Txn type",       &step_txn_type },
   { ALL_TYPES,    "Sender",         &step_sender },
@@ -484,8 +485,6 @@ static const struct ux_step ux_steps[] = {
   { ASSET_CONFIG, "Freezer",        &step_asset_config_freeze },
   { ASSET_CONFIG, "Clawback",       &step_asset_config_clawback },
 };
-
-static unsigned int ux_current_step;
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
   { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0},

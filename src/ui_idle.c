@@ -2,11 +2,6 @@
 #include "os_io_seproxyhal.h"
 #include "algo_ui.h"
 
-#if defined(TARGET_NANOX)
-#include "algo_keys.h"
-#include "ux.h"
-#endif
-
 #if defined(TARGET_NANOS)
 static const ux_menu_entry_t menu_top[];
 static const ux_menu_entry_t menu_about[];
