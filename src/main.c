@@ -40,7 +40,6 @@ struct txn current_txn;
  */
 static uint8_t msgpack_buf[1024];
 static unsigned int msgpack_next_off;
-char checksummedPublicKey[65];
 
 void
 txn_approve()
@@ -106,7 +105,6 @@ algorand_main(void)
 
   algorand_key_derive();
   algorand_public_key(publicKey);
-  checksummed_addr(publicKey, checksummedPublicKey);
 
   msgpack_next_off = 0;
 

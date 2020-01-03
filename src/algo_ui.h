@@ -13,6 +13,8 @@ void ui_text_put(const char *msg);
 void ui_text_putn(const char *msg, size_t maxlen);
 int  ui_text_more();
 
+void step_address();
+
 // Override some of the Ledger X UI macros to enable step skipping
 #if defined(TARGET_NANOX)
 
