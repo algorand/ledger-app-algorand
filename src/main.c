@@ -15,7 +15,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define OFFSET_LC     4
 #define OFFSET_CDATA  5
 
-#define CLA                 0x80
+#define CLA           0x80
 
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
@@ -109,6 +109,13 @@ algorand_main(void)
 
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
+
+  #if defined(TARGET_NANOX)
+  // enable bluetooth on nano x
+  G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+  BLE_power(0, NULL);
+  BLE_power(1, "Nano X");
+  #endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -364,7 +371,10 @@ main(void)
   os_boot();
 
   UX_INIT();
+
+#if defined(TARGET_NANOS)
   UX_MENU_INIT();
+#endif
 
   BEGIN_TRY {
     TRY {

@@ -49,12 +49,17 @@ bagl_ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_
 }
 
 void
-ui_address()
+step_address()
 {
   char checksummed[65];
   checksummed_addr(publicKey, checksummed);
-
   ui_text_put(checksummed);
+}
+
+void
+ui_address()
+{
+  step_address();
   if (ui_text_more()) {
     UX_DISPLAY(bagl_ui_address_nanos, NULL);
   } else {

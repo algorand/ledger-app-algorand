@@ -7,6 +7,7 @@
 #include "algo_addr.h"
 #include "algo_keys.h"
 #include "base64.h"
+#include "glyphs.h"
 
 static char *
 u64str(uint64_t v)
@@ -352,6 +353,92 @@ static int step_asset_config_clawback() {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
+#if defined(TARGET_NANOX)
+static unsigned int ux_last_step;
+
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 0, bn,          step_txn_type(),    {"Txn type",     text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 1, bnnn_paging, step_sender(),      {"Sender",       text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bn,          step_fee(),         {"Fee (uAlg)",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 3, bn,          step_firstvalid(),  {"First valid",  text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 4, bn,          step_lastvalid(),   {"Last valid",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 5, bn,          step_genesisID(),   {"Genesis ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 6, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 7, bn,          step_note(),        {"Note",         text});
+
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 8,  bnnn_paging, step_receiver(), {"Receiver",      text});
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bn,          step_amount(),   {"Amount (uAlg)", text});
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bnnn_paging, step_close(),    {"Close to",      text});
+
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 11, bnnn_paging, step_votepk(), {"Vote PK", text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_vrfpk(),  {"VRF PK",  text});
+
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 13, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 14, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 15, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 16, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
+
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 18, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 19, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 20, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
+
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 21, bn,          step_asset_config_id(),             {"Asset ID",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 22, bn,          step_asset_config_total(),          {"Total units",    text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 23, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 24, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_decimals(),       {"Decimals",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bnnn_paging, step_asset_config_url(),            {"URL",            text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
+
+ALGO_UX_STEP(33, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(34, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+
+const ux_flow_step_t * const ux_txn_flow [] = {
+  &txn_flow_0,
+  &txn_flow_1,
+  &txn_flow_2,
+  &txn_flow_3,
+  &txn_flow_4,
+  &txn_flow_5,
+  &txn_flow_6,
+  &txn_flow_7,
+  &txn_flow_8,
+  &txn_flow_9,
+  &txn_flow_10,
+  &txn_flow_11,
+  &txn_flow_12,
+  &txn_flow_13,
+  &txn_flow_14,
+  &txn_flow_15,
+  &txn_flow_16,
+  &txn_flow_17,
+  &txn_flow_18,
+  &txn_flow_19,
+  &txn_flow_20,
+  &txn_flow_21,
+  &txn_flow_22,
+  &txn_flow_23,
+  &txn_flow_24,
+  &txn_flow_25,
+  &txn_flow_26,
+  &txn_flow_27,
+  &txn_flow_28,
+  &txn_flow_29,
+  &txn_flow_30,
+  &txn_flow_31,
+  &txn_flow_32,
+  &txn_flow_33,
+  &txn_flow_34,
+  FLOW_END_STEP,
+};
+#endif // TARGET_NANOX
+
+#if defined(TARGET_NANOS)
 struct ux_step {
   // The display callback returns a non-zero value if it placed information
   // about the associated caption into lineBuffer, which should be displayed.
@@ -498,6 +585,7 @@ bagl_ui_step_nanos_display()
     ux_current_step++;
   }
 }
+#endif // TARGET_NANOS
 
 void
 ui_txn()
@@ -520,6 +608,16 @@ ui_txn()
     PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
   }
 
+#if defined(TARGET_NANOS)
   ux_current_step = 0;
   bagl_ui_step_nanos_display();
+#endif
+
+#if defined(TARGET_NANOX)
+  ux_last_step = 0;
+  if (G_ux.stack_count == 0) {
+    ux_stack_push();
+  }
+  ux_flow_init(0, ux_txn_flow, NULL);
+#endif
 }

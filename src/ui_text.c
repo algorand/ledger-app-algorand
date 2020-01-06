@@ -5,7 +5,7 @@
 
 #define MAX_CHARS_PER_LINE 8
 
-static char text[128];
+char text[128];
 static int lineBufferPos;
 
 // 2 extra bytes for ".." on continuation
