@@ -15,7 +15,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define OFFSET_LC     4
 #define OFFSET_CDATA  5
 
-#define CLA                 0x80
+#define CLA           0x80
 
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
@@ -110,6 +110,13 @@ algorand_main(void)
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
 
+  #if defined(TARGET_NANOX)
+  // enable bluetooth on nano x
+  G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+  BLE_power(0, NULL);
+  BLE_power(1, "Nano X");
+  #endif
+
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
   // When APDU are to be fetched from multiple IOs, like NFC+USB+BLE, make
@@ -151,15 +158,15 @@ algorand_main(void)
           }
 
           current_txn.type = PAYMENT;
-          copy_and_advance( current_txn.sender,       &p, 32);
-          copy_and_advance(&current_txn.fee,          &p, 8);
-          copy_and_advance(&current_txn.firstValid,   &p, 8);
-          copy_and_advance(&current_txn.lastValid,    &p, 8);
-          copy_and_advance( current_txn.genesisID,    &p, 32);
-          copy_and_advance( current_txn.genesisHash,  &p, 32);
-          copy_and_advance( current_txn.receiver,     &p, 32);
-          copy_and_advance(&current_txn.amount,       &p, 8);
-          copy_and_advance( current_txn.close,        &p, 32);
+          copy_and_advance( current_txn.sender,           &p, 32);
+          copy_and_advance(&current_txn.fee,              &p, 8);
+          copy_and_advance(&current_txn.firstValid,       &p, 8);
+          copy_and_advance(&current_txn.lastValid,        &p, 8);
+          copy_and_advance( current_txn.genesisID,        &p, 32);
+          copy_and_advance( current_txn.genesisHash,      &p, 32);
+          copy_and_advance( current_txn.payment.receiver, &p, 32);
+          copy_and_advance(&current_txn.payment.amount,   &p, 8);
+          copy_and_advance( current_txn.payment.close,    &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
@@ -177,14 +184,14 @@ algorand_main(void)
           }
 
           current_txn.type = KEYREG;
-          copy_and_advance( current_txn.sender,       &p, 32);
-          copy_and_advance(&current_txn.fee,          &p, 8);
-          copy_and_advance(&current_txn.firstValid,   &p, 8);
-          copy_and_advance(&current_txn.lastValid,    &p, 8);
-          copy_and_advance( current_txn.genesisID,    &p, 32);
-          copy_and_advance( current_txn.genesisHash,  &p, 32);
-          copy_and_advance( current_txn.votepk,       &p, 32);
-          copy_and_advance( current_txn.vrfpk,        &p, 32);
+          copy_and_advance( current_txn.sender,        &p, 32);
+          copy_and_advance(&current_txn.fee,           &p, 8);
+          copy_and_advance(&current_txn.firstValid,    &p, 8);
+          copy_and_advance(&current_txn.lastValid,     &p, 8);
+          copy_and_advance( current_txn.genesisID,     &p, 32);
+          copy_and_advance( current_txn.genesisHash,   &p, 32);
+          copy_and_advance( current_txn.keyreg.votepk, &p, 32);
+          copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
@@ -364,7 +371,10 @@ main(void)
   os_boot();
 
   UX_INIT();
+
+#if defined(TARGET_NANOS)
   UX_MENU_INIT();
+#endif
 
   BEGIN_TRY {
     TRY {
