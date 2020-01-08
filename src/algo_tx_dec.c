@@ -45,7 +45,7 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
     THROW(INVALID_PARAMETER);
   }
 
-  if (str_len >= strbuflen) {
+  if (str_len > strbuflen) {
     snprintf(decode_err, sizeof(decode_err), "%d-byte string too big for %d-byte buf", str_len, strbuflen);
     THROW(INVALID_PARAMETER);
   }
@@ -56,8 +56,22 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
   }
 
   os_memmove(strbuf, *bufp, str_len);
-  strbuf[str_len] = 0;
+  if (str_len < strbuflen) {
+    strbuf[str_len] = 0;
+  }
   *bufp += str_len;
+}
+
+static void
+decode_string_nullterm(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
+{
+  if (strbuflen == 0) {
+    snprintf(decode_err, sizeof(decode_err), "decode_string_nullterm: zero strbuflen");
+    THROW(INVALID_PARAMETER);
+  }
+
+  decode_string(bufp, buf_end, strbuf, strbuflen-1);
+  strbuf[strbuflen-1] = '\0';
 }
 
 static void
@@ -154,6 +168,43 @@ decode_bool(uint8_t **bufp, uint8_t *buf_end, uint8_t *res)
   }
 }
 
+static void
+decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
+{
+  uint8_t map_count = decode_fixsz(bufp, buf_end, FIXMAP_0, FIXMAP_15);
+  for (int i = 0; i < map_count; i++) {
+    char key[32];
+    decode_string_nullterm(bufp, buf_end, key, sizeof(key));
+
+    if (!strcmp(key, "t")) {
+      decode_uint64(bufp, buf_end, &res->total);
+    } else if (!strcmp(key, "dc")) {
+      decode_uint64(bufp, buf_end, &res->decimals);
+    } else if (!strcmp(key, "df")) {
+      decode_bool(bufp, buf_end, &res->default_frozen);
+    } else if (!strcmp(key, "un")) {
+      decode_string(bufp, buf_end, res->unitname, sizeof(res->unitname));
+    } else if (!strcmp(key, "an")) {
+      decode_string(bufp, buf_end, res->assetname, sizeof(res->assetname));
+    } else if (!strcmp(key, "au")) {
+      decode_string(bufp, buf_end, res->url, sizeof(res->url));
+    } else if (!strcmp(key, "am")) {
+      decode_bin_fixed(bufp, buf_end, res->metadata_hash, sizeof(res->metadata_hash));
+    } else if (!strcmp(key, "m")) {
+      decode_bin_fixed(bufp, buf_end, res->manager, sizeof(res->manager));
+    } else if (!strcmp(key, "r")) {
+      decode_bin_fixed(bufp, buf_end, res->reserve, sizeof(res->reserve));
+    } else if (!strcmp(key, "f")) {
+      decode_bin_fixed(bufp, buf_end, res->freeze, sizeof(res->freeze));
+    } else if (!strcmp(key, "c")) {
+      decode_bin_fixed(bufp, buf_end, res->clawback, sizeof(res->clawback));
+    } else {
+      snprintf(decode_err, sizeof(decode_err), "unknown params field %s", key);
+      THROW(INVALID_PARAMETER);
+    }
+  }
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -167,16 +218,28 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
       uint8_t map_count = decode_fixsz(&buf, buf_end, FIXMAP_0, FIXMAP_15);
       for (int i = 0; i < map_count; i++) {
         char key[32];
-        decode_string(&buf, buf_end, key, sizeof(key));
+        decode_string_nullterm(&buf, buf_end, key, sizeof(key));
 
+        // We decode type-specific fields into their union location
+        // on the assumption that the caller (host) passed in a valid
+        // transaction.  If the transaction contains fields from more
+        // than one type of transaction, the in-memory value might be
+        // corrupted, but any in-memory representation for the union
+        // fields is valid.
         if (!strcmp(key, "type")) {
           char tbuf[16];
-          decode_string(&buf, buf_end, tbuf, sizeof(tbuf));
+          decode_string_nullterm(&buf, buf_end, tbuf, sizeof(tbuf));
 
           if (!strcmp(tbuf, "pay")) {
             t->type = PAYMENT;
           } else if (!strcmp(tbuf, "keyreg")) {
             t->type = KEYREG;
+          } else if (!strcmp(tbuf, "axfer")) {
+            t->type = ASSET_XFER;
+          } else if (!strcmp(tbuf, "afrz")) {
+            t->type = ASSET_FREEZE;
+          } else if (!strcmp(tbuf, "acfg")) {
+            t->type = ASSET_CONFIG;
           } else {
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
@@ -196,31 +259,35 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
         } else if (!strcmp(key, "note")) {
           decode_bin_var(&buf, buf_end, t->note, &t->note_len, sizeof(t->note));
         } else if (!strcmp(key, "amt")) {
-          decode_uint64(&buf, buf_end, &t->amount);
+          decode_uint64(&buf, buf_end, &t->payment.amount);
         } else if (!strcmp(key, "rcv")) {
-          decode_bin_fixed(&buf, buf_end, t->receiver, sizeof(t->receiver));
+          decode_bin_fixed(&buf, buf_end, t->payment.receiver, sizeof(t->payment.receiver));
         } else if (!strcmp(key, "close")) {
-          decode_bin_fixed(&buf, buf_end, t->close, sizeof(t->close));
+          decode_bin_fixed(&buf, buf_end, t->payment.close, sizeof(t->payment.close));
         } else if (!strcmp(key, "selkey")) {
-          decode_bin_fixed(&buf, buf_end, t->vrfpk, sizeof(t->vrfpk));
+          decode_bin_fixed(&buf, buf_end, t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk));
         } else if (!strcmp(key, "votekey")) {
-          decode_bin_fixed(&buf, buf_end, t->votepk, sizeof(t->votepk));
+          decode_bin_fixed(&buf, buf_end, t->keyreg.votepk, sizeof(t->keyreg.votepk));
         } else if (!strcmp(key, "aamt")) {
-          decode_uint64(&buf, buf_end, &t->asset_xfer_amount);
+          decode_uint64(&buf, buf_end, &t->asset_xfer.amount);
         } else if (!strcmp(key, "aclose")) {
-          decode_bin_fixed(&buf, buf_end, t->asset_xfer_close, sizeof(t->asset_xfer_close));
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer.close, sizeof(t->asset_xfer.close));
         } else if (!strcmp(key, "arcv")) {
-          decode_bin_fixed(&buf, buf_end, t->asset_xfer_receiver, sizeof(t->asset_xfer_receiver));
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer.receiver, sizeof(t->asset_xfer.receiver));
         } else if (!strcmp(key, "asnd")) {
-          decode_bin_fixed(&buf, buf_end, t->asset_xfer_sender, sizeof(t->asset_xfer_sender));
+          decode_bin_fixed(&buf, buf_end, t->asset_xfer.sender, sizeof(t->asset_xfer.sender));
         } else if (!strcmp(key, "xaid")) {
-          decode_uint64(&buf, buf_end, &t->asset_xfer_id);
+          decode_uint64(&buf, buf_end, &t->asset_xfer.id);
         } else if (!strcmp(key, "faid")) {
-          decode_uint64(&buf, buf_end, &t->asset_freeze_id);
+          decode_uint64(&buf, buf_end, &t->asset_freeze.id);
         } else if (!strcmp(key, "fadd")) {
-          decode_bin_fixed(&buf, buf_end, t->asset_freeze_account, sizeof(t->asset_freeze_account));
+          decode_bin_fixed(&buf, buf_end, t->asset_freeze.account, sizeof(t->asset_freeze.account));
         } else if (!strcmp(key, "afrz")) {
-          decode_bool(&buf, buf_end, &t->asset_freeze_flag);
+          decode_bool(&buf, buf_end, &t->asset_freeze.flag);
+        } else if (!strcmp(key, "caid")) {
+          decode_uint64(&buf, buf_end, &t->asset_config.id);
+        } else if (!strcmp(key, "apar")) {
+          decode_asset_params(&buf, buf_end, &t->asset_config.params);
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
