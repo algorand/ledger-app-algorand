@@ -37,7 +37,11 @@ struct txn current_txn;
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
  */
+#if defined(TARGET_NANOX)
+static uint8_t msgpack_buf[2048];
+#else
 static uint8_t msgpack_buf[1024];
+#endif
 static unsigned int msgpack_next_off;
 
 void
