@@ -106,8 +106,6 @@ encode_bin(uint8_t **p, uint8_t *e, uint8_t *bytes, int len)
   for (int i = 0; i < len; i++) {
     put_byte(p, e, bytes[i]);
   }
-
-  return;
 }
 
 static int
