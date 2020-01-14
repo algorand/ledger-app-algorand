@@ -54,6 +54,8 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
+
+
 struct txn {
   enum TXTYPE type;
 
@@ -65,7 +67,12 @@ struct txn {
   char genesisID[32];
   uint8_t genesisHash[32];
 
+#if defined(TARGET_NANOX)
+  uint8_t note[1024];
+#else
   uint8_t note[32];
+#endif
+
   size_t note_len;
 
   // Fields for specific tx types
