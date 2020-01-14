@@ -54,8 +54,6 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
-
-
 struct txn {
   enum TXTYPE type;
 
