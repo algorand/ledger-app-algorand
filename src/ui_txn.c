@@ -608,6 +608,10 @@ ui_txn()
     PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
   }
 
+  // Set state to pending so that this txn must be approved or
+  // rejected before processing the next one
+  pending_txn = true;
+
 #if defined(TARGET_NANOS)
   ux_current_step = 0;
   bagl_ui_step_nanos_display();

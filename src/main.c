@@ -43,6 +43,7 @@ static uint8_t msgpack_buf[2048];
 static uint8_t msgpack_buf[1024];
 #endif
 static unsigned int msgpack_next_off;
+volatile bool pending_txn;
 
 void
 txn_approve()
@@ -74,6 +75,7 @@ txn_approve()
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+  pending_txn = false;
 
   // Display back the original UX
   ui_idle();
@@ -87,6 +89,7 @@ txn_deny()
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+  pending_txn = false;
 
   // Display back the original UX
   ui_idle();
@@ -110,6 +113,7 @@ algorand_main(void)
   algorand_public_key(publicKey);
 
   msgpack_next_off = 0;
+  pending_txn = false;
 
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
@@ -153,6 +157,10 @@ algorand_main(void)
         case INS_SIGN_PAYMENT_V2:
         case INS_SIGN_PAYMENT_V3:
         {
+          if (pending_txn) {
+            THROW(0x6C00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_PAYMENT_V2) {
@@ -179,6 +187,10 @@ algorand_main(void)
         case INS_SIGN_KEYREG_V2:
         case INS_SIGN_KEYREG_V3:
         {
+          if (pending_txn) {
+            THROW(0x6C00);
+          }
+
           os_memset(&current_txn, 0, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_KEYREG_V2) {
@@ -202,6 +214,10 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_MSGPACK: {
+          if (pending_txn) {
+            THROW(0x6C00);
+          }
+
           switch (G_io_apdu_buffer[OFFSET_P1]) {
           case P1_FIRST:
             msgpack_next_off = 0;

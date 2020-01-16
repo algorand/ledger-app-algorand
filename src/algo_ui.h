@@ -4,6 +4,7 @@
 
 extern char lineBuffer[];
 extern char text[128];
+extern volatile bool pending_txn;
 
 void ui_idle();
 void ui_address();
