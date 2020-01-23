@@ -93,9 +93,9 @@ txn_deny()
 }
 
 static void
-copy_and_advance(void *dst, uint8_t **p, uint8_t *pend, size_t len)
+copy_and_advance(void *dst, uint8_t **p, uint8_t *pend, int len)
 {
-  if (*p + len > pend) {
+  if (pend - *p < len) {
     THROW(0x6700);
   }
 
