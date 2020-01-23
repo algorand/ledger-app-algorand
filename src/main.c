@@ -93,8 +93,12 @@ txn_deny()
 }
 
 static void
-copy_and_advance(void *dst, uint8_t **p, size_t len)
+copy_and_advance(void *dst, uint8_t **p, uint8_t *pend, size_t len)
 {
+  if (*p + len > pend) {
+    THROW(0x6700);
+  }
+
   os_memmove(dst, *p, len);
   *p += len;
 }
@@ -144,6 +148,10 @@ algorand_main(void)
           THROW(0x6982);
         }
 
+        if (rx <= OFFSET_INS) {
+          THROW(0x6700);
+        }
+
         if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
           THROW(0x6E00);
         }
@@ -155,6 +163,7 @@ algorand_main(void)
         {
           os_memset(&current_txn, 0, sizeof(current_txn));
           uint8_t *p;
+          uint8_t *pend = &G_io_apdu_buffer[rx];
           if (ins == INS_SIGN_PAYMENT_V2) {
             p = &G_io_apdu_buffer[2];
           } else {
@@ -162,15 +171,15 @@ algorand_main(void)
           }
 
           current_txn.type = PAYMENT;
-          copy_and_advance( current_txn.sender,           &p, 32);
-          copy_and_advance(&current_txn.fee,              &p, 8);
-          copy_and_advance(&current_txn.firstValid,       &p, 8);
-          copy_and_advance(&current_txn.lastValid,        &p, 8);
-          copy_and_advance( current_txn.genesisID,        &p, 32);
-          copy_and_advance( current_txn.genesisHash,      &p, 32);
-          copy_and_advance( current_txn.payment.receiver, &p, 32);
-          copy_and_advance(&current_txn.payment.amount,   &p, 8);
-          copy_and_advance( current_txn.payment.close,    &p, 32);
+          copy_and_advance( current_txn.sender,           &p, pend, 32);
+          copy_and_advance(&current_txn.fee,              &p, pend, 8);
+          copy_and_advance(&current_txn.firstValid,       &p, pend, 8);
+          copy_and_advance(&current_txn.lastValid,        &p, pend, 8);
+          copy_and_advance( current_txn.genesisID,        &p, pend, 32);
+          copy_and_advance( current_txn.genesisHash,      &p, pend, 32);
+          copy_and_advance( current_txn.payment.receiver, &p, pend, 32);
+          copy_and_advance(&current_txn.payment.amount,   &p, pend, 8);
+          copy_and_advance( current_txn.payment.close,    &p, pend, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
@@ -181,6 +190,7 @@ algorand_main(void)
         {
           os_memset(&current_txn, 0, sizeof(current_txn));
           uint8_t *p;
+          uint8_t *pend = &G_io_apdu_buffer[rx];
           if (ins == INS_SIGN_KEYREG_V2) {
             p = &G_io_apdu_buffer[2];
           } else {
@@ -188,20 +198,24 @@ algorand_main(void)
           }
 
           current_txn.type = KEYREG;
-          copy_and_advance( current_txn.sender,        &p, 32);
-          copy_and_advance(&current_txn.fee,           &p, 8);
-          copy_and_advance(&current_txn.firstValid,    &p, 8);
-          copy_and_advance(&current_txn.lastValid,     &p, 8);
-          copy_and_advance( current_txn.genesisID,     &p, 32);
-          copy_and_advance( current_txn.genesisHash,   &p, 32);
-          copy_and_advance( current_txn.keyreg.votepk, &p, 32);
-          copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
+          copy_and_advance( current_txn.sender,        &p, pend, 32);
+          copy_and_advance(&current_txn.fee,           &p, pend, 8);
+          copy_and_advance(&current_txn.firstValid,    &p, pend, 8);
+          copy_and_advance(&current_txn.lastValid,     &p, pend, 8);
+          copy_and_advance( current_txn.genesisID,     &p, pend, 32);
+          copy_and_advance( current_txn.genesisHash,   &p, pend, 32);
+          copy_and_advance( current_txn.keyreg.votepk, &p, pend, 32);
+          copy_and_advance( current_txn.keyreg.vrfpk,  &p, pend, 32);
 
           ui_txn();
           flags |= IO_ASYNCH_REPLY;
         } break;
 
         case INS_SIGN_MSGPACK: {
+          if (rx <= OFFSET_LC) {
+            THROW(0x6700);
+          }
+
           switch (G_io_apdu_buffer[OFFSET_P1]) {
           case P1_FIRST:
             msgpack_next_off = 0;
@@ -214,6 +228,10 @@ algorand_main(void)
 
           uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
           if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
+            THROW(0x6700);
+          }
+
+          if (rx < OFFSET_CDATA + lc) {
             THROW(0x6700);
           }
 
