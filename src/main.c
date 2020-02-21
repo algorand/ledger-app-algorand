@@ -260,6 +260,9 @@ algorand_main(void)
           break;
         }
       }
+      CATCH(EXCEPTION_IO_RESET){
+        THROW(EXCEPTION_IO_RESET);
+      }
       CATCH_OTHER(e) {
         switch (e & 0xF000) {
         case 0x6000:
@@ -374,27 +377,35 @@ main(void)
   // ensure exception will work as planned
   os_boot();
 
-  UX_INIT();
+  for (;;) {
+    UX_INIT();
 
-#if defined(TARGET_NANOS)
-  UX_MENU_INIT();
-#endif
+  #if defined(TARGET_NANOS)
+    UX_MENU_INIT();
+  #endif
 
-  BEGIN_TRY {
-    TRY {
-      io_seproxyhal_init();
+    BEGIN_TRY {
+      TRY {
+        io_seproxyhal_init();
 
-      USB_power(0);
-      USB_power(1);
+        USB_power(0);
+        USB_power(1);
 
-      ui_idle();
+        ui_idle();
 
-      algorand_main();
+        algorand_main();
+      }
+      CATCH(EXCEPTION_IO_RESET) {
+        // Reset IO and UX
+        continue;
+      }
+      CATCH_ALL {
+        break;
+      }
+      FINALLY {
+      }
     }
-    CATCH_OTHER(e) {
-    }
-    FINALLY {
-    }
+    END_TRY;
   }
-  END_TRY;
+
 }
