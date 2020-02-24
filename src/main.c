@@ -58,22 +58,31 @@ txn_approve()
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
   cx_ecfp_private_key_t privateKey;
-  algorand_private_key(&privateKey);
 
-  int sig_len = cx_eddsa_sign(&privateKey,
-                              0, CX_SHA512,
-                              &msgpack_buf[0], msg_len,
-                              NULL, 0,
-                              G_io_apdu_buffer,
-                              6+2*(32+1), // Formerly from cx_compliance_141.c
-                              NULL);
+  BEGIN_TRY {
+    TRY {
+      algorand_private_key(&privateKey);
 
-  tx = sig_len;
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
+      int sig_len = cx_eddsa_sign(&privateKey,
+				  0, CX_SHA512,
+				  &msgpack_buf[0], msg_len,
+				  NULL, 0,
+				  G_io_apdu_buffer,
+				  6+2*(32+1), // Formerly from cx_compliance_141.c
+				  NULL);
 
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+      tx = sig_len;
+      G_io_apdu_buffer[tx++] = 0x90;
+      G_io_apdu_buffer[tx++] = 0x00;
+
+      // Send back the response, do not restart the event loop
+      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    }
+    FINALLY {
+      explicit_bzero(&privateKey, sizeof(privateKey));
+    }
+  }
+  END_TRY;
 
   // Display back the original UX
   ui_idle();
@@ -106,7 +115,6 @@ algorand_main(void)
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
-  algorand_key_derive();
   algorand_public_key(publicKey);
 
   msgpack_next_off = 0;
