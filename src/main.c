@@ -48,19 +48,16 @@ void
 txn_approve()
 {
   unsigned int tx = 0;
-
   unsigned int msg_len;
-
-  msgpack_buf[0] = 'T';
-  msgpack_buf[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
-
-  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
-
   cx_ecfp_private_key_t privateKey;
 
   BEGIN_TRY {
     TRY {
+      msgpack_buf[0] = 'T';
+      msgpack_buf[1] = 'X';
+      msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
+      PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
+
       algorand_private_key(&privateKey);
 
       int sig_len = cx_eddsa_sign(&privateKey,
@@ -74,12 +71,17 @@ txn_approve()
       tx = sig_len;
       G_io_apdu_buffer[tx++] = 0x90;
       G_io_apdu_buffer[tx++] = 0x00;
-
-      // Send back the response, do not restart the event loop
-      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    }
+    CATCH_OTHER(e) {
+      // Report error code and return
+      tx = 0;
+      G_io_apdu_buffer[tx++] = (e >> 8) & 0xFF;
+      G_io_apdu_buffer[tx++] = e & 0xFF;
     }
     FINALLY {
       explicit_bzero(&privateKey, sizeof(privateKey));
+      // Send back the response, do not restart the event loop
+      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
     }
   }
   END_TRY;
@@ -282,8 +284,8 @@ algorand_main(void)
           break;
         }
         // Unexpected exception => report
-        G_io_apdu_buffer[tx] = sw >> 8;
-        G_io_apdu_buffer[tx + 1] = sw;
+        G_io_apdu_buffer[tx] = (sw >> 8) & 0xFF;
+        G_io_apdu_buffer[tx + 1] = sw & 0xFF;
         tx += 2;
       }
       FINALLY {
