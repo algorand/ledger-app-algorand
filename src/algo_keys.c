@@ -1,8 +1,9 @@
+#include <string.h>
+
 #include "os.h"
 #include "cx.h"
 
 #include "algo_keys.h"
-#include <string.h>
 
 uint8_t publicKey[32];
 
