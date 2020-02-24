@@ -23,6 +23,9 @@ algorand_key_derive(uint8_t *privateKeyData)
 void
 algorand_private_key(cx_ecfp_private_key_t *privateKey)
 {
+  // Allocate 64 bytes for privateKeyData because os_perso_derive_node_bip32
+  // appears to write more than 32 bytes to this buffer.  However, we only
+  // need 32 bytes for cx_ecfp_init_private_key...
   uint8_t privateKeyData[64];
 
   // Zero out returned privateKey
