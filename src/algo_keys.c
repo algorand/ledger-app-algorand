@@ -52,12 +52,11 @@ algorand_public_key(uint8_t *buf)
   explicit_bzero(buf, 32);
   explicit_bzero(&publicKey, sizeof(publicKey));
 
-  // Generate private key
-  algorand_private_key(&privateKey);
-
   // Attempt to convert private key to public key, zero out privateKey
   BEGIN_TRY {
     TRY {
+      // Generate private key
+      algorand_private_key(&privateKey);
       cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, &privateKey, 1);
     }
     FINALLY {

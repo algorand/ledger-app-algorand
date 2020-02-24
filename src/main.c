@@ -50,6 +50,7 @@ txn_approve()
   unsigned int tx = 0;
   unsigned int msg_len;
   cx_ecfp_private_key_t privateKey;
+  volatile unsigned short sw = 0;
 
   BEGIN_TRY {
     TRY {
@@ -61,22 +62,31 @@ txn_approve()
       algorand_private_key(&privateKey);
 
       int sig_len = cx_eddsa_sign(&privateKey,
-				  0, CX_SHA512,
-				  &msgpack_buf[0], msg_len,
-				  NULL, 0,
-				  G_io_apdu_buffer,
-				  6+2*(32+1), // Formerly from cx_compliance_141.c
-				  NULL);
+          0, CX_SHA512,
+          &msgpack_buf[0], msg_len,
+          NULL, 0,
+          G_io_apdu_buffer,
+          6+2*(32+1), // Formerly from cx_compliance_141.c
+          NULL);
 
       tx = sig_len;
       G_io_apdu_buffer[tx++] = 0x90;
       G_io_apdu_buffer[tx++] = 0x00;
     }
     CATCH_OTHER(e) {
-      // Report error code and return
+      // Report error code
+      switch (e & 0xF000) {
+      case 0x6000:
+      case 0x9000:
+        sw = e;
+        break;
+      default:
+        sw = 0x6800 | (e & 0x7FF);
+        break;
+      }
       tx = 0;
-      G_io_apdu_buffer[tx++] = (e >> 8) & 0xFF;
-      G_io_apdu_buffer[tx++] = e & 0xFF;
+      G_io_apdu_buffer[tx++] = (sw >> 8) & 0xFF;
+      G_io_apdu_buffer[tx++] = sw & 0xFF;
     }
     FINALLY {
       explicit_bzero(&privateKey, sizeof(privateKey));
