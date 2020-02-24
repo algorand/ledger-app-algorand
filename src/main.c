@@ -114,12 +114,12 @@ algorand_main(void)
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
 
-  #if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX)
   // enable bluetooth on nano x
   G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
   BLE_power(0, NULL);
   BLE_power(1, "Nano X");
-  #endif
+#endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -380,9 +380,9 @@ main(void)
   for (;;) {
     UX_INIT();
 
-  #if defined(TARGET_NANOS)
+#if defined(TARGET_NANOS)
     UX_MENU_INIT();
-  #endif
+#endif
 
     BEGIN_TRY {
       TRY {
@@ -407,5 +407,4 @@ main(void)
     }
     END_TRY;
   }
-
 }
