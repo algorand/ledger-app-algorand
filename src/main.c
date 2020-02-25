@@ -48,32 +48,53 @@ void
 txn_approve()
 {
   unsigned int tx = 0;
-
   unsigned int msg_len;
-
-  msgpack_buf[0] = 'T';
-  msgpack_buf[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
-
-  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
-
   cx_ecfp_private_key_t privateKey;
-  algorand_private_key(&privateKey);
+  volatile unsigned short sw = 0;
 
-  int sig_len = cx_eddsa_sign(&privateKey,
-                              0, CX_SHA512,
-                              &msgpack_buf[0], msg_len,
-                              NULL, 0,
-                              G_io_apdu_buffer,
-                              6+2*(32+1), // Formerly from cx_compliance_141.c
-                              NULL);
+  BEGIN_TRY {
+    TRY {
+      msgpack_buf[0] = 'T';
+      msgpack_buf[1] = 'X';
+      msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
+      PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
-  tx = sig_len;
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
+      algorand_private_key(&privateKey);
 
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+      int sig_len = cx_eddsa_sign(&privateKey,
+                                  0, CX_SHA512,
+                                  &msgpack_buf[0], msg_len,
+                                  NULL, 0,
+                                  G_io_apdu_buffer,
+                                  6+2*(32+1), // Formerly from cx_compliance_141.c
+                                  NULL);
+
+      tx = sig_len;
+      G_io_apdu_buffer[tx++] = 0x90;
+      G_io_apdu_buffer[tx++] = 0x00;
+    }
+    CATCH_OTHER(e) {
+      // Report error code
+      switch (e & 0xF000) {
+      case 0x6000:
+      case 0x9000:
+        sw = e;
+        break;
+      default:
+        sw = 0x6800 | (e & 0x7FF);
+        break;
+      }
+      tx = 0;
+      G_io_apdu_buffer[tx++] = (sw >> 8) & 0xFF;
+      G_io_apdu_buffer[tx++] = sw & 0xFF;
+    }
+    FINALLY {
+      explicit_bzero(&privateKey, sizeof(privateKey));
+      // Send back the response, do not restart the event loop
+      io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    }
+  }
+  END_TRY;
 
   // Display back the original UX
   ui_idle();
@@ -106,7 +127,6 @@ algorand_main(void)
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
-  algorand_key_derive();
   algorand_public_key(publicKey);
 
   msgpack_next_off = 0;
@@ -274,8 +294,8 @@ algorand_main(void)
           break;
         }
         // Unexpected exception => report
-        G_io_apdu_buffer[tx] = sw >> 8;
-        G_io_apdu_buffer[tx + 1] = sw;
+        G_io_apdu_buffer[tx] = (sw >> 8) & 0xFF;
+        G_io_apdu_buffer[tx + 1] = sw & 0xFF;
         tx += 2;
       }
       FINALLY {
