@@ -94,14 +94,18 @@ encode_bin(uint8_t **p, uint8_t *e, uint8_t *bytes, int len)
   if (len < (1 << 8)) {
     put_byte(p, e, BIN8);
     put_byte(p, e, len);
-    for (int i = 0; i < len; i++) {
-      put_byte(p, e, bytes[i]);
-    }
-    return;
+  } else if (len < (1 << 16)) {
+    put_byte(p, e, BIN16);
+    put_byte(p, e, len >> 8);
+    put_byte(p, e, len & 0xFF);
+  } else {
+    // Longer binary blobs not suppported
+    os_sched_exit(0);
   }
 
-  // Longer binary blobs not suppported
-  os_sched_exit(0);
+  for (int i = 0; i < len; i++) {
+    put_byte(p, e, bytes[i]);
+  }
 }
 
 static int

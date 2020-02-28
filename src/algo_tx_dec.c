@@ -102,12 +102,18 @@ static void
 decode_bin_var(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t *reslen, size_t reslenmax)
 {
   uint8_t b = next_byte(bufp, buf_end);
-  if (b != BIN8) {
+  uint16_t bin_len = 0;
+
+  if (b == BIN8) {
+    bin_len = next_byte(bufp, buf_end);
+  } else if (b == BIN16) {
+    bin_len = next_byte(bufp, buf_end);
+    bin_len = (bin_len << 8) | next_byte(bufp, buf_end);
+  } else {
     snprintf(decode_err, sizeof(decode_err), "expected bin, found %d", b);
     THROW(INVALID_PARAMETER);
   }
 
-  uint8_t bin_len = next_byte(bufp, buf_end);
   if (bin_len > reslenmax) {
     snprintf(decode_err, sizeof(decode_err), "expected <= %d bin bytes, found %d", reslenmax, bin_len);
     THROW(INVALID_PARAMETER);
