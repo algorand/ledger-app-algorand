@@ -131,8 +131,10 @@ algorand_main(void)
 
   msgpack_next_off = 0;
 
+#if defined(TARGET_NANOS)
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
+#endif
 
 #if defined(TARGET_NANOX)
   // enable bluetooth on nano x
@@ -336,10 +338,12 @@ io_event(unsigned char channel)
 
   case SEPROXYHAL_TAG_TICKER_EVENT:
     UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+#if defined(TARGET_NANOS)
         // defaulty retrig very soon (will be overriden during
         // stepper_prepro)
         UX_CALLBACK_SET_INTERVAL(500);
         UX_REDISPLAY();
+#endif
     });
     break;
 
