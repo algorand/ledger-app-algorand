@@ -7,6 +7,7 @@
 #define BOOL_FALSE  0xc2
 #define BOOL_TRUE   0xc3
 #define BIN8        0xc4
+#define BIN16       0xc5
 #define UINT8       0xcc
 #define UINT16      0xcd
 #define UINT32      0xce
