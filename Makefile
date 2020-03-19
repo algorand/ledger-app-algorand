@@ -7,7 +7,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.3
+APPVERSION = 1.0.6
 APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
@@ -64,11 +64,11 @@ else
         DEFINES   += PRINTF\(...\)=
 endif
 
-DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
-# Support for WebUSB transport
-WEBUSB_URL = ledger-app.algorand.com
-DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+#WEBUSB_URL = ledger-app.algorand.com
+#DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
+DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
 
 # Support for U2F transport
 DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"algo\" USB_SEGMENT_SIZE=64 BLE_SEGMENT_SIZE=32

@@ -9,11 +9,7 @@ put_byte(uint8_t **p, uint8_t *e, uint8_t b)
 {
   if (*p < e) {
     *((*p)++) = b;
-    return;
   }
-
-  // Output buffer too short, caller should handle
-  THROW(0x6760);
 }
 
 static void
