@@ -38,6 +38,7 @@ const ux_flow_step_t * const ux_idle_flow [] = {
 };
 
 UX_STEP_NOCB(ux_loading_1_step, bn, {"Loading...", "Please wait"});
+
 const ux_flow_step_t * const ux_loading_flow [] = {
   &ux_loading_1_step,
   FLOW_END_STEP,
