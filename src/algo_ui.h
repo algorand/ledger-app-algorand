@@ -5,6 +5,7 @@
 extern char lineBuffer[];
 extern char text[128];
 
+void ui_loading();
 void ui_idle();
 void ui_address();
 void ui_txn();

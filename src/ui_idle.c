@@ -7,15 +7,20 @@ static const ux_menu_entry_t menu_top[];
 static const ux_menu_entry_t menu_about[];
 
 static const ux_menu_entry_t menu_about[] = {
-  {NULL,        NULL,           0, NULL, "Version",  APPVERSION, 0, 0},
-  {menu_top,    NULL,           1, NULL, "Back",     NULL,       0, 0},
+  {NULL,        NULL,           0, NULL, "Version",    APPVERSION,    0, 0},
+  {menu_top,    NULL,           1, NULL, "Back",       NULL,          0, 0},
   UX_MENU_END
 };
 
 static const ux_menu_entry_t menu_top[] = {
-  {NULL,        ui_address,     0, NULL, "Address",  NULL,       0, 0},
-  {menu_about,  NULL,           0, NULL, "About",    NULL,       0, 0},
-  {NULL,        os_sched_exit,  0, NULL, "Quit app", NULL,       0, 0},
+  {NULL,        ui_address,     0, NULL, "Address",    NULL,          0, 0},
+  {menu_about,  NULL,           0, NULL, "About",      NULL,          0, 0},
+  {NULL,        os_sched_exit,  0, NULL, "Quit app",   NULL,          0, 0},
+  UX_MENU_END
+};
+
+static const ux_menu_entry_t menu_loading[] = {
+  {NULL,        NULL,           0, NULL, "Loading...", "Please wait", 0, 0},
   UX_MENU_END
 };
 #endif
@@ -31,7 +36,28 @@ const ux_flow_step_t * const ux_idle_flow [] = {
   &ux_idle_flow_3_step,
   FLOW_END_STEP,
 };
+
+UX_STEP_NOCB(ux_loading_1_step, bn, {"Loading...", "Please wait"});
+const ux_flow_step_t * const ux_loading_flow [] = {
+  &ux_loading_1_step,
+  FLOW_END_STEP,
+};
 #endif
+
+void
+ui_loading()
+{
+#if defined(TARGET_NANOX)
+  // reserve a display stack slot if none yet
+  if(G_ux.stack_count == 0) {
+    ux_stack_push();
+  }
+  ux_flow_init(0, ux_loading_flow, NULL);
+#endif
+#if defined(TARGET_NANOS)
+  UX_MENU_DISPLAY(0, menu_loading, NULL);
+#endif
+}
 
 void
 ui_idle()
