@@ -5,6 +5,7 @@
 #include "algo_keys.h"
 #include "algo_addr.h"
 
+#if defined(TARGET_NANOS)
 static const bagl_element_t
 bagl_ui_address_nanos[] = {
   { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -49,14 +50,6 @@ bagl_ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_
 }
 
 void
-step_address()
-{
-  char checksummed[65];
-  checksummed_addr(publicKey, checksummed);
-  ui_text_put(checksummed);
-}
-
-void
 ui_address()
 {
   step_address();
@@ -65,4 +58,13 @@ ui_address()
   } else {
     ui_idle();
   }
+}
+#endif
+
+void
+step_address()
+{
+  char checksummed[65];
+  checksummed_addr(publicKey, checksummed);
+  ui_text_put(checksummed);
 }

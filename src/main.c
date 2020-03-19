@@ -106,21 +106,11 @@ algorand_main(void)
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
-  algorand_key_derive();
-  algorand_public_key(publicKey);
-
   msgpack_next_off = 0;
 
 #if defined(TARGET_NANOS)
   // next timer callback in 500 ms
   UX_CALLBACK_SET_INTERVAL(500);
-#endif
-
-#if defined(TARGET_NANOX)
-  // enable bluetooth on nano x
-  G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
-  BLE_power(0, NULL);
-  BLE_power(1, "Nano X");
 #endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
@@ -255,6 +245,7 @@ algorand_main(void)
         } break;
 
         case 0xFF: // return to dashboard
+          CLOSE_TRY;
           goto return_to_dashboard;
 
         default:
@@ -296,9 +287,7 @@ io_seproxyhal_display(const bagl_element_t *element)
   io_seproxyhal_display_default((bagl_element_t *)element);
 }
 
-unsigned char
-io_event(unsigned char channel)
-{
+unsigned char io_event(unsigned char channel) {
   // nothing done with the event, throw an error on the transport layer if
   // needed
 
@@ -308,28 +297,33 @@ io_event(unsigned char channel)
     UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
     break;
 
-  case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT: // for Nano S
+  case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT:
     UX_BUTTON_PUSH_EVENT(G_io_seproxyhal_spi_buffer);
     break;
 
+  case SEPROXYHAL_TAG_STATUS_EVENT:
+    if (G_io_apdu_media == IO_APDU_MEDIA_USB_HID && !(U4BE(G_io_seproxyhal_spi_buffer, 3) & SEPROXYHAL_TAG_STATUS_EVENT_FLAG_USB_POWERED)) {
+      THROW(EXCEPTION_IO_RESET);
+    }
+    // no break is intentional
+  default:
+    UX_DEFAULT_EVENT();
+    break;
+
   case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-    UX_DISPLAYED_EVENT();
+    UX_DISPLAYED_EVENT({});
     break;
 
   case SEPROXYHAL_TAG_TICKER_EVENT:
-    UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+    UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer,
+    {
 #if defined(TARGET_NANOS)
-        // defaulty retrig very soon (will be overriden during
-        // stepper_prepro)
-        UX_CALLBACK_SET_INTERVAL(500);
-        UX_REDISPLAY();
+      // defaulty retrig very soon (will be overriden during
+      // stepper_prepro)
+      UX_CALLBACK_SET_INTERVAL(500);
+      UX_REDISPLAY();
 #endif
     });
-    break;
-
-  // unknown events are acknowledged
-  default:
-    UX_DEFAULT_EVENT();
     break;
   }
 
@@ -403,8 +397,27 @@ main(void)
       TRY {
         io_seproxyhal_init();
 
+#if defined(TARGET_NANOX)
+        G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+#endif
+
         USB_power(0);
         USB_power(1);
+
+        // Display a loading screen before (slowly) deriving keys. BLE_power
+        // also seems to be a bit slow, so show the loading screen here.
+        ui_loading();
+
+#if defined(TARGET_NANOX)
+        BLE_power(0, NULL);
+        BLE_power(1, "Nano X");
+#endif
+
+        // Key derivation is quite slow, and must come *after* the calls to
+        // BLE_power, otherwise the device will freeze on BLE disconnect on
+        // the lock screen.
+        algorand_key_derive();
+        algorand_public_key(publicKey);
 
         ui_idle();
 
@@ -412,9 +425,11 @@ main(void)
       }
       CATCH(EXCEPTION_IO_RESET) {
         // Reset IO and UX
+        CLOSE_TRY;
         continue;
       }
       CATCH_ALL {
+        CLOSE_TRY;
         break;
       }
       FINALLY {
