@@ -33,6 +33,10 @@ struct txn_payment {
 struct txn_keyreg {
   uint8_t votepk[32];
   uint8_t vrfpk[32];
+  uint64_t voteFirst;
+  uint64_t voteLast;
+  uint64_t keyDilution;
+  uint8_t nonpartFlag;
 };
 
 struct txn_asset_xfer {

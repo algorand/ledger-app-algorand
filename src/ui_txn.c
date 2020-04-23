@@ -180,6 +180,25 @@ static int step_vrfpk() {
   return 1;
 }
 
+static int step_votefirst() {
+  ui_text_put(u64str(current_txn.keyreg.voteFirst));
+  return 1;
+}
+
+static int step_votelast() {
+  ui_text_put(u64str(current_txn.keyreg.voteLast));
+  return 1;
+}
+
+static int step_nonpart() {
+  if (current_txn.keyreg.nonpartFlag) {
+    ui_text_put("True");
+  } else {
+    ui_text_put("False");
+  }
+  return 1;
+}
+
 static int step_asset_xfer_id() {
   ui_text_put(u64str(current_txn.asset_xfer.id));
   return 1;
@@ -369,34 +388,37 @@ ALGO_UX_STEP_NOCB_INIT(PAYMENT, 8,  bnnn_paging, step_receiver(), {"Receiver",  
 ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bn,          step_amount(),   {"Amount (uAlg)", text});
 ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bnnn_paging, step_close(),    {"Close to",      text});
 
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 11, bnnn_paging, step_votepk(), {"Vote PK", text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_vrfpk(),  {"VRF PK",  text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 11, bnnn_paging, step_votepk(),    {"Vote PK",          text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_vrfpk(),     {"VRF PK",           text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bn,          step_votefirst(), {"Vote first",       text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votelast(),  {"Vote last",        text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_nonpart(),   {"Nonparticipating", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 13, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 14, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 15, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 16, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 16, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 18, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 19, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 20, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 21, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 22, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 21, bn,          step_asset_config_id(),             {"Asset ID",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 22, bn,          step_asset_config_total(),          {"Total units",    text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 23, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 24, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_decimals(),       {"Decimals",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bnnn_paging, step_asset_config_url(),            {"URL",            text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 24, bn,          step_asset_config_id(),             {"Asset ID",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_total(),          {"Total units",    text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bn,          step_asset_config_decimals(),       {"Decimals",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_url(),            {"URL",            text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
 
-ALGO_UX_STEP(33, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(34, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+ALGO_UX_STEP(36, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(37, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_0,
@@ -434,6 +456,9 @@ const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_32,
   &txn_flow_33,
   &txn_flow_34,
+  &txn_flow_35,
+  &txn_flow_36,
+  &txn_flow_37,
   FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
@@ -451,39 +476,42 @@ struct ux_step {
 
 static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
-  { ALL_TYPES,    "Txn type",       &step_txn_type },
-  { ALL_TYPES,    "Sender",         &step_sender },
-  { ALL_TYPES,    "Fee (uAlg)",     &step_fee },
-  { ALL_TYPES,    "First valid",    &step_firstvalid },
-  { ALL_TYPES,    "Last valid",     &step_lastvalid },
-  { ALL_TYPES,    "Genesis ID",     &step_genesisID },
-  { ALL_TYPES,    "Genesis hash",   &step_genesisHash },
-  { ALL_TYPES,    "Note",           &step_note },
-  { PAYMENT,      "Receiver",       &step_receiver },
-  { PAYMENT,      "Amount (uAlg)",  &step_amount },
-  { PAYMENT,      "Close to",       &step_close },
-  { KEYREG,       "Vote PK",        &step_votepk },
-  { KEYREG,       "VRF PK",         &step_vrfpk },
-  { ASSET_XFER,   "Asset ID",       &step_asset_xfer_id },
-  { ASSET_XFER,   "Asset amt",      &step_asset_xfer_amount },
-  { ASSET_XFER,   "Asset src",      &step_asset_xfer_sender },
-  { ASSET_XFER,   "Asset dst",      &step_asset_xfer_receiver },
-  { ASSET_XFER,   "Asset close",    &step_asset_xfer_close },
-  { ASSET_FREEZE, "Asset ID",       &step_asset_freeze_id },
-  { ASSET_FREEZE, "Asset account",  &step_asset_freeze_account },
-  { ASSET_FREEZE, "Freeze flag",    &step_asset_freeze_flag },
-  { ASSET_CONFIG, "Asset ID",       &step_asset_config_id },
-  { ASSET_CONFIG, "Total units",    &step_asset_config_total },
-  { ASSET_CONFIG, "Default frozen", &step_asset_config_default_frozen },
-  { ASSET_CONFIG, "Unit name",      &step_asset_config_unitname },
-  { ASSET_CONFIG, "Decimals",       &step_asset_config_decimals },
-  { ASSET_CONFIG, "Asset name",     &step_asset_config_assetname },
-  { ASSET_CONFIG, "URL",            &step_asset_config_url },
-  { ASSET_CONFIG, "Metadata hash",  &step_asset_config_metadata_hash },
-  { ASSET_CONFIG, "Manager",        &step_asset_config_manager },
-  { ASSET_CONFIG, "Reserve",        &step_asset_config_reserve },
-  { ASSET_CONFIG, "Freezer",        &step_asset_config_freeze },
-  { ASSET_CONFIG, "Clawback",       &step_asset_config_clawback },
+  { ALL_TYPES,    "Txn type",         &step_txn_type },
+  { ALL_TYPES,    "Sender",           &step_sender },
+  { ALL_TYPES,    "Fee (uAlg)",       &step_fee },
+  { ALL_TYPES,    "First valid",      &step_firstvalid },
+  { ALL_TYPES,    "Last valid",       &step_lastvalid },
+  { ALL_TYPES,    "Genesis ID",       &step_genesisID },
+  { ALL_TYPES,    "Genesis hash",     &step_genesisHash },
+  { ALL_TYPES,    "Note",             &step_note },
+  { PAYMENT,      "Receiver",         &step_receiver },
+  { PAYMENT,      "Amount (uAlg)",    &step_amount },
+  { PAYMENT,      "Close to",         &step_close },
+  { KEYREG,       "Vote PK",          &step_votepk },
+  { KEYREG,       "VRF PK",           &step_vrfpk },
+  { KEYREG,       "Vote first",       &step_votefirst },
+  { KEYREG,       "Vote last",        &step_votelast },
+  { KEYREG,       "Nonparticipating", &step_nonpart },
+  { ASSET_XFER,   "Asset ID",         &step_asset_xfer_id },
+  { ASSET_XFER,   "Asset amt",        &step_asset_xfer_amount },
+  { ASSET_XFER,   "Asset src",        &step_asset_xfer_sender },
+  { ASSET_XFER,   "Asset dst",        &step_asset_xfer_receiver },
+  { ASSET_XFER,   "Asset close",      &step_asset_xfer_close },
+  { ASSET_FREEZE, "Asset ID",         &step_asset_freeze_id },
+  { ASSET_FREEZE, "Asset account",    &step_asset_freeze_account },
+  { ASSET_FREEZE, "Freeze flag",      &step_asset_freeze_flag },
+  { ASSET_CONFIG, "Asset ID",         &step_asset_config_id },
+  { ASSET_CONFIG, "Total units",      &step_asset_config_total },
+  { ASSET_CONFIG, "Default frozen",   &step_asset_config_default_frozen },
+  { ASSET_CONFIG, "Unit name",        &step_asset_config_unitname },
+  { ASSET_CONFIG, "Decimals",         &step_asset_config_decimals },
+  { ASSET_CONFIG, "Asset name",       &step_asset_config_assetname },
+  { ASSET_CONFIG, "URL",              &step_asset_config_url },
+  { ASSET_CONFIG, "Metadata hash",    &step_asset_config_metadata_hash },
+  { ASSET_CONFIG, "Manager",          &step_asset_config_manager },
+  { ASSET_CONFIG, "Reserve",          &step_asset_config_reserve },
+  { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
+  { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
