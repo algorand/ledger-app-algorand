@@ -81,6 +81,17 @@ static int step_sender() {
   return 1;
 }
 
+static int step_rekey() {
+  if (all_zero_key(current_txn.rekey)) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.rekey, checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
 static int step_fee() {
   ui_text_put(u64str(current_txn.fee));
   return 1;
@@ -377,48 +388,49 @@ static unsigned int ux_last_step;
 
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 0, bn,          step_txn_type(),    {"Txn type",     text});
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 1, bnnn_paging, step_sender(),      {"Sender",       text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bn,          step_fee(),         {"Fee (uAlg)",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 3, bn,          step_firstvalid(),  {"First valid",  text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 4, bn,          step_lastvalid(),   {"Last valid",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 5, bn,          step_genesisID(),   {"Genesis ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 6, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 7, bn,          step_note(),        {"Note",         text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bnnn_paging, step_rekey(),       {"RekeyTo",      text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 3, bn,          step_fee(),         {"Fee (uAlg)",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 4, bn,          step_firstvalid(),  {"First valid",  text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 5, bn,          step_lastvalid(),   {"Last valid",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 6, bn,          step_genesisID(),   {"Genesis ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 7, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 8, bn,          step_note(),        {"Note",         text});
 
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 8,  bnnn_paging, step_receiver(), {"Receiver",      text});
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bn,          step_amount(),   {"Amount (uAlg)", text});
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bnnn_paging, step_close(),    {"Close to",      text});
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bnnn_paging, step_receiver(), {"Receiver",      text});
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bn,          step_amount(),   {"Amount (uAlg)", text});
+ALGO_UX_STEP_NOCB_INIT(PAYMENT, 11, bnnn_paging, step_close(),    {"Close to",      text});
 
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 11, bnnn_paging, step_votepk(),    {"Vote PK",          text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_vrfpk(),     {"VRF PK",           text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bn,          step_votefirst(), {"Vote first",       text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votelast(),  {"Vote last",        text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_nonpart(),   {"Nonparticipating", text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_votepk(),    {"Vote PK",          text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bnnn_paging, step_vrfpk(),     {"VRF PK",           text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votefirst(), {"Vote first",       text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_votelast(),  {"Vote last",        text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_nonpart(),   {"Nonparticipating", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 16, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 21, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 21, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 22, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 22, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 24, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 24, bn,          step_asset_config_id(),             {"Asset ID",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_total(),          {"Total units",    text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bn,          step_asset_config_decimals(),       {"Decimals",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_url(),            {"URL",            text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_id(),             {"Asset ID",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_total(),          {"Total units",    text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bn,          step_asset_config_decimals(),       {"Decimals",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_url(),            {"URL",            text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
 
-ALGO_UX_STEP(36, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(37, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+ALGO_UX_STEP(37, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(38, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_0,
@@ -459,6 +471,7 @@ const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_35,
   &txn_flow_36,
   &txn_flow_37,
+  &txn_flow_38,
   FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
@@ -478,6 +491,7 @@ static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
   { ALL_TYPES,    "Txn type",         &step_txn_type },
   { ALL_TYPES,    "Sender",           &step_sender },
+  { ALL_TYPES,    "RekeyTo",          &step_rekey },
   { ALL_TYPES,    "Fee (uAlg)",       &step_fee },
   { ALL_TYPES,    "First valid",      &step_firstvalid },
   { ALL_TYPES,    "Last valid",       &step_lastvalid },

@@ -63,6 +63,7 @@ struct txn {
 
   // Common header fields
   uint8_t sender[32];
+  uint8_t rekey[32];
   uint64_t fee;
   uint64_t firstValid;
   uint64_t lastValid;

@@ -252,6 +252,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           }
         } else if (!strcmp(key, "snd")) {
           decode_bin_fixed(&buf, buf_end, t->sender, sizeof(t->sender));
+        } else if (!strcmp(key, "rekey")) {
+          decode_bin_fixed(&buf, buf_end, t->rekey, sizeof(t->rekey));
         } else if (!strcmp(key, "fee")) {
           decode_uint64(&buf, buf_end, &t->fee);
         } else if (!strcmp(key, "fv")) {

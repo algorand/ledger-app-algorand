@@ -266,6 +266,7 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
   buf[0] += T(KEYREG,       map_kv_bool  (&p, e, "nonpart", t->keyreg.nonpartFlag));
   buf[0] +=                 map_kv_bin   (&p, e, "note",    t->note, t->note_len);
   buf[0] += T(PAYMENT,      map_kv_bin   (&p, e, "rcv",     t->payment.receiver, sizeof(t->payment.receiver)));
+  buf[0] +=                 map_kv_bin   (&p, e, "rekey",   t->rekey, sizeof(t->rekey));
   buf[0] += T(KEYREG,       map_kv_bin   (&p, e, "selkey",  t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
   buf[0] +=                 map_kv_bin   (&p, e, "snd",     t->sender, sizeof(t->sender));
   buf[0] +=                 map_kv_str   (&p, e, "type",    typestr, SIZE_MAX);
