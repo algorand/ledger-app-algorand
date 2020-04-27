@@ -318,10 +318,9 @@ unsigned char io_event(unsigned char channel) {
     UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer,
     {
 #if defined(TARGET_NANOS)
-      // defaulty retrig very soon (will be overriden during
-      // stepper_prepro)
-      UX_CALLBACK_SET_INTERVAL(500);
-      UX_REDISPLAY();
+      if (UX_ALLOWED) {
+        UX_REDISPLAY();
+      }
 #endif
     });
     break;
@@ -388,10 +387,6 @@ main(void)
 
   for (;;) {
     UX_INIT();
-
-#if defined(TARGET_NANOS)
-    UX_MENU_INIT();
-#endif
 
     BEGIN_TRY {
       TRY {
