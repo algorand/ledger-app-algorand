@@ -71,7 +71,7 @@ struct txn {
   uint8_t genesisHash[32];
 
 #if defined(TARGET_NANOX)
-  uint8_t note[1024];
+  uint8_t note[512];
 #else
   uint8_t note[32];
 #endif
