@@ -211,6 +211,59 @@ decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
   }
 }
 
+static void
+decode_state_schema(uint8_t **bufp, uint8_t *buf_end, struct state_schema *res)
+{
+  uint8_t map_count = decode_fixsz(bufp, buf_end, FIXMAP_0, FIXMAP_15);
+  for (int i = 0; i < map_count; i++) {
+    char key[32];
+    decode_string_nullterm(bufp, buf_end, key, sizeof(key));
+    if (!strcmp(key, "nui")) {
+      decode_uint64(bufp, buf_end, &res->num_uint);
+    } else if (!strcmp(key, "nbs")) {
+      decode_uint64(bufp, buf_end, &res->num_byteslice);
+    } else {
+      snprintf(decode_err, sizeof(decode_err), "unknown schema field %s", key);
+      THROW(INVALID_PARAMETER);
+    }
+  }
+}
+
+#define COUNT(array) \
+  (sizeof(array) / sizeof(*array))
+
+static void
+decode_app_args(uint8_t **bufp, uint8_t *buf_end, app_args_t *app_args, app_args_len_t *app_arg_len, size_t *num_app_args)
+{
+  uint8_t arr_count = decode_fixsz(bufp, buf_end, FIXARR_0, FIXARR_15);
+  if (arr_count > COUNT(*app_args)) {
+    snprintf(decode_err, sizeof(decode_err), "too many app args. max %u", COUNT(*app_args));
+    THROW(INVALID_PARAMETER);
+  }
+
+  for (int i = 0; i < arr_count; i++) {
+    decode_bin_var(bufp, buf_end, (*app_args)[i], &((*app_arg_len)[i]), sizeof((*app_args)[0]));
+  }
+
+  *num_app_args = arr_count;
+}
+
+static void
+decode_accounts(uint8_t **bufp, uint8_t *buf_end, accounts_t *accounts, size_t *num_accounts)
+{
+  uint8_t arr_count = decode_fixsz(bufp, buf_end, FIXARR_0, FIXARR_15);
+  if (arr_count > COUNT(*accounts)) {
+    snprintf(decode_err, sizeof(decode_err), "too many accounts. max %u", COUNT(*accounts));
+    THROW(INVALID_PARAMETER);
+  }
+
+  for (int i = 0; i < arr_count; i++) {
+    decode_bin_fixed(bufp, buf_end, (*accounts)[i], sizeof((*accounts)[0]));
+  }
+
+  *num_accounts = arr_count;
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -246,6 +299,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
             t->type = ASSET_FREEZE;
           } else if (!strcmp(tbuf, "acfg")) {
             t->type = ASSET_CONFIG;
+          } else if (!strcmp(tbuf, "appl")) {
+            t->type = APPLICATION;
           } else {
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
@@ -304,6 +359,20 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_uint64(&buf, buf_end, &t->asset_config.id);
         } else if (!strcmp(key, "apar")) {
           decode_asset_params(&buf, buf_end, &t->asset_config.params);
+        } else if (!strcmp(key, "apls")) {
+          decode_state_schema(&buf, buf_end, &t->application.local_schema);
+        } else if (!strcmp(key, "apgs")) {
+          decode_state_schema(&buf, buf_end, &t->application.global_schema);
+        } else if (!strcmp(key, "apaa")) {
+          decode_app_args(&buf, buf_end, &t->application.app_args, &t->application.app_arg_len, &t->application.num_app_args);
+        } else if (!strcmp(key, "apat")) {
+          decode_accounts(&buf, buf_end, &t->application.accounts, &t->application.num_accounts);
+        } else if (!strcmp(key, "apid")) {
+          decode_uint64(&buf, buf_end, &t->application.id);
+        } else if (!strcmp(key, "apap")) {
+          decode_bin_var(&buf, buf_end, t->application.approv_prog, &t->application.approv_prog_len, sizeof(t->application.approv_prog));
+        } else if (!strcmp(key, "apsu")) {
+          decode_bin_var(&buf, buf_end, t->application.clear_prog, &t->application.clear_prog_len, sizeof(t->application.clear_prog));
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);

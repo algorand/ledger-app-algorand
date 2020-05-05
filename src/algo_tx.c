@@ -227,6 +227,10 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
     typestr = "acfg";
     break;
 
+  case APPLICATION:
+    typestr = "appl";
+    break;
+
   default:
     PRINTF("Unknown transaction type %d\n", t->type);
     typestr = "unknown";

@@ -7,8 +7,18 @@ enum TXTYPE {
   ASSET_XFER,
   ASSET_FREEZE,
   ASSET_CONFIG,
+  APPLICATION,
   ALL_TYPES,
 };
+
+typedef enum oncompletion {
+  NOOPOC       = 0,
+  OPTINOC      = 1,
+  CLOSEOUTOC   = 2,
+  CLEARSTATEOC = 3,
+  UPDATEAPPOC  = 4,
+  DELETEAPPOC  = 5,
+} oncompletion_t;
 
 struct asset_params {
   uint64_t total;
@@ -22,6 +32,11 @@ struct asset_params {
   uint8_t reserve[32];
   uint8_t freeze[32];
   uint8_t clawback[32];
+};
+
+struct state_schema {
+  uint64_t num_uint;
+  uint64_t num_byteslice;
 };
 
 struct txn_payment {
@@ -58,6 +73,41 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
+#define MAX_APP_ARG 2
+#define MAX_ARG_LEN 32
+
+#define MAX_ACCT 1
+#define ACCT_LEN 32
+
+typedef uint8_t app_args_t[MAX_APP_ARG][MAX_ARG_LEN];
+typedef size_t app_args_len_t[MAX_APP_ARG];
+
+typedef uint8_t accounts_t[MAX_ACCT][ACCT_LEN];
+
+struct txn_application {
+  uint64_t id;
+  uint64_t oncompletion;
+
+  accounts_t accounts;
+  size_t num_accounts;
+
+  app_args_t app_args;
+  app_args_len_t app_arg_len;
+  size_t num_app_args;
+
+  uint64_t foreign_apps[1];
+  size_t num_foreign_apps;
+
+  uint8_t approv_prog[128];
+  size_t approv_prog_len;
+
+  uint8_t clear_prog[128];
+  size_t clear_prog_len;
+
+  struct state_schema local_schema;
+  struct state_schema global_schema;
+};
+
 struct txn {
   enum TXTYPE type;
 
@@ -85,6 +135,7 @@ struct txn {
     struct txn_asset_xfer asset_xfer;
     struct txn_asset_freeze asset_freeze;
     struct txn_asset_config asset_config;
+    struct txn_application application;
   };
 };
 

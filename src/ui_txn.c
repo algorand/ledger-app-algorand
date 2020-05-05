@@ -64,6 +64,10 @@ static int step_txn_type() {
     ui_text_put("Asset config");
     break;
 
+  case APPLICATION:
+    ui_text_put("Application");
+    break;
+
   default:
     ui_text_put("Unknown");
   }
@@ -383,6 +387,100 @@ static int step_asset_config_clawback() {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
+static int step_application_id() {
+  ui_text_put(u64str(current_txn.application.id));
+  return 1;
+}
+
+static int step_application_oncompletion() {
+  switch (current_txn.application.oncompletion) {
+  case NOOPOC:
+    ui_text_put("NoOp");
+    break;
+
+  case OPTINOC:
+    ui_text_put("OptIn");
+    break;
+
+  case CLOSEOUTOC:
+    ui_text_put("CloseOut");
+    break;
+
+  case CLEARSTATEOC:
+    ui_text_put("ClearState");
+    break;
+
+  case UPDATEAPPOC:
+    ui_text_put("UpdateApp");
+    break;
+
+  case DELETEAPPOC:
+    ui_text_put("DeleteApp");
+    break;
+
+  default:
+    ui_text_put("Unknown");
+  }
+  return 1;
+}
+
+static int step_application_accounts() {
+  return 0;
+}
+
+static int step_application_args() {
+  return 0;
+}
+
+static int display_schema(struct state_schema *schema) {
+  // Don't display if nonzero schema cannot be valid
+  if (current_txn.application.id != 0) {
+    return 0;
+  }
+
+  char schema_repr[64];
+  // TODO(maxj) fix format string
+  snprintf(schema_repr, sizeof(schema_repr), "int: %llu, byte: %llu", schema->num_uint, schema->num_byteslice);
+  ui_text_put(schema_repr);
+  return 1;
+}
+
+static int step_application_global_schema() {
+  return display_schema(&current_txn.application.global_schema);
+}
+
+static int step_application_local_schema() {
+  return display_schema(&current_txn.application.local_schema);
+}
+
+static int display_prog(uint8_t *prog_bytes, size_t prog_len) {
+  // Don't display if nonzero program cannot be valid
+  if (current_txn.application.id != 0 && current_txn.application.oncompletion != UPDATEAPPOC) {
+    return 0;
+  }
+
+  // Hash program
+  unsigned char hash[32];
+  cx_sha256_t ctx;
+  cx_sha256_init(&ctx);
+  cx_hash(&ctx.header, 0, (unsigned char *)prog_bytes, prog_len, NULL, 0);
+  cx_hash(&ctx.header, CX_LAST, NULL, 0, hash, 32);
+
+  // base-64 encode hash for display
+  char b64hash[45];
+  base64_encode((const char *)hash, sizeof(hash), b64hash, sizeof(b64hash));
+  ui_text_put(b64hash);
+  return 1;
+}
+
+static int step_application_approve_prog() {
+  return display_prog(current_txn.application.approv_prog, current_txn.application.approv_prog_len);
+}
+
+static int step_application_clear_prog() {
+  return display_prog(current_txn.application.clear_prog, current_txn.application.clear_prog_len);
+}
+
 #if defined(TARGET_NANOX)
 static unsigned int ux_last_step;
 
@@ -429,8 +527,17 @@ ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_reserve(
 ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
 ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
 
-ALGO_UX_STEP(37, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(38, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 37, bn, step_application_id(),            {"App ID",               text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 38, bn, step_application_oncompletion(),  {"On completion",        text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 39, bn, step_application_accounts(),      {"App accounts",         text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 40, bn, step_application_args(),          {"App args",             text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 41, bn, step_application_global_schema(), {"Global schema",        text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 42, bn, step_application_local_schema(),  {"Local schema",         text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 43, bn, step_application_approve_prog(),  {"Apprv prog (sha256)",  text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 44, bn, step_application_clear_prog(),    {"Clear prog (sha256)",  text});
+
+ALGO_UX_STEP(45, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(46, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_0,
@@ -472,6 +579,14 @@ const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_36,
   &txn_flow_37,
   &txn_flow_38,
+  &txn_flow_39,
+  &txn_flow_40,
+  &txn_flow_41,
+  &txn_flow_42,
+  &txn_flow_43,
+  &txn_flow_44,
+  &txn_flow_45,
+  &txn_flow_46,
   FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
@@ -526,6 +641,15 @@ static const struct ux_step ux_steps[] = {
   { ASSET_CONFIG, "Reserve",          &step_asset_config_reserve },
   { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
   { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
+
+  { APPLICATION, "App ID",               &step_application_id},
+  { APPLICATION, "On completion",        &step_application_oncompletion},
+  { APPLICATION, "App accounts",         &step_application_accounts},
+  { APPLICATION, "App args",             &step_application_args},
+  { APPLICATION, "Global schema",        &step_application_global_schema},
+  { APPLICATION, "Local schema",         &step_application_local_schema},
+  { APPLICATION, "Apprv prog (sha256)",  &step_application_approve_prog},
+  { APPLICATION, "Clear prog (sha256)",  &step_application_clear_prog},
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
