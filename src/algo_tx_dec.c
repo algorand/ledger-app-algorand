@@ -231,7 +231,7 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
         // transaction.  If the transaction contains fields from more
         // than one type of transaction, the in-memory value might be
         // corrupted, but any in-memory representation for the union
-        // fields is valid.
+        // fields is valid (though lengths must be checked before use).
         if (!strcmp(key, "type")) {
           char tbuf[16];
           decode_string_nullterm(&buf, buf_end, tbuf, sizeof(tbuf));
@@ -252,7 +252,6 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
           }
-        // TODO(maxj) typechecks now that union has length fields that can be overwritten.
         } else if (!strcmp(key, "snd")) {
           decode_bin_fixed(&buf, buf_end, t->sender, sizeof(t->sender));
         } else if (!strcmp(key, "rekey")) {
@@ -319,6 +318,14 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
         }
+      }
+      if (current_txn.application.cprog_len > sizeof(current_txn.application.cprog)) {
+        snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
+        THROW(INVALID_PARAMETER);
+      }
+      if (current_txn.application.aprog_len > sizeof(current_txn.application.aprog)) {
+        snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
+        THROW(INVALID_PARAMETER);
       }
     }
     CATCH_OTHER(e) {
