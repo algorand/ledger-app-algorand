@@ -313,6 +313,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_bin_var(&buf, buf_end, t->application.aprog, &t->application.aprog_len, sizeof(t->application.aprog));
         } else if (!strcmp(key, "apsu")) {
           decode_bin_var(&buf, buf_end, t->application.cprog, &t->application.cprog_len, sizeof(t->application.cprog));
+        } else if (!strcmp(key, "apan")) {
+          decode_uint64(&buf, buf_end, &t->application.oncompletion);
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);

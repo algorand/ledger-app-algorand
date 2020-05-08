@@ -423,6 +423,43 @@ static int step_application_clear_prog() {
   return display_prog(current_txn.application.cprog, current_txn.application.cprog_len);
 }
 
+static int step_application_id() {
+  ui_text_put(u64str(current_txn.application.id));
+  return 1;
+}
+
+static int step_application_oncompletion() {
+  switch (current_txn.application.oncompletion) {
+  case NOOPOC:
+    ui_text_put("NoOp");
+    break;
+
+  case OPTINOC:
+    ui_text_put("OptIn");
+    break;
+
+  case CLOSEOUTOC:
+    ui_text_put("CloseOut");
+    break;
+
+  case CLEARSTATEOC:
+    ui_text_put("ClearState");
+    break;
+
+  case UPDATEAPPOC:
+    ui_text_put("UpdateApp");
+    break;
+
+  case DELETEAPPOC:
+    ui_text_put("DeleteApp");
+    break;
+
+  default:
+    ui_text_put("Unknown");
+  }
+  return 1;
+}
+
 #if defined(TARGET_NANOX)
 static unsigned int ux_last_step;
 
@@ -567,6 +604,8 @@ static const struct ux_step ux_steps[] = {
   { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
   { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
 
+  { APPLICATION, "App ID",         &step_application_id},
+  { APPLICATION, "On completion",  &step_application_oncompletion},
   { APPLICATION, "Apprv (sha256)", &step_application_approve_prog},
   { APPLICATION, "Clear (sha256)", &step_application_clear_prog},
 };
