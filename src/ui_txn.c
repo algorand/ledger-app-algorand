@@ -46,7 +46,8 @@ all_zero_key(uint8_t *buf)
 }
 
 static char *
-b64hash_data(unsigned char *data, size_t data_len) {
+b64hash_data(unsigned char *data, size_t data_len)
+{
   static char b64hash[45];
   static unsigned char hash[32];
 
@@ -428,6 +429,32 @@ static int step_application_id() {
   return 1;
 }
 
+// Dummy step to reset looping step state
+static int step_loop_reset() {
+  ux_replay_state = 0;
+  ux_step_replay = false;
+  return 0;
+}
+
+static int step_application_accounts() {
+  // Begin looping over account addresses
+  ux_step_replay = true;
+
+  // Check if we should continue looping on this step
+  if (ux_replay_state >= current_txn.application.num_accounts) {
+    ux_step_replay = false;
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.application.accounts[ux_replay_state], checksummed);
+  ui_text_put(checksummed);
+
+  // Bump replay state so we will print next address on next call
+  ux_replay_state++;
+  return 1;
+}
+
 static int step_application_oncompletion() {
   switch (current_txn.application.oncompletion) {
   case NOOPOC:
@@ -606,6 +633,9 @@ static const struct ux_step ux_steps[] = {
 
   { APPLICATION, "App ID",         &step_application_id},
   { APPLICATION, "On completion",  &step_application_oncompletion},
+  { APPLICATION, "[loop reset]",   &step_loop_reset},
+  { APPLICATION, "App accounts",   &step_application_accounts},
+  { APPLICATION, "[loop reset]",   &step_loop_reset},
   { APPLICATION, "Apprv (sha256)", &step_application_approve_prog},
   { APPLICATION, "Clear (sha256)", &step_application_clear_prog},
 };
@@ -673,7 +703,10 @@ bagl_ui_step_nanos_button(unsigned int button_mask, unsigned int button_mask_cou
       return 0;
     }
 
-    ux_current_step++;
+    if (!ux_step_replay) {
+      ux_current_step++;
+    }
+
     bagl_ui_step_nanos_display();
     return 0;
 
@@ -734,6 +767,8 @@ ui_txn()
 
 #if defined(TARGET_NANOS)
   ux_current_step = 0;
+  ux_replay_state = 0;
+  ux_step_replay = false;
   bagl_ui_step_nanos_display();
 #endif
 

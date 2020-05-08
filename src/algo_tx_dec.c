@@ -211,6 +211,25 @@ decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
   }
 }
 
+#define COUNT(array) \
+  (sizeof(array) / sizeof(*array))
+
+static void
+decode_accounts(uint8_t **bufp, uint8_t *buf_end, uint8_t accounts[][32], size_t *num_accounts, size_t max_accounts)
+{
+  uint8_t arr_count = decode_fixsz(bufp, buf_end, FIXARR_0, FIXARR_15);
+  if (arr_count > max_accounts) {
+    snprintf(decode_err, sizeof(decode_err), "too many accounts. max %u", max_accounts);
+    THROW(INVALID_PARAMETER);
+  }
+
+  for (int i = 0; i < arr_count; i++) {
+    decode_bin_fixed(bufp, buf_end, accounts[i], sizeof(accounts[0]));
+  }
+
+  *num_accounts = arr_count;
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -314,6 +333,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_bin_var(&buf, buf_end, t->application.cprog, &t->application.cprog_len, sizeof(t->application.cprog));
         } else if (!strcmp(key, "apan")) {
           decode_uint64(&buf, buf_end, &t->application.oncompletion);
+        } else if (!strcmp(key, "apat")) {
+          decode_accounts(&buf, buf_end, t->application.accounts, &t->application.num_accounts, COUNT(t->application.accounts));
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
@@ -325,6 +346,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
       }
       if (current_txn.application.aprog_len > sizeof(current_txn.application.aprog)) {
         snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
+        THROW(INVALID_PARAMETER);
+      }
+      if (current_txn.application.num_accounts > COUNT(current_txn.application.accounts)) {
+        snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
         THROW(INVALID_PARAMETER);
       }
     }
