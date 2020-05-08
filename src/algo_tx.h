@@ -7,8 +7,18 @@ enum TXTYPE {
   ASSET_XFER,
   ASSET_FREEZE,
   ASSET_CONFIG,
+  APPLICATION,
   ALL_TYPES,
 };
+
+typedef enum oncompletion {
+  NOOPOC       = 0,
+  OPTINOC      = 1,
+  CLOSEOUTOC   = 2,
+  CLEARSTATEOC = 3,
+  UPDATEAPPOC  = 4,
+  DELETEAPPOC  = 5,
+} oncompletion_t;
 
 struct asset_params {
   uint64_t total;
@@ -58,6 +68,17 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
+struct txn_application {
+  uint64_t id;
+  uint64_t oncompletion;
+
+  uint8_t aprog[128];
+  size_t aprog_len;
+
+  uint8_t cprog[128];
+  size_t cprog_len;
+};
+
 struct txn {
   enum TXTYPE type;
 
@@ -85,6 +106,7 @@ struct txn {
     struct txn_asset_xfer asset_xfer;
     struct txn_asset_freeze asset_freeze;
     struct txn_asset_config asset_config;
+    struct txn_application application;
   };
 };
 

@@ -246,10 +246,13 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
             t->type = ASSET_FREEZE;
           } else if (!strcmp(tbuf, "acfg")) {
             t->type = ASSET_CONFIG;
+          } else if (!strcmp(tbuf, "appl")) {
+            t->type = APPLICATION;
           } else {
             snprintf(decode_err, sizeof(decode_err), "unknown tx type %s", tbuf);
             THROW(INVALID_PARAMETER);
           }
+        // TODO(maxj) typechecks now that union has length fields that can be overwritten.
         } else if (!strcmp(key, "snd")) {
           decode_bin_fixed(&buf, buf_end, t->sender, sizeof(t->sender));
         } else if (!strcmp(key, "rekey")) {
@@ -304,6 +307,12 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_uint64(&buf, buf_end, &t->asset_config.id);
         } else if (!strcmp(key, "apar")) {
           decode_asset_params(&buf, buf_end, &t->asset_config.params);
+        } else if (!strcmp(key, "apid")) {
+          decode_uint64(&buf, buf_end, &t->application.id);
+        } else if (!strcmp(key, "apap")) {
+          decode_bin_var(&buf, buf_end, t->application.aprog, &t->application.aprog_len, sizeof(t->application.aprog));
+        } else if (!strcmp(key, "apsu")) {
+          decode_bin_var(&buf, buf_end, t->application.cprog, &t->application.cprog_len, sizeof(t->application.cprog));
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);

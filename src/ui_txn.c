@@ -9,6 +9,9 @@
 #include "base64.h"
 #include "glyphs.h"
 
+static unsigned int ux_replay_state;
+static bool ux_step_replay;
+
 static char *
 u64str(uint64_t v)
 {
@@ -42,6 +45,21 @@ all_zero_key(uint8_t *buf)
   return 1;
 }
 
+static char *
+b64hash_data(unsigned char *data, size_t data_len) {
+  static char b64hash[45];
+  static unsigned char hash[32];
+
+  // Hash program and b64 encode for display
+  cx_sha256_t ctx;
+  memset(&ctx, 0, sizeof(ctx));
+  cx_sha256_init(&ctx);
+  cx_hash(&ctx.header, CX_LAST, data, data_len, hash, sizeof(hash));
+  base64_encode((const char *)hash, sizeof(hash), b64hash, sizeof(b64hash));
+
+  return b64hash;
+}
+
 static int step_txn_type() {
   switch (current_txn.type) {
   case PAYMENT:
@@ -62,6 +80,10 @@ static int step_txn_type() {
 
   case ASSET_CONFIG:
     ui_text_put("Asset config");
+    break;
+
+  case APPLICATION:
+    ui_text_put("Application");
     break;
 
   default:
@@ -383,6 +405,24 @@ static int step_asset_config_clawback() {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
+static int display_prog(uint8_t *prog_bytes, size_t prog_len) {
+  // Don't display if nonzero program cannot be valid
+  if (current_txn.application.id != 0 && current_txn.application.oncompletion != UPDATEAPPOC) {
+    return 0;
+  }
+
+  ui_text_put(b64hash_data((unsigned char *)prog_bytes, prog_len));
+  return 1;
+}
+
+static int step_application_approve_prog() {
+  return display_prog(current_txn.application.aprog, current_txn.application.aprog_len);
+}
+
+static int step_application_clear_prog() {
+  return display_prog(current_txn.application.cprog, current_txn.application.cprog_len);
+}
+
 #if defined(TARGET_NANOX)
 static unsigned int ux_last_step;
 
@@ -526,6 +566,9 @@ static const struct ux_step ux_steps[] = {
   { ASSET_CONFIG, "Reserve",          &step_asset_config_reserve },
   { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
   { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
+
+  { APPLICATION, "Apprv (sha256)", &step_application_approve_prog},
+  { APPLICATION, "Clear (sha256)", &step_application_clear_prog},
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
