@@ -73,13 +73,14 @@ struct state_schema {
   uint64_t num_byteslice;
 };
 
-#define MAX_ACCT 1
+#define MAX_ACCT 2
 typedef uint8_t accounts_t[MAX_ACCT][32];
 
-#define MAX_ARG 1
+#define MAX_ARG 2
 #define MAX_ARGLEN 32
-typedef uint8_t app_args_t[MAX_ARG][MAX_ARGLEN];
-typedef size_t app_args_len_t[MAX_ARG];
+#define MAX_FOREIGN_APPS 1
+#define MAX_APPROV_LEN 128
+#define MAX_CLEAR_LEN 32
 
 struct txn_application {
   uint64_t id;
@@ -88,14 +89,17 @@ struct txn_application {
   uint8_t accounts[MAX_ACCT][32];
   size_t num_accounts;
 
-  app_args_t app_args;
-  app_args_len_t app_args_len;
+  uint64_t foreign_apps[MAX_FOREIGN_APPS];
+  size_t num_foreign_apps;
+
+  uint8_t app_args[MAX_ARG][MAX_ARGLEN];
+  size_t app_args_len[MAX_ARG];
   size_t num_app_args;
 
-  uint8_t aprog[128];
+  uint8_t aprog[MAX_APPROV_LEN];
   size_t aprog_len;
 
-  uint8_t cprog[128];
+  uint8_t cprog[MAX_CLEAR_LEN];
   size_t cprog_len;
 
   struct state_schema local_schema;

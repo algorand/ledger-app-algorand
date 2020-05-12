@@ -246,6 +246,21 @@ decode_app_args(uint8_t **bufp, uint8_t *buf_end, uint8_t app_args[][MAX_ARGLEN]
 }
 
 static void
+decode_foreign_apps(uint8_t **bufp, uint8_t *buf_end, uint64_t foreign_apps[], size_t *num_foreign_apps, size_t max_foreign_apps) {
+  uint8_t arr_count = decode_fixsz(bufp, buf_end, FIXARR_0, FIXARR_15);
+  if (arr_count > max_foreign_apps) {
+    snprintf(decode_err, sizeof(decode_err), "too many foreign apps. max %u", max_foreign_apps);
+    THROW(INVALID_PARAMETER);
+  }
+
+  for (int i = 0; i < arr_count; i++) {
+    decode_uint64(bufp, buf_end, &foreign_apps[i]);
+  }
+
+  *num_foreign_apps = arr_count;
+}
+
+static void
 decode_state_schema(uint8_t **bufp, uint8_t *buf_end, struct state_schema *res)
 {
   uint8_t map_count = decode_fixsz(bufp, buf_end, FIXMAP_0, FIXMAP_15);
@@ -374,6 +389,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_state_schema(&buf, buf_end, &t->application.local_schema);
         } else if (!strcmp(key, "apgs")) {
           decode_state_schema(&buf, buf_end, &t->application.global_schema);
+        } else if (!strcmp(key, "apfa")) {
+          decode_foreign_apps(&buf, buf_end, t->application.foreign_apps, &t->application.num_foreign_apps, COUNT(t->application.foreign_apps));
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);
@@ -396,6 +413,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
         }
         if (t->application.num_app_args > COUNT(t->application.app_args)) {
           snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
+          THROW(INVALID_PARAMETER);
+        }
+        if (t->application.num_foreign_apps > COUNT(t->application.foreign_apps)) {
+          snprintf(decode_err, sizeof(decode_err), "invalid num foreign apps");
           THROW(INVALID_PARAMETER);
         }
         for (unsigned int i = 0; i < COUNT(t->application.app_args_len); i++) {

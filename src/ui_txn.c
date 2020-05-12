@@ -455,6 +455,23 @@ static int step_application_accounts() {
   return 1;
 }
 
+static int step_application_foreign_apps() {
+  // Begin looping over foreign apps
+  ux_step_replay = true;
+
+  // Check if we should continue looping on this step
+  if (ux_replay_state >= current_txn.application.num_foreign_apps) {
+    ux_step_replay = false;
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.application.foreign_apps[ux_replay_state]));
+
+  // Bump replay state so we will print next address on next call
+  ux_replay_state++;
+  return 1;
+}
+
 static int step_application_args() {
   // Begin looping over application args
   ux_step_replay = true;
@@ -674,6 +691,8 @@ static const struct ux_step ux_steps[] = {
 
   { APPLICATION, "App ID",            &step_application_id},
   { APPLICATION, "On completion",     &step_application_oncompletion},
+  { APPLICATION, "[loop reset]",      &step_loop_reset},
+  { APPLICATION, "Foreign apps",      &step_application_foreign_apps},
   { APPLICATION, "[loop reset]",      &step_loop_reset},
   { APPLICATION, "App accounts",      &step_application_accounts},
   { APPLICATION, "[loop reset]",      &step_loop_reset},
