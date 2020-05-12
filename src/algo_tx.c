@@ -223,6 +223,35 @@ map_kv_args(uint8_t **p, uint8_t *e, char *key, uint8_t app_args[][MAX_ARGLEN], 
 }
 
 static int
+map_kv_fnapps(uint8_t **p, uint8_t *e, char *key, uint64_t foreign_apps[], size_t num_foreign_apps)
+{
+  if (num_foreign_apps == 0) {
+    return 0;
+  }
+
+  if (num_foreign_apps > FIXARR_15 - FIXARR_0) {
+    os_sched_exit(0);
+  }
+
+  encode_str(p, e, key, SIZE_MAX);
+
+  uint8_t *arrbase = *p;
+  if (*p >= e) {
+    // We need to access arrbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
+  put_byte(p, e, FIXARR_0);
+  for (size_t i = 0; i < num_foreign_apps; i++) {
+    encode_uint64(p, e, foreign_apps[i]);
+    arrbase[0]++;
+  }
+
+  return 1;
+}
+
+static int
 map_kv_params(uint8_t **p, uint8_t *e, char *key, struct asset_params *params)
 {
   // Save original buffer in case we end up with a zero value
@@ -317,6 +346,7 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
   buf[0] += T(APPLICATION,  map_kv_uint64(&p, e, "apan",    t->application.oncompletion));
   buf[0] += T(ASSET_CONFIG, map_kv_params(&p, e, "apar",    &t->asset_config.params));
   buf[0] += T(APPLICATION,  map_kv_accts (&p, e, "apat",    t->application.accounts, t->application.num_accounts));
+  buf[0] += T(APPLICATION,  map_kv_fnapps(&p, e, "apfa",    t->application.foreign_apps, t->application.num_foreign_apps));
   buf[0] += T(APPLICATION,  map_kv_uint64(&p, e, "apid",    t->application.id));
   buf[0] += T(ASSET_XFER,   map_kv_bin   (&p, e, "arcv",    t->asset_xfer.receiver, sizeof(t->asset_xfer.receiver)));
   buf[0] += T(ASSET_XFER,   map_kv_bin   (&p, e, "asnd",    t->asset_xfer.sender, sizeof(t->asset_xfer.sender)));
