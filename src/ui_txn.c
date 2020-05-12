@@ -472,6 +472,30 @@ static int step_application_args() {
   return 1;
 }
 
+static int display_schema(struct state_schema *schema) {
+  // Don't display if nonzero schema cannot be valid
+  if (current_txn.application.id != 0) {
+    return 0;
+  }
+
+  char schm_repr[65];
+  char uint_part[32];
+  char byte_part[32];
+  snprintf(uint_part, sizeof(uint_part), "uint: %s", u64str(schema->num_uint));
+  snprintf(byte_part, sizeof(byte_part), "byte: %s", u64str(schema->num_byteslice));
+  snprintf(schm_repr, sizeof(schm_repr), "%s, %s",   uint_part, byte_part);
+  ui_text_put(schm_repr);
+  return 1;
+}
+
+static int step_application_global_schema() {
+  return display_schema(&current_txn.application.global_schema);
+}
+
+static int step_application_local_schema() {
+  return display_schema(&current_txn.application.local_schema);
+}
+
 static int step_application_oncompletion() {
   switch (current_txn.application.oncompletion) {
   case NOOPOC:
@@ -655,6 +679,8 @@ static const struct ux_step ux_steps[] = {
   { APPLICATION, "[loop reset]",      &step_loop_reset},
   { APPLICATION, "App args (sha256)", &step_application_args},
   { APPLICATION, "[loop reset]",      &step_loop_reset},
+  { APPLICATION, "Global schema",     &step_application_global_schema},
+  { APPLICATION, "Local schema",      &step_application_local_schema},
   { APPLICATION, "Apprv (sha256)",    &step_application_approve_prog},
   { APPLICATION, "Clear (sha256)",    &step_application_clear_prog},
 };

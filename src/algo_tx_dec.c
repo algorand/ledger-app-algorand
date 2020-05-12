@@ -245,6 +245,24 @@ decode_app_args(uint8_t **bufp, uint8_t *buf_end, uint8_t app_args[][MAX_ARGLEN]
   *num_args = arr_count;
 }
 
+static void
+decode_state_schema(uint8_t **bufp, uint8_t *buf_end, struct state_schema *res)
+{
+  uint8_t map_count = decode_fixsz(bufp, buf_end, FIXMAP_0, FIXMAP_15);
+  for (int i = 0; i < map_count; i++) {
+    char key[32];
+    decode_string_nullterm(bufp, buf_end, key, sizeof(key));
+    if (!strcmp(key, "nui")) {
+      decode_uint64(bufp, buf_end, &res->num_uint);
+    } else if (!strcmp(key, "nbs")) {
+      decode_uint64(bufp, buf_end, &res->num_byteslice);
+    } else {
+      snprintf(decode_err, sizeof(decode_err), "unknown schema field %s", key);
+      THROW(INVALID_PARAMETER);
+    }
+  }
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -352,6 +370,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_uint64(&buf, buf_end, &t->application.oncompletion);
         } else if (!strcmp(key, "apat")) {
           decode_accounts(&buf, buf_end, t->application.accounts, &t->application.num_accounts, COUNT(t->application.accounts));
+        } else if (!strcmp(key, "apls")) {
+          decode_state_schema(&buf, buf_end, &t->application.local_schema);
+        } else if (!strcmp(key, "apgs")) {
+          decode_state_schema(&buf, buf_end, &t->application.global_schema);
         } else {
           snprintf(decode_err, sizeof(decode_err), "unknown field %s", key);
           THROW(INVALID_PARAMETER);

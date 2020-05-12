@@ -68,6 +68,10 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
+struct state_schema {
+  uint64_t num_uint;
+  uint64_t num_byteslice;
+};
 
 #define MAX_ACCT 1
 typedef uint8_t accounts_t[MAX_ACCT][32];
@@ -93,6 +97,9 @@ struct txn_application {
 
   uint8_t cprog[128];
   size_t cprog_len;
+
+  struct state_schema local_schema;
+  struct state_schema global_schema;
 };
 
 struct txn {
