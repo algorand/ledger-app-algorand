@@ -69,8 +69,13 @@ struct txn_asset_config {
 };
 
 
-#define MAX_ACCT 2
+#define MAX_ACCT 1
 typedef uint8_t accounts_t[MAX_ACCT][32];
+
+#define MAX_ARG 1
+#define MAX_ARGLEN 32
+typedef uint8_t app_args_t[MAX_ARG][MAX_ARGLEN];
+typedef size_t app_args_len_t[MAX_ARG];
 
 struct txn_application {
   uint64_t id;
@@ -78,6 +83,10 @@ struct txn_application {
 
   uint8_t accounts[MAX_ACCT][32];
   size_t num_accounts;
+
+  app_args_t app_args;
+  app_args_len_t app_args_len;
+  size_t num_app_args;
 
   uint8_t aprog[128];
   size_t aprog_len;

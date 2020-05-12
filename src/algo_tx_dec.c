@@ -230,6 +230,21 @@ decode_accounts(uint8_t **bufp, uint8_t *buf_end, uint8_t accounts[][32], size_t
   *num_accounts = arr_count;
 }
 
+static void
+decode_app_args(uint8_t **bufp, uint8_t *buf_end, uint8_t app_args[][MAX_ARGLEN], size_t app_args_len[], size_t *num_args, size_t max_args) {
+  uint8_t arr_count = decode_fixsz(bufp, buf_end, FIXARR_0, FIXARR_15);
+  if (arr_count > max_args) {
+    snprintf(decode_err, sizeof(decode_err), "too many args. max %u", max_args);
+    THROW(INVALID_PARAMETER);
+  }
+
+  for (int i = 0; i < arr_count; i++) {
+    decode_bin_var(bufp, buf_end, app_args[i], &app_args_len[i], sizeof(app_args[0]));
+  }
+
+  *num_args = arr_count;
+}
+
 char*
 tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
@@ -327,6 +342,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_asset_params(&buf, buf_end, &t->asset_config.params);
         } else if (!strcmp(key, "apid")) {
           decode_uint64(&buf, buf_end, &t->application.id);
+        } else if (!strcmp(key, "apaa")) {
+          decode_app_args(&buf, buf_end, t->application.app_args, t->application.app_args_len, &t->application.num_app_args, COUNT(t->application.app_args));
         } else if (!strcmp(key, "apap")) {
           decode_bin_var(&buf, buf_end, t->application.aprog, &t->application.aprog_len, sizeof(t->application.aprog));
         } else if (!strcmp(key, "apsu")) {
@@ -340,17 +357,31 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           THROW(INVALID_PARAMETER);
         }
       }
-      if (current_txn.application.cprog_len > sizeof(current_txn.application.cprog)) {
-        snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
-        THROW(INVALID_PARAMETER);
-      }
-      if (current_txn.application.aprog_len > sizeof(current_txn.application.aprog)) {
-        snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
-        THROW(INVALID_PARAMETER);
-      }
-      if (current_txn.application.num_accounts > COUNT(current_txn.application.accounts)) {
-        snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
-        THROW(INVALID_PARAMETER);
+
+      // Check that lengths are not dangerous values
+      if (t->type == APPLICATION) {
+        if (t->application.cprog_len > COUNT(t->application.cprog)) {
+          snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
+          THROW(INVALID_PARAMETER);
+        }
+        if (t->application.aprog_len > COUNT(t->application.aprog)) {
+          snprintf(decode_err, sizeof(decode_err), "invalid cprog length");
+          THROW(INVALID_PARAMETER);
+        }
+        if (t->application.num_accounts > COUNT(t->application.accounts)) {
+          snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
+          THROW(INVALID_PARAMETER);
+        }
+        if (t->application.num_app_args > COUNT(t->application.app_args)) {
+          snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
+          THROW(INVALID_PARAMETER);
+        }
+        for (unsigned int i = 0; i < COUNT(t->application.app_args_len); i++) {
+          if (t->application.app_args_len[i] > COUNT(t->application.app_args[0])) {
+            snprintf(decode_err, sizeof(decode_err), "invalid arg len");
+            THROW(INVALID_PARAMETER);
+          }
+        }
       }
     }
     CATCH_OTHER(e) {
