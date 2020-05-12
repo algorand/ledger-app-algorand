@@ -455,6 +455,23 @@ static int step_application_accounts() {
   return 1;
 }
 
+static int step_application_args() {
+  // Begin looping over application args
+  ux_step_replay = true;
+
+  // Check if we should continue looping on this step
+  if (ux_replay_state >= current_txn.application.num_app_args) {
+    ux_step_replay = false;
+    return 0;
+  }
+
+  ui_text_put(b64hash_data(current_txn.application.app_args[ux_replay_state], current_txn.application.app_args_len[ux_replay_state]));
+
+  // Bump replay state so we will print next arg on next call
+  ux_replay_state++;
+  return 1;
+}
+
 static int step_application_oncompletion() {
   switch (current_txn.application.oncompletion) {
   case NOOPOC:
@@ -631,13 +648,15 @@ static const struct ux_step ux_steps[] = {
   { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
   { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
 
-  { APPLICATION, "App ID",         &step_application_id},
-  { APPLICATION, "On completion",  &step_application_oncompletion},
-  { APPLICATION, "[loop reset]",   &step_loop_reset},
-  { APPLICATION, "App accounts",   &step_application_accounts},
-  { APPLICATION, "[loop reset]",   &step_loop_reset},
-  { APPLICATION, "Apprv (sha256)", &step_application_approve_prog},
-  { APPLICATION, "Clear (sha256)", &step_application_clear_prog},
+  { APPLICATION, "App ID",            &step_application_id},
+  { APPLICATION, "On completion",     &step_application_oncompletion},
+  { APPLICATION, "[loop reset]",      &step_loop_reset},
+  { APPLICATION, "App accounts",      &step_application_accounts},
+  { APPLICATION, "[loop reset]",      &step_loop_reset},
+  { APPLICATION, "App args (sha256)", &step_application_args},
+  { APPLICATION, "[loop reset]",      &step_loop_reset},
+  { APPLICATION, "Apprv (sha256)",    &step_application_approve_prog},
+  { APPLICATION, "Clear (sha256)",    &step_application_clear_prog},
 };
 
 static const bagl_element_t bagl_ui_approval_nanos[] = {
