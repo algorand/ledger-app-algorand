@@ -19,6 +19,17 @@ void step_address();
 // Override some of the Ledger X UI macros to enable step skipping
 #if defined(TARGET_NANOX)
 
+typedef struct ux_layout_algo_paging_params_s {
+  const char* title;
+  const char* text;
+} ux_layout_algo_paging_params_t;
+
+void ux_layout_algo_paging_init(unsigned int stack_slot);
+// Call to reset the paging component to the first page
+void ux_layout_algo_paging_reset(void);
+void ux_layout_algo_paging_prevstep_hook(void);
+void ux_layout_algo_paging_nextstep_hook(void);
+
 // If going backwards, skip backwards. Otherwise, skip forwards.
 #define SKIPEMPTY(stepnum) \
         if (stepnum < ux_last_step) { \

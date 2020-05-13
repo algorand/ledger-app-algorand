@@ -596,9 +596,9 @@ ALGO_UX_STEP_NOCB_INIT(APPLICATION, 38, bn,          step_application_oncompleti
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 39, bn,          step_loop_reset(),                {"[loop reset]",     text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 40, bn,          step_application_foreign_apps(),  {"Foreign apps",     text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 41, bn,          step_loop_reset(),                {"[loop reset]",     text});
-ALGO_UX_STEP_NOCB_INIT(APPLICATION, 42, bnnn_paging, step_application_accounts(),      {"App accounts",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 42, algo_paging, step_application_accounts(),      {"App accounts",     text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 43, bn,          step_loop_reset(),                {"[loop reset]",     text});
-ALGO_UX_STEP_NOCB_INIT(APPLICATION, 44, bnnn_paging, step_application_args(),          {"App args (sha256)",text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 44, algo_paging, step_application_args(),          {"App args (sha256)",text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 45, bn,          step_loop_reset(),                {"[loop reset]",     text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 46, bnnn_paging, step_application_global_schema(), {"Global schema",    text});
 ALGO_UX_STEP_NOCB_INIT(APPLICATION, 47, bnnn_paging, step_application_local_schema(),  {"Local schema",     text});
