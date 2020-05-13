@@ -28,9 +28,11 @@ void step_address();
         } \
         return
 
+
 #define ALGO_UX_STEP_NOCB_INIT(txtype, stepnum, layoutkind, preinit, ...) \
         void txn_flow_ ## stepnum ##_init (unsigned int stack_slot) { \
                 if (txtype != ALL_TYPES && txtype != current_txn.type) { SKIPEMPTY(stepnum); }; \
+                if (stepnum > ux_last_step && ux_step_replay) { ux_flow_prev(); return; }; \
                 if (preinit == 0) { SKIPEMPTY(stepnum); }; \
                 ux_last_step = stepnum; \
                 ux_layout_ ## layoutkind ## _init(stack_slot); \

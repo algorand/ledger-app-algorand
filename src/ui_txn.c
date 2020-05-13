@@ -591,49 +591,31 @@ ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_reserve(
 ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
 ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
 
-ALGO_UX_STEP(37, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(38, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 37, bn,          step_application_id(),            {"App ID",           text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 38, bn,          step_application_oncompletion(),  {"On completion",    text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 39, bn,          step_loop_reset(),                {"[loop reset]",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 40, bn,          step_application_foreign_apps(),  {"Foreign apps",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 41, bn,          step_loop_reset(),                {"[loop reset]",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 42, bnnn_paging, step_application_accounts(),      {"App accounts",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 43, bn,          step_loop_reset(),                {"[loop reset]",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 44, bnnn_paging, step_application_args(),          {"App args (sha256)",text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 45, bn,          step_loop_reset(),                {"[loop reset]",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 46, bnnn_paging, step_application_global_schema(), {"Global schema",    text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 47, bnnn_paging, step_application_local_schema(),  {"Local schema",     text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 48, bnnn_paging, step_application_approve_prog(),  {"Apprv (sha256)",   text});
+ALGO_UX_STEP_NOCB_INIT(APPLICATION, 49, bnnn_paging, step_application_clear_prog(),    {"Clear (sha256)",   text});
+
+ALGO_UX_STEP(50, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(51, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
-  &txn_flow_0,
-  &txn_flow_1,
-  &txn_flow_2,
-  &txn_flow_3,
-  &txn_flow_4,
-  &txn_flow_5,
-  &txn_flow_6,
-  &txn_flow_7,
-  &txn_flow_8,
-  &txn_flow_9,
-  &txn_flow_10,
-  &txn_flow_11,
-  &txn_flow_12,
-  &txn_flow_13,
-  &txn_flow_14,
-  &txn_flow_15,
-  &txn_flow_16,
-  &txn_flow_17,
-  &txn_flow_18,
-  &txn_flow_19,
-  &txn_flow_20,
-  &txn_flow_21,
-  &txn_flow_22,
-  &txn_flow_23,
-  &txn_flow_24,
-  &txn_flow_25,
-  &txn_flow_26,
-  &txn_flow_27,
-  &txn_flow_28,
-  &txn_flow_29,
-  &txn_flow_30,
-  &txn_flow_31,
-  &txn_flow_32,
-  &txn_flow_33,
-  &txn_flow_34,
-  &txn_flow_35,
-  &txn_flow_36,
-  &txn_flow_37,
-  &txn_flow_38,
+  &txn_flow_0,  &txn_flow_1,  &txn_flow_2,  &txn_flow_3,  &txn_flow_4,  &txn_flow_5,  &txn_flow_6,  &txn_flow_7,
+  &txn_flow_8,  &txn_flow_9,  &txn_flow_10, &txn_flow_11, &txn_flow_12, &txn_flow_13, &txn_flow_14, &txn_flow_15,
+  &txn_flow_16, &txn_flow_17, &txn_flow_18, &txn_flow_19, &txn_flow_20, &txn_flow_21, &txn_flow_22, &txn_flow_23,
+  &txn_flow_24, &txn_flow_25, &txn_flow_26, &txn_flow_27, &txn_flow_28, &txn_flow_29, &txn_flow_30, &txn_flow_31,
+  &txn_flow_32, &txn_flow_33, &txn_flow_34, &txn_flow_35, &txn_flow_36, &txn_flow_37, &txn_flow_38, &txn_flow_39,
+  &txn_flow_40, &txn_flow_41, &txn_flow_42, &txn_flow_43, &txn_flow_44, &txn_flow_45, &txn_flow_46, &txn_flow_47,
+  &txn_flow_48, &txn_flow_49, &txn_flow_50, &txn_flow_51,
   FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
@@ -829,10 +811,11 @@ ui_txn()
     PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
   }
 
-#if defined(TARGET_NANOS)
-  ux_current_step = 0;
   ux_replay_state = 0;
   ux_step_replay = false;
+
+#if defined(TARGET_NANOS)
+  ux_current_step = 0;
   bagl_ui_step_nanos_display();
 #endif
 
