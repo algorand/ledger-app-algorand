@@ -352,6 +352,11 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
     typestr = "unknown";
   }
 
+  // Must be able to at least store map header
+  if (buflen < 3) {
+    os_sched_exit(0);
+  }
+
   uint8_t *p = buf;
   *(p++) = FIXMAP_0;
 

@@ -31,6 +31,23 @@ decode_fixsz(uint8_t **bufp, uint8_t *buf_end, uint8_t fix_first, uint8_t fix_la
   return b - fix_first;
 }
 
+static unsigned int
+decode_mapsz(uint8_t **bufp, uint8_t *buf_end)
+{
+  uint8_t b = next_byte(bufp, buf_end);
+  unsigned int map_len = 0;
+  if (b >= FIXMAP_0 && b <= FIXMAP_15) {
+    map_len = b - FIXMAP_0;
+  } else if (b == MAP16) {
+    map_len = next_byte(bufp, buf_end);
+    map_len = (map_len << 8) | next_byte(bufp, buf_end);
+  } else {
+    snprintf(decode_err, sizeof(decode_err), "expected map, found %d", b);
+    THROW(INVALID_PARAMETER);
+  }
+  return map_len;
+}
+
 static void
 decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
 {
@@ -288,8 +305,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
 
   BEGIN_TRY {
     TRY {
-      uint8_t map_count = decode_fixsz(&buf, buf_end, FIXMAP_0, FIXMAP_15);
-      for (int i = 0; i < map_count; i++) {
+      unsigned int map_count = decode_mapsz(&buf, buf_end);
+      for (unsigned int i = 0; i < map_count; i++) {
         char key[32];
         decode_string_nullterm(&buf, buf_end, key, sizeof(key));
 
