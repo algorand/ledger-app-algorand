@@ -429,7 +429,7 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           THROW(INVALID_PARAMETER);
         }
         if (t->application.num_app_args > COUNT(t->application.app_args)) {
-          snprintf(decode_err, sizeof(decode_err), "invalid num accounts");
+          snprintf(decode_err, sizeof(decode_err), "invalid num args");
           THROW(INVALID_PARAMETER);
         }
         if (t->application.num_foreign_apps > COUNT(t->application.foreign_apps)) {
