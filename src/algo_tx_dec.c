@@ -252,6 +252,8 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           }
         } else if (!strcmp(key, "snd")) {
           decode_bin_fixed(&buf, buf_end, t->sender, sizeof(t->sender));
+        } else if (!strcmp(key, "rekey")) {
+          decode_bin_fixed(&buf, buf_end, t->rekey, sizeof(t->rekey));
         } else if (!strcmp(key, "fee")) {
           decode_uint64(&buf, buf_end, &t->fee);
         } else if (!strcmp(key, "fv")) {
@@ -274,6 +276,14 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
           decode_bin_fixed(&buf, buf_end, t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk));
         } else if (!strcmp(key, "votekey")) {
           decode_bin_fixed(&buf, buf_end, t->keyreg.votepk, sizeof(t->keyreg.votepk));
+        } else if (!strcmp(key, "votefst")) {
+          decode_uint64(&buf, buf_end, &t->keyreg.voteFirst);
+        } else if (!strcmp(key, "votelst")) {
+          decode_uint64(&buf, buf_end, &t->keyreg.voteLast);
+        } else if (!strcmp(key, "votekd")) {
+          decode_uint64(&buf, buf_end, &t->keyreg.keyDilution);
+        } else if (!strcmp(key, "nonpart")) {
+          decode_bool(&buf, buf_end, &t->keyreg.nonpartFlag);
         } else if (!strcmp(key, "aamt")) {
           decode_uint64(&buf, buf_end, &t->asset_xfer.amount);
         } else if (!strcmp(key, "aclose")) {

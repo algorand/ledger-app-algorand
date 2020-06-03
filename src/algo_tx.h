@@ -33,6 +33,10 @@ struct txn_payment {
 struct txn_keyreg {
   uint8_t votepk[32];
   uint8_t vrfpk[32];
+  uint64_t voteFirst;
+  uint64_t voteLast;
+  uint64_t keyDilution;
+  uint8_t nonpartFlag;
 };
 
 struct txn_asset_xfer {
@@ -59,6 +63,7 @@ struct txn {
 
   // Common header fields
   uint8_t sender[32];
+  uint8_t rekey[32];
   uint64_t fee;
   uint64_t firstValid;
   uint64_t lastValid;
@@ -66,7 +71,7 @@ struct txn {
   uint8_t genesisHash[32];
 
 #if defined(TARGET_NANOX)
-  uint8_t note[1024];
+  uint8_t note[512];
 #else
   uint8_t note[32];
 #endif

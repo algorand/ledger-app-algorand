@@ -7,7 +7,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.7
+APPVERSION = 1.0.8
 APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
@@ -94,13 +94,13 @@ $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os
+CFLAGS += -O3 -Oz
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
 
 LD := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS += -O3 -Os
+LDFLAGS += -O3 -Oz
 LDLIBS += -lm -lgcc -lc
 
 # Main rules
