@@ -201,11 +201,11 @@ static int step_votelast() {
   return 1;
 }
 
-static int step_nonpart() {
+static int step_participating() {
   if (current_txn.keyreg.nonpartFlag) {
-    ui_text_put("True");
+    ui_text_put("No");
   } else {
-    ui_text_put("False");
+    ui_text_put("Yes");
   }
   return 1;
 }
@@ -400,11 +400,11 @@ ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bnnn_paging, step_receiver(), {"Receiver",  
 ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bn,          step_amount(),   {"Amount (uAlg)", text});
 ALGO_UX_STEP_NOCB_INIT(PAYMENT, 11, bnnn_paging, step_close(),    {"Close to",      text});
 
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_votepk(),    {"Vote PK",          text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bnnn_paging, step_vrfpk(),     {"VRF PK",           text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votefirst(), {"Vote first",       text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_votelast(),  {"Vote last",        text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_nonpart(),   {"Nonparticipating", text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_votepk(),        {"Vote PK",       text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bnnn_paging, step_vrfpk(),         {"VRF PK",        text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votefirst(),     {"Vote first",    text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_votelast(),      {"Vote last",     text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_participating(), {"Participating", text});
 
 ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
 ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
@@ -505,7 +505,7 @@ static const struct ux_step ux_steps[] = {
   { KEYREG,       "VRF PK",           &step_vrfpk },
   { KEYREG,       "Vote first",       &step_votefirst },
   { KEYREG,       "Vote last",        &step_votelast },
-  { KEYREG,       "Nonparticipating", &step_nonpart },
+  { KEYREG,       "Participating",    &step_participating },
   { ASSET_XFER,   "Asset ID",         &step_asset_xfer_id },
   { ASSET_XFER,   "Asset amt",        &step_asset_xfer_amount },
   { ASSET_XFER,   "Asset src",        &step_asset_xfer_sender },
