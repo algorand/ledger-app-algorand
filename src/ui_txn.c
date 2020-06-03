@@ -201,6 +201,11 @@ static int step_votelast() {
   return 1;
 }
 
+static int step_keydilution() {
+  ui_text_put(u64str(current_txn.keyreg.keyDilution));
+  return 1;
+}
+
 static int step_participating() {
   if (current_txn.keyreg.nonpartFlag) {
     ui_text_put("No");
@@ -404,33 +409,34 @@ ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_votepk(),        {"Vote PK"
 ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bnnn_paging, step_vrfpk(),         {"VRF PK",        text});
 ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votefirst(),     {"Vote first",    text});
 ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_votelast(),      {"Vote last",     text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_participating(), {"Participating", text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_keydilution(),   {"Key dilution",  text});
+ALGO_UX_STEP_NOCB_INIT(KEYREG, 17, bn,          step_participating(), {"Participating", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 17, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 21, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 21, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 22, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 22, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 24, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 24, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 25, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
 
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 25, bn,          step_asset_config_id(),             {"Asset ID",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_total(),          {"Total units",    text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bn,          step_asset_config_decimals(),       {"Decimals",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_url(),            {"URL",            text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_id(),             {"Asset ID",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bn,          step_asset_config_total(),          {"Total units",    text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bn,          step_asset_config_decimals(),       {"Decimals",       text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_url(),            {"URL",            text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
+ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 37, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
 
-ALGO_UX_STEP(37, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(38, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
+ALGO_UX_STEP(38, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
+ALGO_UX_STEP(39, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
 
 const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_0,
@@ -472,6 +478,7 @@ const ux_flow_step_t * const ux_txn_flow [] = {
   &txn_flow_36,
   &txn_flow_37,
   &txn_flow_38,
+  &txn_flow_39,
   FLOW_END_STEP,
 };
 #endif // TARGET_NANOX
@@ -505,6 +512,7 @@ static const struct ux_step ux_steps[] = {
   { KEYREG,       "VRF PK",           &step_vrfpk },
   { KEYREG,       "Vote first",       &step_votefirst },
   { KEYREG,       "Vote last",        &step_votelast },
+  { KEYREG,       "Key dilution",     &step_keydilution },
   { KEYREG,       "Participating",    &step_participating },
   { ASSET_XFER,   "Asset ID",         &step_asset_xfer_id },
   { ASSET_XFER,   "Asset amt",        &step_asset_xfer_amount },
