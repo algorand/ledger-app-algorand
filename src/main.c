@@ -416,7 +416,7 @@ main(void)
         // Key derivation is quite slow, and must come *after* the calls to
         // BLE_power, otherwise the device will freeze on BLE disconnect on
         // the lock screen.
-        algorand_key_derive();
+        algorand_key_derive(0);
         algorand_public_key(publicKey);
 
         ui_idle();
