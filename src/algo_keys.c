@@ -22,7 +22,7 @@ algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
   os_memset(privateKeyData, 0, sizeof(privateKeyData));
 }
 
-void
+int
 algorand_public_key(cx_ecfp_private_key_t *privateKey, uint8_t *buf)
 {
   cx_ecfp_public_key_t publicKey;
@@ -40,4 +40,5 @@ algorand_public_key(cx_ecfp_private_key_t *privateKey, uint8_t *buf)
   if (publicKey.W[32] & 1) {
     buf[31] |= 0x80;
   }
+  return 32;
 }
