@@ -4,8 +4,6 @@
 #include "algo_keys.h"
 
 
-uint8_t publicKey[32];
-
 void
 algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
 {
