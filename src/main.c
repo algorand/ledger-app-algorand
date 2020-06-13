@@ -241,8 +241,7 @@ algorand_main(void)
           cx_ecfp_private_key_t privateKey;
 
           algorand_key_derive(0, &privateKey);
-          algorand_public_key(&privateKey, G_io_apdu_buffer);
-          tx = 32;
+          tx = algorand_public_key(&privateKey, G_io_apdu_buffer);
           THROW(0x9000);
         } break;
 
