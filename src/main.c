@@ -238,8 +238,11 @@ algorand_main(void)
         } break;
 
         case INS_GET_PUBLIC_KEY: {
-          os_memmove(G_io_apdu_buffer, publicKey, sizeof(publicKey));
-          tx = sizeof(publicKey);
+          cx_ecfp_private_key_t privateKey;
+
+          algorand_key_derive(0, &privateKey);
+          algorand_public_key(&privateKey, G_io_apdu_buffer);
+          tx = 32;
           THROW(0x9000);
         } break;
 
@@ -411,13 +414,6 @@ main(void)
         BLE_power(0, NULL);
         BLE_power(1, "Nano X");
 #endif
-
-        // Key derivation is quite slow, and must come *after* the calls to
-        // BLE_power, otherwise the device will freeze on BLE disconnect on
-        // the lock screen.
-        cx_ecfp_private_key_t privateKey;
-        algorand_key_derive(0, &privateKey);
-        algorand_public_key(&privateKey, publicKey);
 
         ui_idle();
 
