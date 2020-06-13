@@ -71,9 +71,11 @@ static int step_txn_type() {
 }
 
 static int step_sender() {
+#if 0 // TEMP
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }
+#endif
 
   char checksummed[65];
   checksummed_addr(current_txn.sender, checksummed);
