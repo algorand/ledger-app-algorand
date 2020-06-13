@@ -57,20 +57,17 @@ txn_approve()
 
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
-  uint8_t privateKeyData[64];
   cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(0, privateKeyData);
-  algorand_private_key(privateKeyData, &privateKey);
+  algorand_key_derive(0, &privateKey);
 
-  int sig_len = cx_eddsa_sign(&privateKey,
-                              0, CX_SHA512,
-                              &msgpack_buf[0], msg_len,
-                              NULL, 0,
-                              G_io_apdu_buffer,
-                              6+2*(32+1), // Formerly from cx_compliance_141.c
-                              NULL);
+  tx = cx_eddsa_sign(&privateKey,
+                     0, CX_SHA512,
+                     &msgpack_buf[0], msg_len,
+                     NULL, 0,
+                     G_io_apdu_buffer,
+                     6+2*(32+1), // Formerly from cx_compliance_141.c
+                     NULL);
 
-  tx = sig_len;
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
 
@@ -418,9 +415,9 @@ main(void)
         // Key derivation is quite slow, and must come *after* the calls to
         // BLE_power, otherwise the device will freeze on BLE disconnect on
         // the lock screen.
-        uint8_t privateKeyData[64];
-        algorand_key_derive(0, privateKeyData);
-        algorand_public_key(privateKeyData, publicKey);
+        cx_ecfp_private_key_t privateKey;
+        algorand_key_derive(0, &privateKey);
+        algorand_public_key(&privateKey, publicKey);
 
         ui_idle();
 
