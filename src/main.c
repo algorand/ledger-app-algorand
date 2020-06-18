@@ -194,14 +194,19 @@ algorand_main(void)
 
         case INS_SIGN_MSGPACK: {
           uint8_t *cdata = &G_io_apdu_buffer[OFFSET_CDATA];
+          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
 
           switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
           case P1_FIRST:
             os_memset(&current_txn, 0, sizeof(current_txn));
             current_txn.accountId = 0;
             if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
+              if (lc < sizeof(uint32_t)) {
+                THROW(0x6700);
+              }
               current_txn.accountId = U4BE(cdata, 0);
               cdata += sizeof(uint32_t);
+              lc -= sizeof(uint32_t);
             }
             msgpack_next_off = 0;
             break;
@@ -211,7 +216,6 @@ algorand_main(void)
             THROW(0x6B00);
           }
 
-          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
           if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
             THROW(0x6700);
           }
