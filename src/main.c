@@ -19,6 +19,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
+#define P1_WITH_ACCOUNT_ID  0x01
 #define P2_LAST  0x00
 #define P2_MORE  0x80
 
@@ -59,7 +60,6 @@ txn_approve()
 
   cx_ecfp_private_key_t privateKey;
   algorand_key_derive(0, &privateKey);
-
   tx = cx_eddsa_sign(&privateKey,
                      0, CX_SHA512,
                      &msgpack_buf[0], msg_len,
@@ -193,8 +193,16 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_MSGPACK: {
-          switch (G_io_apdu_buffer[OFFSET_P1]) {
+          uint8_t *cdata = &G_io_apdu_buffer[OFFSET_CDATA];
+
+          switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
           case P1_FIRST:
+            os_memset(&current_txn, 0, sizeof(current_txn));
+            current_txn.accountId = 0;
+            if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
+              current_txn.accountId = U4BE(cdata, 0);
+              cdata += sizeof(uint32_t);
+            }
             msgpack_next_off = 0;
             break;
           case P1_MORE:
@@ -208,7 +216,7 @@ algorand_main(void)
             THROW(0x6700);
           }
 
-          os_memmove(&msgpack_buf[msgpack_next_off], &G_io_apdu_buffer[OFFSET_CDATA], lc);
+          os_memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
           msgpack_next_off += lc;
 
           switch (G_io_apdu_buffer[OFFSET_P2]) {
@@ -239,8 +247,22 @@ algorand_main(void)
 
         case INS_GET_PUBLIC_KEY: {
           cx_ecfp_private_key_t privateKey;
+          uint32_t              accountId = 0;
 
-          algorand_key_derive(0, &privateKey);
+          if (rx > OFFSET_LC) {
+              uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
+              if (lc == sizeof(uint32_t)) {
+                accountId = U4BE(G_io_apdu_buffer, OFFSET_CDATA);
+              } else if (lc != 0) {
+                return THROW(0x6a85);
+              }
+          }
+
+          /*
+           * Push derived key to `G_io_apdu_buffer`
+           * and return pushed buffer length.
+           */
+          algorand_key_derive(accountId, &privateKey);
           tx = algorand_public_key(&privateKey, G_io_apdu_buffer);
           THROW(0x9000);
         } break;

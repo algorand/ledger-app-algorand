@@ -56,6 +56,8 @@ struct txn_asset_config {
 
 struct txn {
   enum TXTYPE type;
+  // Account Id asscociated with this transaction.
+  uint32_t accountId;
 
   // Common header fields
   uint8_t sender[32];
