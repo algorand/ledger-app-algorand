@@ -23,11 +23,14 @@ algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
 }
 
 int
-algorand_public_key(cx_ecfp_private_key_t *privateKey, uint8_t *buf)
+algorand_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
 {
   cx_ecfp_public_key_t publicKey;
 
-  cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, privateKey, 1);
+  cx_ecfp_generate_pair(CX_CURVE_Ed25519,
+                        &publicKey,
+                        (cx_ecfp_private_key_t *)privateKey,
+                        1);
 
   // publicKey.W is 65 bytes: a header byte, followed by a 32-byte
   // x coordinate, followed by a 32-byte y coordinate.  The bytes
