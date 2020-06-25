@@ -57,6 +57,7 @@ txn_approve()
   msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
 
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
+  PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
 
   cx_ecfp_private_key_t privateKey;
   algorand_key_derive(current_txn.accountId, &privateKey);
