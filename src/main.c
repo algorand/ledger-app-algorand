@@ -60,6 +60,9 @@ txn_approve()
 
   cx_ecfp_private_key_t privateKey;
   algorand_key_derive(current_txn.accountId, &privateKey);
+
+  io_seproxyhal_io_heartbeat();
+
   tx = cx_eddsa_sign(&privateKey,
                      0, CX_SHA512,
                      &msgpack_buf[0], msg_len,
@@ -67,6 +70,8 @@ txn_approve()
                      G_io_apdu_buffer,
                      6+2*(32+1), // Formerly from cx_compliance_141.c
                      NULL);
+
+  io_seproxyhal_io_heartbeat();
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
