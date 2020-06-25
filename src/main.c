@@ -59,7 +59,7 @@ txn_approve()
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
 
   cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(0, &privateKey);
+  algorand_key_derive(current_txn.accountId, &privateKey);
   tx = cx_eddsa_sign(&privateKey,
                      0, CX_SHA512,
                      &msgpack_buf[0], msg_len,
