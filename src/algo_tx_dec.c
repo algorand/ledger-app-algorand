@@ -216,8 +216,10 @@ tx_decode(uint8_t *buf, int buflen, struct txn *t)
 {
   char* ret = NULL;
   uint8_t* buf_end = buf + buflen;
+  uint32_t accountId = t->accountId; // Save `accountId`
 
   os_memset(t, 0, sizeof(*t));
+  t->accountId = accountId;
 
   BEGIN_TRY {
     TRY {
