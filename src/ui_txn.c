@@ -73,12 +73,11 @@ static int step_txn_type() {
 static int step_sender() {
   uint8_t publicKey[32];
   cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(0, &privateKey);
+  algorand_key_derive(current_txn.accountId, &privateKey);
   algorand_public_key(&privateKey, publicKey);
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }
-
 
   char checksummed[65];
   checksummed_addr(current_txn.sender, checksummed);
