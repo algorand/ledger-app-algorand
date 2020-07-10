@@ -203,7 +203,7 @@ map_kv_params(uint8_t **p, uint8_t *e, char *key, struct asset_params *params)
 }
 
 unsigned int
-tx_encode(struct txn *t, uint8_t *buf, int buflen)
+tx_encode(txn_t *t, uint8_t *buf, int buflen)
 {
   char *typestr;
   switch (t->type) {

@@ -4,6 +4,7 @@
 
 #include "algo_keys.h"
 #include "algo_ui.h"
+#include "algo_addr.h"
 #include "algo_tx.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -20,6 +21,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
 #define P1_WITH_ACCOUNT_ID  0x01
+#define P1_WITH_REQUEST_USER_APPROVAL  0x80
 #define P2_LAST  0x00
 #define P2_MORE  0x80
 
@@ -33,7 +35,8 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define INS_SIGN_MSGPACK    0x08
 
 /* The transaction that we might ask the user to approve. */
-struct txn current_txn;
+txn_t current_txn;
+already_computed_key_t current_pubkey;
 
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
@@ -84,8 +87,22 @@ txn_approve()
   ui_idle();
 }
 
+void address_approve()
+{
+  unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
+
+  G_io_apdu_buffer[tx++] = 0x90;
+  G_io_apdu_buffer[tx++] = 0x00;
+
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+
+  // Display back the original UX
+  ui_idle();
+}
+
 void
-txn_deny()
+user_approval_denied()
 {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -104,6 +121,12 @@ copy_and_advance(void *dst, uint8_t **p, size_t len)
   *p += len;
 }
 
+void init_globals(){
+  memset(&current_txn, 0, sizeof(current_txn));
+  memset(&current_pubkey, 0, sizeof(current_pubkey));
+  fetch_public_key(0, text);
+}
+
 static void
 algorand_main(void)
 {
@@ -112,11 +135,6 @@ algorand_main(void)
   volatile unsigned int flags = 0;
 
   msgpack_next_off = 0;
-
-#if defined(TARGET_NANOS)
-  // next timer callback in 500 ms
-  UX_CALLBACK_SET_INTERVAL(500);
-#endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -134,6 +152,8 @@ algorand_main(void)
                 // an error
         rx = io_exchange(CHANNEL_APDU | flags, rx);
         flags = 0;
+
+        PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
 
         // no apdu received, well, reset the session, and reset the
         // bootloader configuration
@@ -256,8 +276,9 @@ algorand_main(void)
         } break;
 
         case INS_GET_PUBLIC_KEY: {
-          cx_ecfp_private_key_t privateKey;
-          uint32_t              accountId = 0;
+          uint32_t accountId = 0;
+          char checksummed[65];
+          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
 
           if (rx > OFFSET_LC) {
               uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
@@ -272,9 +293,18 @@ algorand_main(void)
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
-          algorand_key_derive(accountId, &privateKey);
-          tx = algorand_public_key(&privateKey, G_io_apdu_buffer);
-          THROW(0x9000);
+          fetch_public_key(accountId, G_io_apdu_buffer);
+
+          if(user_approval_required){
+            checksummed_addr(G_io_apdu_buffer, checksummed);
+            ui_text_put(checksummed);
+            ui_address_approval();
+            flags |= IO_ASYNCH_REPLY;
+          }
+          else{
+            tx = ALGORAND_PUBLIC_KEY_SIZE;
+            THROW(0x9000);
+          }
         } break;
 
         case 0xFF: // return to dashboard
@@ -350,12 +380,6 @@ unsigned char io_event(unsigned char channel) {
   case SEPROXYHAL_TAG_TICKER_EVENT:
     UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer,
     {
-#if defined(TARGET_NANOS)
-      // defaulty retrig very soon (will be overriden during
-      // stepper_prepro)
-      UX_CALLBACK_SET_INTERVAL(500);
-      UX_REDISPLAY();
-#endif
     });
     break;
   }
@@ -422,10 +446,6 @@ main(void)
   for (;;) {
     UX_INIT();
 
-#if defined(TARGET_NANOS)
-    UX_MENU_INIT();
-#endif
-
     BEGIN_TRY {
       TRY {
         io_seproxyhal_init();
@@ -437,16 +457,14 @@ main(void)
         USB_power(0);
         USB_power(1);
 
-        // Display a loading screen before (slowly) deriving keys. BLE_power
-        // also seems to be a bit slow, so show the loading screen here.
-        ui_loading();
-
 #if defined(TARGET_NANOX)
         BLE_power(0, NULL);
         BLE_power(1, "Nano X");
 #endif
 
         ui_idle();
+
+        init_globals();
 
         algorand_main();
       }

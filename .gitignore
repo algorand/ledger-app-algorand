@@ -3,3 +3,4 @@
 /dep
 /obj
 *.swp
+/src/glyphs.*

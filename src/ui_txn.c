@@ -9,6 +9,8 @@
 #include "base64.h"
 #include "glyphs.h"
 
+char caption[20];
+
 static char *
 u64str(uint64_t v)
 {
@@ -72,9 +74,7 @@ static int step_txn_type() {
 
 static int step_sender() {
   uint8_t publicKey[32];
-  cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(current_txn.accountId, &privateKey);
-  algorand_public_key(&privateKey, publicKey);
+  fetch_public_key(current_txn.accountId, publicKey);
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }
@@ -101,15 +101,15 @@ static int step_fee() {
   return 1;
 }
 
-static int step_firstvalid() {
-  ui_text_put(u64str(current_txn.firstValid));
-  return 1;
-}
+// static int step_firstvalid() {
+//   ui_text_put(u64str(current_txn.firstValid));
+//   return 1;
+// }
 
-static int step_lastvalid() {
-  ui_text_put(u64str(current_txn.lastValid));
-  return 1;
-}
+// static int step_lastvalid() {
+//   ui_text_put(u64str(current_txn.lastValid));
+//   return 1;
+// }
 
 static const char* default_genesisID = "mainnet-v1.0";
 static const uint8_t default_genesisHash[] = {
@@ -392,258 +392,195 @@ static int step_asset_config_clawback() {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
-#if defined(TARGET_NANOX)
-static unsigned int ux_last_step;
+typedef int (*format_function_t)();
+typedef struct{
+  char* caption;
+  format_function_t value_setter;
+  uint8_t type;
+} screen_t;
 
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 0, bn,          step_txn_type(),    {"Txn type",     text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 1, bnnn_paging, step_sender(),      {"Sender",       text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bnnn_paging, step_rekey(),       {"RekeyTo",      text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 3, bn,          step_fee(),         {"Fee (uAlg)",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 4, bn,          step_firstvalid(),  {"First valid",  text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 5, bn,          step_lastvalid(),   {"Last valid",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 6, bn,          step_genesisID(),   {"Genesis ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 7, bnnn_paging, step_genesisHash(), {"Genesis hash", text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 8, bn,          step_note(),        {"Note",         text});
-
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 9,  bnnn_paging, step_receiver(), {"Receiver",      text});
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 10, bn,          step_amount(),   {"Amount (uAlg)", text});
-ALGO_UX_STEP_NOCB_INIT(PAYMENT, 11, bnnn_paging, step_close(),    {"Close to",      text});
-
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 12, bnnn_paging, step_votepk(),        {"Vote PK",       text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 13, bnnn_paging, step_vrfpk(),         {"VRF PK",        text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 14, bn,          step_votefirst(),     {"Vote first",    text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 15, bn,          step_votelast(),      {"Vote last",     text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 16, bn,          step_keydilution(),   {"Key dilution",  text});
-ALGO_UX_STEP_NOCB_INIT(KEYREG, 17, bn,          step_participating(), {"Participating", text});
-
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 18, bn,          step_asset_xfer_id(),       {"Asset ID",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 19, bn,          step_asset_xfer_amount(),   {"Asset amt",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 20, bnnn_paging, step_asset_xfer_sender(),   {"Asset src",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 21, bnnn_paging, step_asset_xfer_receiver(), {"Asset dst",   text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_XFER, 22, bnnn_paging, step_asset_xfer_close(),    {"Asset close", text});
-
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 23, bn,          step_asset_freeze_id(),      {"Asset ID",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 24, bnnn_paging, step_asset_freeze_account(), {"Asset account", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_FREEZE, 25, bn,          step_asset_freeze_flag(),    {"Freeze flag",   text});
-
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 26, bn,          step_asset_config_id(),             {"Asset ID",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 27, bn,          step_asset_config_total(),          {"Total units",    text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 28, bn,          step_asset_config_default_frozen(), {"Default frozen", text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 29, bnnn_paging, step_asset_config_unitname(),       {"Unit name",      text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 30, bn,          step_asset_config_decimals(),       {"Decimals",       text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 31, bnnn_paging, step_asset_config_assetname(),      {"Asset name",     text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 32, bnnn_paging, step_asset_config_url(),            {"URL",            text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 33, bnnn_paging, step_asset_config_metadata_hash(),  {"Metadata hash",  text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 34, bnnn_paging, step_asset_config_manager(),        {"Manager",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 35, bnnn_paging, step_asset_config_reserve(),        {"Reserve",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 36, bnnn_paging, step_asset_config_freeze(),         {"Freezer",        text});
-ALGO_UX_STEP_NOCB_INIT(ASSET_CONFIG, 37, bnnn_paging, step_asset_config_clawback(),       {"Clawback",       text});
-
-ALGO_UX_STEP(38, pbb, NULL, 0, txn_approve(), NULL, {&C_icon_validate_14, "Sign",   "transaction"});
-ALGO_UX_STEP(39, pbb, NULL, 0, txn_deny(),    NULL, {&C_icon_crossmark,   "Cancel", "signature"});
-
-const ux_flow_step_t * const ux_txn_flow [] = {
-  &txn_flow_0,
-  &txn_flow_1,
-  &txn_flow_2,
-  &txn_flow_3,
-  &txn_flow_4,
-  &txn_flow_5,
-  &txn_flow_6,
-  &txn_flow_7,
-  &txn_flow_8,
-  &txn_flow_9,
-  &txn_flow_10,
-  &txn_flow_11,
-  &txn_flow_12,
-  &txn_flow_13,
-  &txn_flow_14,
-  &txn_flow_15,
-  &txn_flow_16,
-  &txn_flow_17,
-  &txn_flow_18,
-  &txn_flow_19,
-  &txn_flow_20,
-  &txn_flow_21,
-  &txn_flow_22,
-  &txn_flow_23,
-  &txn_flow_24,
-  &txn_flow_25,
-  &txn_flow_26,
-  &txn_flow_27,
-  &txn_flow_28,
-  &txn_flow_29,
-  &txn_flow_30,
-  &txn_flow_31,
-  &txn_flow_32,
-  &txn_flow_33,
-  &txn_flow_34,
-  &txn_flow_35,
-  &txn_flow_36,
-  &txn_flow_37,
-  &txn_flow_38,
-  &txn_flow_39,
-  FLOW_END_STEP,
-};
-#endif // TARGET_NANOX
-
-#if defined(TARGET_NANOS)
-struct ux_step {
-  // The display callback returns a non-zero value if it placed information
-  // about the associated caption into lineBuffer, which should be displayed.
-  // If it returns 0, the approval flow moves on to the next step.  The
-  // callback is invoked only if the transaction type matches txtype.
-  int txtype;
-  const char *caption;
-  int (*display)(void);
+screen_t const screen_table[] = {
+  {"Txn type", &step_txn_type, ALL_TYPES},
+  {"Sender", &step_sender, ALL_TYPES},
+  {"RekeyTo", &step_rekey, ALL_TYPES},
+  {"Fee (uAlg)", &step_fee, ALL_TYPES},
+  // {"First valid", step_firstvalid, ALL_TYPES},
+  // {"Last valid", step_lastvalid, ALL_TYPES},
+  {"Genesis ID", &step_genesisID, ALL_TYPES},
+  {"Genesis hash", &step_genesisHash, ALL_TYPES},
+  {"Note", &step_note, ALL_TYPES},
+  {"Receiver", &step_receiver, PAYMENT},
+  {"Amount (uAlg)", step_amount, PAYMENT},
+  {"Close to", &step_close, PAYMENT},
+  {"Vote PK", &step_votepk, KEYREG},
+  {"VRF PK", &step_vrfpk, KEYREG},
+  {"Vote first", &step_votefirst, KEYREG},
+  {"Vote last", &step_votelast, KEYREG},
+  {"Key dilution", &step_keydilution, KEYREG},
+  {"Participating", &step_participating, KEYREG},
+  {"Asset ID", &step_asset_xfer_id, ASSET_XFER},
+  {"Asset amt", &step_asset_xfer_amount, ASSET_XFER},
+  {"Asset src", &step_asset_xfer_sender, ASSET_XFER},
+  {"Asset dst", &step_asset_xfer_receiver, ASSET_XFER},
+  {"Asset close", &step_asset_xfer_close, ASSET_XFER},
+  {"Asset ID", &step_asset_freeze_id, ASSET_FREEZE},
+  {"Asset account", &step_asset_freeze_account, ASSET_FREEZE},
+  {"Freeze flag", &step_asset_freeze_flag, ASSET_FREEZE},
+  {"Asset ID", &step_asset_config_id, ASSET_CONFIG},
+  {"Total units", &step_asset_config_total, ASSET_CONFIG},
+  {"Default frozen", &step_asset_config_default_frozen, ASSET_CONFIG},
+  {"Unit name", &step_asset_config_unitname, ASSET_CONFIG},
+  {"Decimals", &step_asset_config_decimals, ASSET_CONFIG},
+  {"Asset name", &step_asset_config_assetname, ASSET_CONFIG},
+  {"URL", &step_asset_config_url, ASSET_CONFIG},
+  {"Metadata hash", &step_asset_config_metadata_hash, ASSET_CONFIG},
+  {"Manager", &step_asset_config_manager, ASSET_CONFIG},
+  {"Reserve", &step_asset_config_reserve, ASSET_CONFIG},
+  {"Freezer", &step_asset_config_freeze, ASSET_CONFIG},
+  {"Clawback", &step_asset_config_clawback, ASSET_CONFIG}
 };
 
-static unsigned int ux_current_step;
-static const struct ux_step ux_steps[] = {
-  { ALL_TYPES,    "Txn type",         &step_txn_type },
-  { ALL_TYPES,    "Sender",           &step_sender },
-  { ALL_TYPES,    "RekeyTo",          &step_rekey },
-  { ALL_TYPES,    "Fee (uAlg)",       &step_fee },
-  { ALL_TYPES,    "First valid",      &step_firstvalid },
-  { ALL_TYPES,    "Last valid",       &step_lastvalid },
-  { ALL_TYPES,    "Genesis ID",       &step_genesisID },
-  { ALL_TYPES,    "Genesis hash",     &step_genesisHash },
-  { ALL_TYPES,    "Note",             &step_note },
-  { PAYMENT,      "Receiver",         &step_receiver },
-  { PAYMENT,      "Amount (uAlg)",    &step_amount },
-  { PAYMENT,      "Close to",         &step_close },
-  { KEYREG,       "Vote PK",          &step_votepk },
-  { KEYREG,       "VRF PK",           &step_vrfpk },
-  { KEYREG,       "Vote first",       &step_votefirst },
-  { KEYREG,       "Vote last",        &step_votelast },
-  { KEYREG,       "Key dilution",     &step_keydilution },
-  { KEYREG,       "Participating",    &step_participating },
-  { ASSET_XFER,   "Asset ID",         &step_asset_xfer_id },
-  { ASSET_XFER,   "Asset amt",        &step_asset_xfer_amount },
-  { ASSET_XFER,   "Asset src",        &step_asset_xfer_sender },
-  { ASSET_XFER,   "Asset dst",        &step_asset_xfer_receiver },
-  { ASSET_XFER,   "Asset close",      &step_asset_xfer_close },
-  { ASSET_FREEZE, "Asset ID",         &step_asset_freeze_id },
-  { ASSET_FREEZE, "Asset account",    &step_asset_freeze_account },
-  { ASSET_FREEZE, "Freeze flag",      &step_asset_freeze_flag },
-  { ASSET_CONFIG, "Asset ID",         &step_asset_config_id },
-  { ASSET_CONFIG, "Total units",      &step_asset_config_total },
-  { ASSET_CONFIG, "Default frozen",   &step_asset_config_default_frozen },
-  { ASSET_CONFIG, "Unit name",        &step_asset_config_unitname },
-  { ASSET_CONFIG, "Decimals",         &step_asset_config_decimals },
-  { ASSET_CONFIG, "Asset name",       &step_asset_config_assetname },
-  { ASSET_CONFIG, "URL",              &step_asset_config_url },
-  { ASSET_CONFIG, "Metadata hash",    &step_asset_config_metadata_hash },
-  { ASSET_CONFIG, "Manager",          &step_asset_config_manager },
-  { ASSET_CONFIG, "Reserve",          &step_asset_config_reserve },
-  { ASSET_CONFIG, "Freezer",          &step_asset_config_freeze },
-  { ASSET_CONFIG, "Clawback",         &step_asset_config_clawback },
-};
+#define SCREEN_NUM (int8_t)(sizeof(screen_table)/sizeof(screen_t))
 
-static const bagl_element_t bagl_ui_approval_nanos[] = {
-  { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-  { {BAGL_LABELINE, 0x02, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    "Sign transaction", 0, 0, 0, NULL, NULL, NULL, },
-  { {BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CROSS},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-  { {BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-};
+void display_next_state(bool is_upper_border);
 
-static unsigned int
-bagl_ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter)
-{
-  switch (button_mask) {
-  case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-    txn_approve();
-    break;
+UX_STEP_NOCB(
+    ux_confirm_tx_init_flow_step,
+    pnn,
+    {
+      &C_icon_eye,
+      "Review",
+      "Transaction",
+    });
 
-  case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-    txn_deny();
+UX_STEP_INIT(
+    ux_init_upper_border,
+    NULL,
+    NULL,
+    {
+        display_next_state(true);
+    });
+UX_STEP_NOCB(
+    ux_variable_display,
+    bnnn_paging,
+    {
+      .title = caption,
+      .text = text,
+    });
+UX_STEP_INIT(
+    ux_init_lower_border,
+    NULL,
+    NULL,
+    {
+        display_next_state(false);
+    });
+
+UX_FLOW_DEF_VALID(
+    ux_confirm_tx_finalize_step,
+    pnn,
+    txn_approve(),
+    {
+      &C_icon_validate_14,
+      "Sign",
+      "Transaction",
+    });
+
+UX_FLOW_DEF_VALID(
+    ux_reject_tx_flow_step,
+    pnn,
+    user_approval_denied(),
+    {
+      &C_icon_crossmark,
+      "Cancel",
+      "Transaction"
+    });
+
+UX_FLOW(ux_txn_flow,
+  &ux_confirm_tx_init_flow_step,
+
+  &ux_init_upper_border,
+  &ux_variable_display,
+  &ux_init_lower_border,
+
+  &ux_confirm_tx_finalize_step,
+  &ux_reject_tx_flow_step
+);
+
+volatile int8_t current_data_index;
+
+bool set_state_data(bool forward){
+    // Apply last formatter to fill the screen's buffer
+    do{
+      current_data_index = forward ? current_data_index+1 : current_data_index-1;
+      if(screen_table[current_data_index].type == ALL_TYPES ||
+         screen_table[current_data_index].type == current_txn.type){
+           if(((format_function_t)PIC(screen_table[current_data_index].value_setter))() != 0){
     break;
   }
-  return 0;
 }
+    } while(current_data_index >= 0 &&
+            current_data_index < SCREEN_NUM);
 
-static char captionBuffer[32];
-
-static const bagl_element_t bagl_ui_step_nanos[] = {
-  { {BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-     0, 0},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-
-  /* Caption */
-  { {BAGL_LABELINE, 0x02, 0, 12, 128, 11, 0, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-    captionBuffer, 0, 0, 0, NULL, NULL, NULL, },
-
-  /* Value */
-  { {BAGL_LABELINE, 0x02, 23, 26, 82, 11, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-     BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-    lineBuffer, 0, 0, 0, NULL, NULL, NULL, },
-
-  { {BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000,
-     0, BAGL_GLYPH_ICON_CROSS},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-  { {BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000,
-     0, BAGL_GLYPH_ICON_RIGHT},
-    NULL, 0, 0, 0, NULL, NULL, NULL, },
-};
-
-static void bagl_ui_step_nanos_display();
-
-static unsigned int
-bagl_ui_step_nanos_button(unsigned int button_mask, unsigned int button_mask_counter)
-{
-  switch (button_mask) {
-  case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-    if (ui_text_more()) {
-      UX_REDISPLAY();
-      return 0;
+    if(current_data_index < 0 || current_data_index >= SCREEN_NUM){
+      return false;
     }
 
-    ux_current_step++;
-    bagl_ui_step_nanos_display();
-    return 0;
+    strncpy(caption, (char*)PIC(screen_table[current_data_index].caption), sizeof(caption));
 
-  case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-    txn_deny();
-    return 0;
+    PRINTF("caption: %s\n", caption);
+    PRINTF("details: %s\n\n", text);
+    return true;
+}
+
+volatile uint8_t current_state;
+
+#define INSIDE_BORDERS 0
+#define OUT_OF_BORDERS 1
+
+void display_next_state(bool is_upper_border){
+
+    if(is_upper_border){
+        if(current_state == OUT_OF_BORDERS){ // -> from first screen
+            current_state = INSIDE_BORDERS;
+            set_state_data(true);
+            ux_flow_next();
+    }
+        else{
+            if(set_state_data(false)){ // <- from middle, more screens available
+                ux_flow_next();
   }
-
-  return 0;
+            else{ // <- from middle, no more screens available
+                current_state = OUT_OF_BORDERS;
+                ux_flow_prev();
 }
-
-static void
-bagl_ui_step_nanos_display()
-{
-  while (1) {
-    if (ux_current_step >= sizeof(ux_steps) / sizeof(ux_steps[0])) {
-      UX_DISPLAY(bagl_ui_approval_nanos, NULL);
-      return;
+        }
     }
-
-    int txtype = ux_steps[ux_current_step].txtype;
-    if (txtype == ALL_TYPES || txtype == current_txn.type) {
-      const char* step_caption = (const char*) PIC(ux_steps[ux_current_step].caption);
-      int (*step_display)(void) = (int (*)(void)) PIC(ux_steps[ux_current_step].display);
-      if (step_display()) {
-        snprintf(captionBuffer, sizeof(captionBuffer), "%s", step_caption);
-        ui_text_more();
-        UX_DISPLAY(bagl_ui_step_nanos, NULL);
-        return;
+    else // walking over the second border
+{
+        if(current_state == OUT_OF_BORDERS){ // <- from last screen
+            current_state = INSIDE_BORDERS;
+            set_state_data(false);
+            ux_flow_prev();
+    }
+        else{
+            if(set_state_data(true)){ // -> from middle, more screens available
+                /*dirty hack to have coherent behavior on bnnn_paging when there are multiple screens*/
+                G_ux.flow_stack[G_ux.stack_count-1].prev_index = G_ux.flow_stack[G_ux.stack_count-1].index-2;
+                G_ux.flow_stack[G_ux.stack_count-1].index--;
+                ux_flow_relayout();
+                /*end of dirty hack*/
       }
+            else{ // -> from middle, no more screens available
+                current_state = OUT_OF_BORDERS;
+                ux_flow_next();
     }
-
-    ux_current_step++;
   }
 }
-#endif // TARGET_NANOS
 
-void
-ui_txn()
-{
+}
+
+
+void ui_txn(void) {
   PRINTF("Transaction:\n");
   PRINTF("  Type: %d\n", current_txn.type);
   PRINTF("  Sender: %.*h\n", 32, current_txn.sender);
@@ -662,16 +599,10 @@ ui_txn()
     PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
   }
 
-#if defined(TARGET_NANOS)
-  ux_current_step = 0;
-  bagl_ui_step_nanos_display();
-#endif
-
-#if defined(TARGET_NANOX)
-  ux_last_step = 0;
+  current_data_index = -1;
+  current_state = OUT_OF_BORDERS;
   if (G_ux.stack_count == 0) {
     ux_stack_push();
   }
   ux_flow_init(0, ux_txn_flow, NULL);
-#endif
 }

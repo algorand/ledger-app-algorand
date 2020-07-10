@@ -58,7 +58,7 @@ struct txn_asset_config {
   struct asset_params params;
 };
 
-struct txn {
+typedef struct{
   enum TXTYPE type;
   // Account Id asscociated with this transaction.
   uint32_t accountId;
@@ -88,23 +88,24 @@ struct txn {
     struct txn_asset_freeze asset_freeze;
     struct txn_asset_config asset_config;
   };
-};
+} txn_t;
 
 // tx_encode produces a canonical msgpack encoding of a transaction.
 // buflen is the size of the buffer.  The return value is the length
 // of the resulting encoding.
-unsigned int tx_encode(struct txn *t, uint8_t *buf, int buflen);
+unsigned int tx_encode(txn_t *t, uint8_t *buf, int buflen);
 
 // tx_decode takes a canonical msgpack encoding of a transaction, and
-// unpacks it into a struct txn.  The return value is NULL for success,
+// unpacks it into a txn_t.  The return value is NULL for success,
 // or a string describing the error on failure.  Decoding may or may
 // not succeed for a non-canonical encoding.
-char* tx_decode(uint8_t *buf, int buflen, struct txn *t);
+char* tx_decode(uint8_t *buf, int buflen, txn_t *t);
 
 // We have a global transaction that is the subject of the current
 // operation, if any.
-extern struct txn current_txn;
+extern txn_t current_txn;
 
 // Two callbacks into the main code: approve and deny signing.
 void txn_approve();
-void txn_deny();
+void address_approve();
+void user_approval_denied();

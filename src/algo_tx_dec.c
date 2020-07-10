@@ -212,7 +212,7 @@ decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
 }
 
 char*
-tx_decode(uint8_t *buf, int buflen, struct txn *t)
+tx_decode(uint8_t *buf, int buflen, txn_t *t)
 {
   char* ret = NULL;
   uint8_t* buf_end = buf + buflen;
