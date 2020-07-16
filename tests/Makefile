@@ -10,7 +10,7 @@ test: $(APP_ALGORAND_BIN)/app.elf
 	PYTHONPATH=$(APP_ALGORAND_CLI) pytest --verbose --app $< test/
 
 $(APP_ALGORAND_BIN)/app.elf: FORCE
-	$(MAKE) -C $(APP_ALGORAND_SRC) DEBUG=$(DEBUG)
+	$(MAKE) -j -C $(APP_ALGORAND_SRC) DEBUG=$(DEBUG)
 
 
 .PHONY: FORCE
