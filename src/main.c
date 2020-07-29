@@ -22,6 +22,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define P1_MORE  0x80
 #define P1_WITH_ACCOUNT_ID  0x01
 #define P1_WITH_REQUEST_USER_APPROVAL  0x80
+
 #define P2_LAST  0x00
 #define P2_MORE  0x80
 
@@ -305,6 +306,7 @@ algorand_main(void)
             tx = ALGORAND_PUBLIC_KEY_SIZE;
             THROW(0x9000);
           }
+          
         } break;
 
         case 0xFF: // return to dashboard
