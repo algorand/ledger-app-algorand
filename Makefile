@@ -22,13 +22,14 @@ endif
 # Build configuration
 
 APP_SOURCE_PATH += src
-SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f lib_ux
 
 DEFINES += APPVERSION=\"$(APPVERSION)\"
 
 DEFINES += OS_IO_SEPROXYHAL
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
+DEFINES += HAVE_UX_FLOW
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
@@ -44,10 +45,7 @@ DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
 DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
 DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
 
-DEFINES += HAVE_UX_FLOW
-
 SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-SDK_SOURCE_PATH  += lib_ux
 else
 $(error unknown device TARGET_NAME)
 endif
@@ -93,7 +91,7 @@ $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Oz
+CFLAGS += -O3 -Oz -I/usr/include
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
