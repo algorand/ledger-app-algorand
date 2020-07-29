@@ -263,12 +263,17 @@ tx_encode(struct txn *t, uint8_t *buf, int buflen)
   buf[0] +=                 map_kv_str   (&p, e, "gen",     t->genesisID, sizeof(t->genesisID));
   buf[0] +=                 map_kv_bin   (&p, e, "gh",      t->genesisHash, sizeof(t->genesisHash));
   buf[0] +=                 map_kv_uint64(&p, e, "lv",      t->lastValid);
+  buf[0] += T(KEYREG,       map_kv_bool  (&p, e, "nonpart", t->keyreg.nonpartFlag));
   buf[0] +=                 map_kv_bin   (&p, e, "note",    t->note, t->note_len);
   buf[0] += T(PAYMENT,      map_kv_bin   (&p, e, "rcv",     t->payment.receiver, sizeof(t->payment.receiver)));
+  buf[0] +=                 map_kv_bin   (&p, e, "rekey",   t->rekey, sizeof(t->rekey));
   buf[0] += T(KEYREG,       map_kv_bin   (&p, e, "selkey",  t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
   buf[0] +=                 map_kv_bin   (&p, e, "snd",     t->sender, sizeof(t->sender));
   buf[0] +=                 map_kv_str   (&p, e, "type",    typestr, SIZE_MAX);
+  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votefst", t->keyreg.voteFirst));
+  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votekd",  t->keyreg.keyDilution));
   buf[0] += T(KEYREG,       map_kv_bin   (&p, e, "votekey", t->keyreg.votepk, sizeof(t->keyreg.votepk)));
+  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votelst", t->keyreg.voteLast));
   buf[0] += T(ASSET_XFER,   map_kv_uint64(&p, e, "xaid",    t->asset_xfer.id));
 
 #undef T
