@@ -397,7 +397,7 @@ static unsigned int ux_last_step;
 
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 0, bn,          step_txn_type(),    {"Txn type",     text});
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 1, bnnn_paging, step_sender(),      {"Sender",       text});
-ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bnnn_paging, step_rekey(),       {"RekeyTo",      text});
+ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 2, bnnn_paging, step_rekey(),       {"Rekey to",     text});
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 3, bn,          step_fee(),         {"Fee (uAlg)",   text});
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 4, bn,          step_firstvalid(),  {"First valid",  text});
 ALGO_UX_STEP_NOCB_INIT(ALL_TYPES, 5, bn,          step_lastvalid(),   {"Last valid",   text});
@@ -502,7 +502,7 @@ static unsigned int ux_current_step;
 static const struct ux_step ux_steps[] = {
   { ALL_TYPES,    "Txn type",         &step_txn_type },
   { ALL_TYPES,    "Sender",           &step_sender },
-  { ALL_TYPES,    "RekeyTo",          &step_rekey },
+  { ALL_TYPES,    "Rekey to",         &step_rekey },
   { ALL_TYPES,    "Fee (uAlg)",       &step_fee },
   { ALL_TYPES,    "First valid",      &step_firstvalid },
   { ALL_TYPES,    "Last valid",       &step_lastvalid },
