@@ -477,6 +477,7 @@ typedef struct{
 screen_t const screen_table[] = {
   {"Txn type", &step_txn_type, ALL_TYPES},
   {"Sender", &step_sender, ALL_TYPES},
+  {"Rekey to", &step_rekey, ALL_TYPES},
   {"Fee (Alg)", &step_fee, ALL_TYPES},
   // {"First valid", step_firstvalid, ALL_TYPES},
   // {"Last valid", step_lastvalid, ALL_TYPES},
