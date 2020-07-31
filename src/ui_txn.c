@@ -9,6 +9,18 @@
 #include "base64.h"
 #include "glyphs.h"
 
+bool is_opt_in_tx(){
+  if(current_txn.type == ASSET_XFER &&
+     current_txn.payment.amount == 0 &&
+     current_txn.asset_xfer.id != 0 &&
+     memcmp(current_txn.asset_xfer.receiver,
+            current_txn.asset_xfer.sender,
+            sizeof(current_txn.asset_xfer.receiver) == 0)){
+      return true;
+  }
+  return false;
+}
+
 char caption[20];
 
 static char *
@@ -129,7 +141,11 @@ static int step_txn_type() {
     break;
 
   case ASSET_XFER:
-    ui_text_put("Asset xfer");
+    if(is_opt_in_tx()){
+      ui_text_put("Opt-in");
+    }else{
+      ui_text_put("Asset xfer");
+    }
     break;
 
   case ASSET_FREEZE:
@@ -149,7 +165,6 @@ static int step_txn_type() {
 static int step_sender() {
   uint8_t publicKey[32];
   fetch_public_key(current_txn.accountId, publicKey);
-  
   if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }
@@ -300,6 +315,9 @@ static int step_asset_xfer_id() {
 }
 
 static int step_asset_xfer_amount() {
+  if(is_opt_in_tx()){
+    return 0;
+  }
   ui_text_put(amount_to_str(current_txn.asset_xfer.amount));
   return 1;
 }
@@ -316,7 +334,8 @@ static int step_asset_xfer_sender() {
 }
 
 static int step_asset_xfer_receiver() {
-  if (all_zero_key(current_txn.asset_xfer.receiver)) {
+  if (all_zero_key(current_txn.asset_xfer.receiver) ||
+      is_opt_in_tx()) {
     return 0;
   }
 
