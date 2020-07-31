@@ -45,7 +45,7 @@ already_computed_key_t current_pubkey;
 #if defined(TARGET_NANOX)
 static uint8_t msgpack_buf[2048];
 #else
-static uint8_t msgpack_buf[1024];
+static uint8_t msgpack_buf[900];
 #endif
 static unsigned int msgpack_next_off;
 
