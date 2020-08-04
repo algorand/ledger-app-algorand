@@ -318,7 +318,7 @@ static int step_asset_xfer_amount() {
   if(is_opt_in_tx()){
     return 0;
   }
-  ui_text_put(amount_to_str(current_txn.asset_xfer.amount));
+  ui_text_put(u64str(current_txn.asset_xfer.amount));
   return 1;
 }
 
@@ -687,6 +687,12 @@ void ui_txn(void) {
     PRINTF("  Receiver: %.*h\n", 32, current_txn.payment.receiver);
     PRINTF("  Amount: %s\n", amount_to_str(current_txn.payment.amount));
     PRINTF("  Close to: %.*h\n", 32, current_txn.payment.close);
+  }
+  if (current_txn.type == ASSET_XFER) {
+    PRINTF("  Sender: %.*h\n", 32, current_txn.asset_xfer.sender);
+    PRINTF("  Receiver: %.*h\n", 32, current_txn.asset_xfer.receiver);
+    PRINTF("  Amount: %s\n", u64str(current_txn.asset_xfer.amount));
+    PRINTF("  Close to: %.*h\n", 32, current_txn.asset_xfer.close);
   }
   if (current_txn.type == KEYREG) {
     PRINTF("  Vote PK: %.*h\n", 32, current_txn.keyreg.votepk);
