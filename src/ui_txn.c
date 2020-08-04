@@ -15,7 +15,7 @@ bool is_opt_in_tx(){
      current_txn.asset_xfer.id != 0 &&
      memcmp(current_txn.asset_xfer.receiver,
             current_txn.asset_xfer.sender,
-            sizeof(current_txn.asset_xfer.receiver) == 0)){
+            sizeof(current_txn.asset_xfer.receiver)) == 0){
       return true;
   }
   return false;
