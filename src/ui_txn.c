@@ -6,6 +6,7 @@
 #include "algo_tx.h"
 #include "algo_addr.h"
 #include "algo_keys.h"
+#include "algo_asa.h"
 #include "base64.h"
 #include "glyphs.h"
 
@@ -311,7 +312,14 @@ static int step_participating() {
 }
 
 static int step_asset_xfer_id() {
-  ui_text_put(u64str(current_txn.asset_xfer.id));
+  const algo_asset_info_t *asa = algo_asa_get(current_txn.asset_xfer.id);
+  const char *id = u64str(current_txn.asset_xfer.id);
+
+  if (asa == NULL) {
+    snprintf(text, sizeof(text), "#%s", id);
+  } else {
+    snprintf(text, sizeof(text), "%s (#%s)", asa->name, id);
+  }
   return 1;
 }
 
@@ -319,7 +327,15 @@ static int step_asset_xfer_amount() {
   if(is_opt_in_tx()){
     return 0;
   }
-  ui_text_put(u64str(current_txn.asset_xfer.amount));
+
+  const algo_asset_info_t *asa = algo_asa_get(current_txn.asset_xfer.id);
+  if (asa != NULL) {
+    snprintf(caption, sizeof(caption), "Amount (%s)", asa->unit);
+    ui_text_put(amount_to_str(current_txn.asset_xfer.amount, asa->decimals));
+  } else {
+    snprintf(caption, sizeof(caption), "Amount (base unit)");
+    ui_text_put(u64str(current_txn.asset_xfer.amount));
+  }
   return 1;
 }
 
