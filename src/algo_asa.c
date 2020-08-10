@@ -24,7 +24,6 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(438828, "MESE USD Exchange Token",     "USD-MESE",    6),
     ALGO_ASA(312769, "Thether USDt",                "USDt",        6),
     ALGO_ASA(163650, "Asia Reserve Currency Coin",  "ARCC",        6),
-    ALGO_ASA(342836, "Asia Reserve Currency Coin",  "ARCC",        3),
 };
 
 
