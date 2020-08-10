@@ -108,12 +108,13 @@ bool adjustDecimals(char *src, uint32_t srcLength, char *target,
     return true;
 }
 
-char* amount_to_str(uint64_t amount){
+static char*
+amount_to_str(uint64_t amount, uint8_t decimals){
   char* result = u64str(amount);
   char tmp[24];
   memcpy(tmp, result, sizeof(tmp));
   memset(result, 0, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, 27, ALGORAND_DECIMALS);
+  adjustDecimals(tmp, strlen(tmp), result, 27, decimals);
   result[26] = '\0';
   return result;
 }
@@ -187,7 +188,7 @@ static int step_rekey() {
 }
 
 static int step_fee() {
-  ui_text_put(amount_to_str(current_txn.fee));
+  ui_text_put(amount_to_str(current_txn.fee, ALGORAND_DECIMALS));
   return 1;
 }
 
@@ -256,7 +257,7 @@ static int step_receiver() {
 }
 
 static int step_amount() {
-  ui_text_put(amount_to_str(current_txn.payment.amount));
+  ui_text_put(amount_to_str(current_txn.payment.amount, ALGORAND_DECIMALS));
   return 1;
 }
 
@@ -678,14 +679,14 @@ void ui_txn(void) {
   PRINTF("Transaction:\n");
   PRINTF("  Type: %d\n", current_txn.type);
   PRINTF("  Sender: %.*h\n", 32, current_txn.sender);
-  PRINTF("  Fee: %s\n", amount_to_str(current_txn.fee));
+  PRINTF("  Fee: %s\n", amount_to_str(current_txn.fee, ALGORAND_DECIMALS));
   PRINTF("  First valid: %s\n", u64str(current_txn.firstValid));
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
   PRINTF("  Genesis ID: %.*s\n", 32, current_txn.genesisID);
   PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
   if (current_txn.type == PAYMENT) {
     PRINTF("  Receiver: %.*h\n", 32, current_txn.payment.receiver);
-    PRINTF("  Amount: %s\n", amount_to_str(current_txn.payment.amount));
+    PRINTF("  Amount: %s\n", amount_to_str(current_txn.payment.amount, ALGORAND_DECIMALS));
     PRINTF("  Close to: %.*h\n", 32, current_txn.payment.close);
   }
   if (current_txn.type == ASSET_XFER) {
