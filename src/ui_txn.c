@@ -494,6 +494,8 @@ typedef struct{
   uint8_t type;
 } screen_t;
 
+#define SCREEN_DYN_CAPTION    NULL
+
 screen_t const screen_table[] = {
   {"Txn type", &step_txn_type, ALL_TYPES},
   {"Sender", &step_sender, ALL_TYPES},
@@ -514,7 +516,7 @@ screen_t const screen_table[] = {
   {"Key dilution", &step_keydilution, KEYREG},
   {"Participating", &step_participating, KEYREG},
   {"Asset ID", &step_asset_xfer_id, ASSET_XFER},
-  {"Asset amt", &step_asset_xfer_amount, ASSET_XFER},
+  {SCREEN_DYN_CAPTION, &step_asset_xfer_amount, ASSET_XFER},
   {"Asset src", &step_asset_xfer_sender, ASSET_XFER},
   {"Asset dst", &step_asset_xfer_receiver, ASSET_XFER},
   {"Asset close", &step_asset_xfer_close, ASSET_XFER},
@@ -620,7 +622,11 @@ bool set_state_data(bool forward){
       return false;
     }
 
-    strncpy(caption, (char*)PIC(screen_table[current_data_index].caption), sizeof(caption));
+    if (screen_table[current_data_index].caption != SCREEN_DYN_CAPTION) {
+      strncpy(caption,
+              (char*)PIC(screen_table[current_data_index].caption),
+              sizeof(caption));
+    }
 
     PRINTF("caption: %s\n", caption);
     PRINTF("details: %s\n\n", text);
