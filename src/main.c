@@ -456,6 +456,8 @@ main(void)
         G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif
 
+        init_globals();
+
         USB_power(0);
         USB_power(1);
 
@@ -465,9 +467,6 @@ main(void)
 #endif
 
         ui_idle();
-
-        init_globals();
-
         algorand_main();
       }
       CATCH(EXCEPTION_IO_RESET) {
