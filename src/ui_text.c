@@ -12,39 +12,6 @@ static int lineBufferPos;
 // 1 extra byte for the null termination
 char lineBuffer[MAX_CHARS_PER_LINE+2+1];
 
-int
-ui_text_more()
-{
-  int linePos;
-
-  if (text[lineBufferPos] == '\0') {
-    lineBuffer[0] = '\0';
-    return 0;
-  }
-
-  for (linePos = 0; linePos < MAX_CHARS_PER_LINE; linePos++) {
-    if (text[lineBufferPos] == '\0') {
-      break;
-    }
-
-    if (text[lineBufferPos] == '\n') {
-      lineBufferPos++;
-      break;
-    }
-
-    lineBuffer[linePos] = text[lineBufferPos];
-    lineBufferPos++;
-  }
-
-  if (text[lineBufferPos] != '\0') {
-    lineBuffer[linePos++] = '.';
-    lineBuffer[linePos++] = '.';
-  }
-
-  lineBuffer[linePos++] = '\0';
-  return 1;
-}
-
 void
 ui_text_putn(const char *msg, size_t maxlen)
 {
@@ -60,8 +27,6 @@ ui_text_putn(const char *msg, size_t maxlen)
   lineBufferPos = 0;
 
   PRINTF("ui_text_putn: text %s\n", &text[0]);
-
-  /* Caller should invoke ui_text_more() after ui_text_putn(). */
 }
 
 void

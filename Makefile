@@ -7,7 +7,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.8
+APPVERSION = 1.2.8
 APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
@@ -22,16 +22,16 @@ endif
 # Build configuration
 
 APP_SOURCE_PATH += src
-SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f lib_ux
 
 DEFINES += APPVERSION=\"$(APPVERSION)\"
 
 DEFINES += OS_IO_SEPROXYHAL
 DEFINES += HAVE_BAGL HAVE_SPRINTF
 DEFINES += HAVE_BOLOS_APP_STACK_CANARY
+DEFINES += HAVE_UX_FLOW
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-DEFINES += HAVE_UX_LEGACY
 DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 else ifeq ($(TARGET_NAME),TARGET_NANOX)
 DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
@@ -45,10 +45,7 @@ DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
 DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
 DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
 
-DEFINES += HAVE_UX_FLOW
-
 SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-SDK_SOURCE_PATH  += lib_ux
 else
 $(error unknown device TARGET_NAME)
 endif
@@ -94,13 +91,13 @@ $(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
 endif
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Oz
+CFLAGS += -O3 -Os
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
 
 LD := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS += -O3 -Oz
+LDFLAGS += -O3 -Os
 LDLIBS += -lm -lgcc -lc
 
 # Main rules
