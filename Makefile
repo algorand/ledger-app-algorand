@@ -1,3 +1,7 @@
+## Define the "all" target first, so that "make" without any
+## additional arguments builds it.
+all: default
+
 ifeq ($(BOLOS_SDK),)
 $(error BOLOS_SDK is not set)
 endif
@@ -104,8 +108,6 @@ LDFLAGS += -O3 -Oz
 LDLIBS += -lm -lgcc -lc
 
 # Main rules
-
-all: default
 
 load: all
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
