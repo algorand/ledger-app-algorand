@@ -49,7 +49,7 @@ static char *
 b64hash_data(unsigned char *data, size_t data_len)
 {
   static char b64hash[45];
-  static unsigned char hash[32];
+  unsigned char hash[32];
 
   // Hash program and b64 encode for display
   cx_sha256_t ctx;
