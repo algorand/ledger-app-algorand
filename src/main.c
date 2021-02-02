@@ -4,6 +4,7 @@
 
 #include "algo_keys.h"
 #include "algo_ui.h"
+#include "algo_addr.h"
 #include "algo_tx.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -19,6 +20,9 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 #define P1_FIRST 0x00
 #define P1_MORE  0x80
+#define P1_WITH_ACCOUNT_ID  0x01
+#define P1_WITH_REQUEST_USER_APPROVAL  0x80
+
 #define P2_LAST  0x00
 #define P2_MORE  0x80
 
@@ -32,7 +36,8 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define INS_SIGN_MSGPACK    0x08
 
 /* The transaction that we might ask the user to approve. */
-struct txn current_txn;
+txn_t current_txn;
+already_computed_key_t current_pubkey;
 
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
@@ -40,7 +45,7 @@ struct txn current_txn;
 #if defined(TARGET_NANOX)
 static uint8_t msgpack_buf[2048];
 #else
-static uint8_t msgpack_buf[1024];
+static uint8_t msgpack_buf[900];
 #endif
 static unsigned int msgpack_next_off;
 
@@ -56,19 +61,37 @@ txn_approve()
   msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
 
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
+  PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
 
   cx_ecfp_private_key_t privateKey;
-  algorand_private_key(&privateKey);
+  algorand_key_derive(current_txn.accountId, &privateKey);
 
-  int sig_len = cx_eddsa_sign(&privateKey,
-                              0, CX_SHA512,
-                              &msgpack_buf[0], msg_len,
-                              NULL, 0,
-                              G_io_apdu_buffer,
-                              6+2*(32+1), // Formerly from cx_compliance_141.c
-                              NULL);
+  io_seproxyhal_io_heartbeat();
 
-  tx = sig_len;
+  tx = cx_eddsa_sign(&privateKey,
+                     0, CX_SHA512,
+                     &msgpack_buf[0], msg_len,
+                     NULL, 0,
+                     G_io_apdu_buffer,
+                     6+2*(32+1), // Formerly from cx_compliance_141.c
+                     NULL);
+
+  io_seproxyhal_io_heartbeat();
+
+  G_io_apdu_buffer[tx++] = 0x90;
+  G_io_apdu_buffer[tx++] = 0x00;
+
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+
+  // Display back the original UX
+  ui_idle();
+}
+
+void address_approve()
+{
+  unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
+
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
 
@@ -80,7 +103,7 @@ txn_approve()
 }
 
 void
-txn_deny()
+user_approval_denied()
 {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -99,6 +122,12 @@ copy_and_advance(void *dst, uint8_t **p, size_t len)
   *p += len;
 }
 
+void init_globals(){
+  memset(&current_txn, 0, sizeof(current_txn));
+  memset(&current_pubkey, 0, sizeof(current_pubkey));
+  fetch_public_key(0, text);
+}
+
 static void
 algorand_main(void)
 {
@@ -107,11 +136,6 @@ algorand_main(void)
   volatile unsigned int flags = 0;
 
   msgpack_next_off = 0;
-
-#if defined(TARGET_NANOS)
-  // next timer callback in 500 ms
-  UX_CALLBACK_SET_INTERVAL(500);
-#endif
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -129,6 +153,8 @@ algorand_main(void)
                 // an error
         rx = io_exchange(CHANNEL_APDU | flags, rx);
         flags = 0;
+
+        PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
 
         // no apdu received, well, reset the session, and reset the
         // bootloader configuration
@@ -194,8 +220,21 @@ algorand_main(void)
         } break;
 
         case INS_SIGN_MSGPACK: {
-          switch (G_io_apdu_buffer[OFFSET_P1]) {
+          uint8_t *cdata = &G_io_apdu_buffer[OFFSET_CDATA];
+          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
+
+          switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
           case P1_FIRST:
+            os_memset(&current_txn, 0, sizeof(current_txn));
+            current_txn.accountId = 0;
+            if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
+              if (lc < sizeof(uint32_t)) {
+                THROW(0x6700);
+              }
+              current_txn.accountId = U4BE(cdata, 0);
+              cdata += sizeof(uint32_t);
+              lc -= sizeof(uint32_t);
+            }
             msgpack_next_off = 0;
             break;
           case P1_MORE:
@@ -204,12 +243,11 @@ algorand_main(void)
             THROW(0x6B00);
           }
 
-          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
           if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
             THROW(0x6700);
           }
 
-          os_memmove(&msgpack_buf[msgpack_next_off], &G_io_apdu_buffer[OFFSET_CDATA], lc);
+          os_memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
           msgpack_next_off += lc;
 
           switch (G_io_apdu_buffer[OFFSET_P2]) {
@@ -239,9 +277,36 @@ algorand_main(void)
         } break;
 
         case INS_GET_PUBLIC_KEY: {
-          os_memmove(G_io_apdu_buffer, publicKey, sizeof(publicKey));
-          tx = sizeof(publicKey);
-          THROW(0x9000);
+          uint32_t accountId = 0;
+          char checksummed[65];
+          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+
+          if (rx > OFFSET_LC) {
+              uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
+              if (lc == sizeof(uint32_t)) {
+                accountId = U4BE(G_io_apdu_buffer, OFFSET_CDATA);
+              } else if (lc != 0) {
+                return THROW(0x6a85);
+              }
+          }
+
+          /*
+           * Push derived key to `G_io_apdu_buffer`
+           * and return pushed buffer length.
+           */
+          fetch_public_key(accountId, G_io_apdu_buffer);
+
+          if(user_approval_required){
+            checksummed_addr(G_io_apdu_buffer, checksummed);
+            ui_text_put(checksummed);
+            ui_address_approval();
+            flags |= IO_ASYNCH_REPLY;
+          }
+          else{
+            tx = ALGORAND_PUBLIC_KEY_SIZE;
+            THROW(0x9000);
+          }
+          
         } break;
 
         case 0xFF: // return to dashboard
@@ -317,12 +382,6 @@ unsigned char io_event(unsigned char channel) {
   case SEPROXYHAL_TAG_TICKER_EVENT:
     UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer,
     {
-#if defined(TARGET_NANOS)
-      // defaulty retrig very soon (will be overriden during
-      // stepper_prepro)
-      UX_CALLBACK_SET_INTERVAL(500);
-      UX_REDISPLAY();
-#endif
     });
     break;
   }
@@ -389,10 +448,6 @@ main(void)
   for (;;) {
     UX_INIT();
 
-#if defined(TARGET_NANOS)
-    UX_MENU_INIT();
-#endif
-
     BEGIN_TRY {
       TRY {
         io_seproxyhal_init();
@@ -401,26 +456,17 @@ main(void)
         G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif
 
+        init_globals();
+
         USB_power(0);
         USB_power(1);
-
-        // Display a loading screen before (slowly) deriving keys. BLE_power
-        // also seems to be a bit slow, so show the loading screen here.
-        ui_loading();
 
 #if defined(TARGET_NANOX)
         BLE_power(0, NULL);
         BLE_power(1, "Nano X");
 #endif
 
-        // Key derivation is quite slow, and must come *after* the calls to
-        // BLE_power, otherwise the device will freeze on BLE disconnect on
-        // the lock screen.
-        algorand_key_derive();
-        algorand_public_key(publicKey);
-
         ui_idle();
-
         algorand_main();
       }
       CATCH(EXCEPTION_IO_RESET) {
