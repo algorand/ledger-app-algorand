@@ -1,9 +1,9 @@
+#ifdef TARGET_NANOX
 
 #include "ux.h"
 #include "algo_ui.h"
 #include "string.h"
 
-#ifdef TARGET_NANOX
 // requires BAGL font table to compute line width
 
 #ifdef HAVE_BAGL
