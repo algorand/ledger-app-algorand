@@ -7,7 +7,7 @@ include $(BOLOS_SDK)/Makefile.glyphs
 # Main app configuration
 
 APPNAME = "Algorand"
-APPVERSION = 1.0.7
+APPVERSION = 1.0.8
 APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
 APP_LOAD_PARAMS += --path "44'/283'"
 
@@ -54,7 +54,7 @@ $(error unknown device TARGET_NAME)
 endif
 
 # Enabling debug PRINTF
-DEBUG = 1
+DEBUG = 0
 ifneq ($(DEBUG),0)
 
         ifeq ($(TARGET_NAME),TARGET_NANOX)
