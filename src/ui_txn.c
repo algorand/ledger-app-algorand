@@ -132,6 +132,22 @@ all_zero_key(uint8_t *buf)
   return 1;
 }
 
+static char *
+b64hash_data(unsigned char *data, size_t data_len)
+{
+  static char b64hash[45];
+  unsigned char hash[32];
+
+  // Hash program and b64 encode for display
+  cx_sha256_t ctx;
+  memset(&ctx, 0, sizeof(ctx));
+  cx_sha256_init(&ctx);
+  cx_hash(&ctx.header, CX_LAST, data, data_len, hash, sizeof(hash));
+  base64_encode((const char *)hash, sizeof(hash), b64hash, sizeof(b64hash));
+
+  return b64hash;
+}
+
 static int step_txn_type() {
   switch (current_txn.type) {
   case PAYMENT:
@@ -156,6 +172,10 @@ static int step_txn_type() {
 
   case ASSET_CONFIG:
     ui_text_put("Asset config");
+    break;
+
+  case APPLICATION:
+    ui_text_put("Application");
     break;
 
   default:
@@ -503,6 +523,147 @@ static int step_asset_config_clawback() {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
+static int step_application_id() {
+  ui_text_put(u64str(current_txn.application.id));
+  return 1;
+}
+
+static int step_application_oncompletion() {
+  switch (current_txn.application.oncompletion) {
+  case NOOPOC:
+    ui_text_put("NoOp");
+    break;
+
+  case OPTINOC:
+    ui_text_put("OptIn");
+    break;
+
+  case CLOSEOUTOC:
+    ui_text_put("CloseOut");
+    break;
+
+  case CLEARSTATEOC:
+    ui_text_put("ClearState");
+    break;
+
+  case UPDATEAPPOC:
+    ui_text_put("UpdateApp");
+    break;
+
+  case DELETEAPPOC:
+    ui_text_put("DeleteApp");
+    break;
+
+  default:
+    ui_text_put("Unknown");
+  }
+  return 1;
+}
+
+static int display_schema(struct state_schema *schema) {
+  // Don't display if nonzero schema cannot be valid
+  if (current_txn.application.id != 0) {
+    return 0;
+  }
+
+  char schm_repr[65];
+  char uint_part[32];
+  char byte_part[32];
+  snprintf(uint_part, sizeof(uint_part), "uint: %s", u64str(schema->num_uint));
+  snprintf(byte_part, sizeof(byte_part), "byte: %s", u64str(schema->num_byteslice));
+  snprintf(schm_repr, sizeof(schm_repr), "%s, %s",   uint_part, byte_part);
+  ui_text_put(schm_repr);
+  return 1;
+}
+
+static int step_application_global_schema() {
+  return display_schema(&current_txn.application.global_schema);
+}
+
+static int step_application_local_schema() {
+  return display_schema(&current_txn.application.local_schema);
+}
+
+static int display_prog(uint8_t *prog_bytes, size_t prog_len) {
+  // Don't display if nonzero program cannot be valid
+  if (current_txn.application.id != 0 && current_txn.application.oncompletion != UPDATEAPPOC) {
+    return 0;
+  }
+
+  ui_text_put(b64hash_data((unsigned char *)prog_bytes, prog_len));
+  return 1;
+}
+
+static int step_application_approve_prog() {
+  return display_prog(current_txn.application.aprog, current_txn.application.aprog_len);
+}
+
+static int step_application_clear_prog() {
+  return display_prog(current_txn.application.cprog, current_txn.application.cprog_len);
+}
+
+static int step_application_account(unsigned int idx) {
+  if (idx >= current_txn.application.num_accounts) {
+    return 0;
+  }
+
+  char checksummed[65];
+  checksummed_addr(current_txn.application.accounts[idx], checksummed);
+  ui_text_put(checksummed);
+  return 1;
+}
+
+static int step_application_account_0() {
+  return step_application_account(0);
+}
+
+static int step_application_account_1() {
+  return step_application_account(1);
+}
+
+static int step_application_foreign_app(unsigned int idx) {
+  if (idx >= current_txn.application.num_foreign_apps) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.application.foreign_apps[idx]));
+  return 1;
+}
+
+static int step_application_foreign_app_0() {
+  return step_application_foreign_app(0);
+}
+
+static int step_application_foreign_asset(unsigned int idx) {
+  if (idx >= current_txn.application.num_foreign_assets) {
+    return 0;
+  }
+
+  ui_text_put(u64str(current_txn.application.foreign_assets[idx]));
+  return 1;
+}
+
+static int step_application_foreign_asset_0() {
+  return step_application_foreign_asset(0);
+}
+
+static int step_application_arg(unsigned int idx) {
+  if (idx >= current_txn.application.num_app_args) {
+    return 0;
+  }
+
+  ui_text_put(b64hash_data(current_txn.application.app_args[idx], current_txn.application.app_args_len[idx]));
+  return 1;
+}
+
+static int step_application_arg_0() {
+  return step_application_arg(0);
+}
+
+static int step_application_arg_1() {
+  return step_application_arg(1);
+}
+
 typedef int (*format_function_t)();
 typedef struct{
   char* caption;
@@ -522,23 +683,28 @@ screen_t const screen_table[] = {
   {"Genesis ID", &step_genesisID, ALL_TYPES},
   {"Genesis hash", &step_genesisHash, ALL_TYPES},
   {"Note", &step_note, ALL_TYPES},
+
   {"Receiver", &step_receiver, PAYMENT},
   {"Amount (Alg)", step_amount, PAYMENT},
   {"Close to", &step_close, PAYMENT},
+
   {"Vote PK", &step_votepk, KEYREG},
   {"VRF PK", &step_vrfpk, KEYREG},
   {"Vote first", &step_votefirst, KEYREG},
   {"Vote last", &step_votelast, KEYREG},
   {"Key dilution", &step_keydilution, KEYREG},
   {"Participating", &step_participating, KEYREG},
+
   {"Asset ID", &step_asset_xfer_id, ASSET_XFER},
   {SCREEN_DYN_CAPTION, &step_asset_xfer_amount, ASSET_XFER},
   {"Asset src", &step_asset_xfer_sender, ASSET_XFER},
   {"Asset dst", &step_asset_xfer_receiver, ASSET_XFER},
   {"Asset close", &step_asset_xfer_close, ASSET_XFER},
+
   {"Asset ID", &step_asset_freeze_id, ASSET_FREEZE},
   {"Asset account", &step_asset_freeze_account, ASSET_FREEZE},
   {"Freeze flag", &step_asset_freeze_flag, ASSET_FREEZE},
+
   {"Asset ID", &step_asset_config_id, ASSET_CONFIG},
   {"Total units", &step_asset_config_total, ASSET_CONFIG},
   {"Default frozen", &step_asset_config_default_frozen, ASSET_CONFIG},
@@ -550,7 +716,20 @@ screen_t const screen_table[] = {
   {"Manager", &step_asset_config_manager, ASSET_CONFIG},
   {"Reserve", &step_asset_config_reserve, ASSET_CONFIG},
   {"Freezer", &step_asset_config_freeze, ASSET_CONFIG},
-  {"Clawback", &step_asset_config_clawback, ASSET_CONFIG}
+  {"Clawback", &step_asset_config_clawback, ASSET_CONFIG},
+
+  {"App ID", &step_application_id, APPLICATION},
+  {"On completion", &step_application_oncompletion, APPLICATION},
+  {"Foreign app 0", &step_application_foreign_app_0, APPLICATION},
+  {"Foreign asset 0", &step_application_foreign_asset_0, APPLICATION},
+  {"App account 0", &step_application_account_0, APPLICATION},
+  {"App account 1", &step_application_account_1, APPLICATION},
+  {"App arg 0 (sha256)", &step_application_arg_0, APPLICATION},
+  {"App arg 1 (sha256)", &step_application_arg_1, APPLICATION},
+  {"Global schema", &step_application_global_schema, APPLICATION},
+  {"Local schema", &step_application_local_schema, APPLICATION},
+  {"Apprv (sha256)", &step_application_approve_prog, APPLICATION},
+  {"Clear (sha256)", &step_application_clear_prog, APPLICATION},
 };
 
 #define SCREEN_NUM (int8_t)(sizeof(screen_table)/sizeof(screen_t))

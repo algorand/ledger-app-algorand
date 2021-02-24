@@ -165,6 +165,122 @@ map_kv_bin(uint8_t **p, uint8_t *e, char *key, uint8_t *valbuf, int vallen)
 }
 
 static int
+map_kv_accts(uint8_t **p, uint8_t *e, char *key, uint8_t accounts[][32], size_t num_accounts)
+{
+  if (num_accounts == 0) {
+    return 0;
+  }
+
+  if (num_accounts > FIXARR_15 - FIXARR_0) {
+    os_sched_exit(0);
+  }
+
+  encode_str(p, e, key, SIZE_MAX);
+
+  uint8_t *arrbase = *p;
+  if (*p >= e) {
+    // We need to access arrbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
+  put_byte(p, e, FIXARR_0);
+  for (size_t i = 0; i < num_accounts; i++) {
+    encode_bin(p, e, accounts[i], sizeof(accounts[0]));
+    arrbase[0]++;
+  }
+
+  return 1;
+}
+
+static int
+map_kv_args(uint8_t **p, uint8_t *e, char *key, uint8_t app_args[][MAX_ARGLEN], size_t app_args_len[], size_t num_app_args)
+{
+  if (num_app_args == 0) {
+    return 0;
+  }
+
+  if (num_app_args > FIXARR_15 - FIXARR_0) {
+    os_sched_exit(0);
+  }
+
+  encode_str(p, e, key, SIZE_MAX);
+
+  uint8_t *arrbase = *p;
+  if (*p >= e) {
+    // We need to access arrbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
+  put_byte(p, e, FIXARR_0);
+  for (size_t i = 0; i < num_app_args; i++) {
+    encode_bin(p, e, app_args[i], app_args_len[i]);
+    arrbase[0]++;
+  }
+
+  return 1;
+}
+
+static int
+map_kv_u64arr(uint8_t **p, uint8_t *e, char *key, uint64_t elems[], size_t num_elems)
+{
+  if (num_elems == 0) {
+    return 0;
+  }
+
+  if (num_elems > FIXARR_15 - FIXARR_0) {
+    os_sched_exit(0);
+  }
+
+  encode_str(p, e, key, SIZE_MAX);
+
+  uint8_t *arrbase = *p;
+  if (*p >= e) {
+    // We need to access arrbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
+  put_byte(p, e, FIXARR_0);
+  for (size_t i = 0; i < num_elems; i++) {
+    encode_uint64(p, e, elems[i]);
+    arrbase[0]++;
+  }
+
+  return 1;
+}
+
+static int
+map_kv_schema(uint8_t **p, uint8_t *e, char *key, struct state_schema *schema)
+{
+  // Save original buffer in case we end up with a zero value
+  uint8_t *psave = *p;
+
+  encode_str(p, e, key, SIZE_MAX);
+
+  uint8_t *mapbase = *p;
+  if (*p >= e) {
+    // We need to access mapbase[0] below, so if there isn't space for at least
+    // one byte, bail out.
+    return 0;
+  }
+
+  put_byte(p, e, FIXMAP_0);
+
+  mapbase[0] += map_kv_uint64(p, e, "nbs", schema->num_byteslice);
+  mapbase[0] += map_kv_uint64(p, e, "nui", schema->num_uint);
+
+  if (mapbase[0] == FIXMAP_0) {
+    // No keys is a zero value; roll back any changes
+    *p = psave;
+    return 0;
+  }
+
+  return 1;
+}
+
+static int
 map_kv_params(uint8_t **p, uint8_t *e, char *key, struct asset_params *params)
 {
   // Save original buffer in case we end up with a zero value
@@ -227,15 +343,29 @@ tx_encode(txn_t *t, uint8_t *buf, int buflen)
     typestr = "acfg";
     break;
 
+  case APPLICATION:
+    typestr = "appl";
+    break;
+
   default:
     PRINTF("Unknown transaction type %d\n", t->type);
     typestr = "unknown";
   }
 
-  uint8_t *p = buf;
-  *(p++) = FIXMAP_0;
+  // Must be able to at least store map header in the worst case
+  if (buflen < 3) {
+    os_sched_exit(0);
+  }
 
+  uint8_t *p = buf;
   uint8_t *e = &buf[buflen];
+
+  // Start off assuming we will need the larger map type (3 bytes) versus the
+  // smaller map type (1 byte). This way we can shift everything back two bytes
+  // at the end without having to keep track of how much space we have left.
+  put_byte(&p, e, 0);
+  put_byte(&p, e, 0);
+  put_byte(&p, e, 0);
 
 #define T(expected, encoder)                        \
   ({                                                \
@@ -247,36 +377,61 @@ tx_encode(txn_t *t, uint8_t *buf, int buflen)
   // Fill in the fields in sorted key order, bumping the
   // number of map elements as we go if they are non-zero.
   // Type-specific fields are encoded only if the type matches.
-  buf[0] += T(ASSET_XFER,   map_kv_uint64(&p, e, "aamt",    t->asset_xfer.amount));
-  buf[0] += T(ASSET_XFER,   map_kv_bin   (&p, e, "aclose",  t->asset_xfer.close, sizeof(t->asset_xfer.close)));
-  buf[0] += T(ASSET_FREEZE, map_kv_bool  (&p, e, "afrz",    t->asset_freeze.flag));
-  buf[0] += T(PAYMENT,      map_kv_uint64(&p, e, "amt",     t->payment.amount));
-  buf[0] += T(ASSET_CONFIG, map_kv_params(&p, e, "apar",    &t->asset_config.params));
-  buf[0] += T(ASSET_XFER,   map_kv_bin   (&p, e, "arcv",    t->asset_xfer.receiver, sizeof(t->asset_xfer.receiver)));
-  buf[0] += T(ASSET_XFER,   map_kv_bin   (&p, e, "asnd",    t->asset_xfer.sender, sizeof(t->asset_xfer.sender)));
-  buf[0] += T(ASSET_CONFIG, map_kv_uint64(&p, e, "caid",    t->asset_config.id));
-  buf[0] += T(PAYMENT,      map_kv_bin   (&p, e, "close",   t->payment.close, sizeof(t->payment.close)));
-  buf[0] += T(ASSET_FREEZE, map_kv_bin   (&p, e, "fadd",    t->asset_freeze.account, sizeof(t->asset_freeze.account)));
-  buf[0] += T(ASSET_FREEZE, map_kv_uint64(&p, e, "faid",    t->asset_freeze.id));
-  buf[0] +=                 map_kv_uint64(&p, e, "fee",     t->fee);
-  buf[0] +=                 map_kv_uint64(&p, e, "fv",      t->firstValid);
-  buf[0] +=                 map_kv_str   (&p, e, "gen",     t->genesisID, sizeof(t->genesisID));
-  buf[0] +=                 map_kv_bin   (&p, e, "gh",      t->genesisHash, sizeof(t->genesisHash));
-  buf[0] +=                 map_kv_uint64(&p, e, "lv",      t->lastValid);
-  buf[0] += T(KEYREG,       map_kv_bool  (&p, e, "nonpart", t->keyreg.nonpartFlag));
-  buf[0] +=                 map_kv_bin   (&p, e, "note",    t->note, t->note_len);
-  buf[0] += T(PAYMENT,      map_kv_bin   (&p, e, "rcv",     t->payment.receiver, sizeof(t->payment.receiver)));
-  buf[0] +=                 map_kv_bin   (&p, e, "rekey",   t->rekey, sizeof(t->rekey));
-  buf[0] += T(KEYREG,       map_kv_bin   (&p, e, "selkey",  t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
-  buf[0] +=                 map_kv_bin   (&p, e, "snd",     t->sender, sizeof(t->sender));
-  buf[0] +=                 map_kv_str   (&p, e, "type",    typestr, SIZE_MAX);
-  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votefst", t->keyreg.voteFirst));
-  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votekd",  t->keyreg.keyDilution));
-  buf[0] += T(KEYREG,       map_kv_bin   (&p, e, "votekey", t->keyreg.votepk, sizeof(t->keyreg.votepk)));
-  buf[0] += T(KEYREG,       map_kv_uint64(&p, e, "votelst", t->keyreg.voteLast));
-  buf[0] += T(ASSET_XFER,   map_kv_uint64(&p, e, "xaid",    t->asset_xfer.id));
-
+  uint8_t fields = 0;
+  fields += T(ASSET_XFER,   map_kv_uint64(&p, e, "aamt",    t->asset_xfer.amount));
+  fields += T(ASSET_XFER,   map_kv_bin   (&p, e, "aclose",  t->asset_xfer.close, sizeof(t->asset_xfer.close)));
+  fields += T(ASSET_FREEZE, map_kv_bool  (&p, e, "afrz",    t->asset_freeze.flag));
+  fields += T(PAYMENT,      map_kv_uint64(&p, e, "amt",     t->payment.amount));
+  fields += T(APPLICATION,  map_kv_args  (&p, e, "apaa",    t->application.app_args, t->application.app_args_len, t->application.num_app_args));
+  fields += T(APPLICATION,  map_kv_uint64(&p, e, "apan",    t->application.oncompletion));
+  fields += T(APPLICATION,  map_kv_bin   (&p, e, "apap",    t->application.aprog, t->application.aprog_len));
+  fields += T(ASSET_CONFIG, map_kv_params(&p, e, "apar",    &t->asset_config.params));
+  fields += T(APPLICATION,  map_kv_u64arr(&p, e, "apas",    t->application.foreign_assets, t->application.num_foreign_assets));
+  fields += T(APPLICATION,  map_kv_accts (&p, e, "apat",    t->application.accounts, t->application.num_accounts));
+  fields += T(APPLICATION,  map_kv_u64arr(&p, e, "apfa",    t->application.foreign_apps, t->application.num_foreign_apps));
+  fields += T(APPLICATION,  map_kv_schema(&p, e, "apgs",    &t->application.global_schema));
+  fields += T(APPLICATION,  map_kv_uint64(&p, e, "apid",    t->application.id));
+  fields += T(APPLICATION,  map_kv_schema(&p, e, "apls",    &t->application.local_schema));
+  fields += T(APPLICATION,  map_kv_bin   (&p, e, "apsu",    t->application.cprog, t->application.cprog_len));
+  fields += T(ASSET_XFER,   map_kv_bin   (&p, e, "arcv",    t->asset_xfer.receiver, sizeof(t->asset_xfer.receiver)));
+  fields += T(ASSET_XFER,   map_kv_bin   (&p, e, "asnd",    t->asset_xfer.sender, sizeof(t->asset_xfer.sender)));
+  fields += T(ASSET_CONFIG, map_kv_uint64(&p, e, "caid",    t->asset_config.id));
+  fields += T(PAYMENT,      map_kv_bin   (&p, e, "close",   t->payment.close, sizeof(t->payment.close)));
+  fields += T(ASSET_FREEZE, map_kv_bin   (&p, e, "fadd",    t->asset_freeze.account, sizeof(t->asset_freeze.account)));
+  fields += T(ASSET_FREEZE, map_kv_uint64(&p, e, "faid",    t->asset_freeze.id));
+  fields +=                 map_kv_uint64(&p, e, "fee",     t->fee);
+  fields +=                 map_kv_uint64(&p, e, "fv",      t->firstValid);
+  fields +=                 map_kv_str   (&p, e, "gen",     t->genesisID, sizeof(t->genesisID));
+  fields +=                 map_kv_bin   (&p, e, "gh",      t->genesisHash, sizeof(t->genesisHash));
+  fields +=                 map_kv_uint64(&p, e, "lv",      t->lastValid);
+  fields += T(KEYREG,       map_kv_bool  (&p, e, "nonpart", t->keyreg.nonpartFlag));
+  fields +=                 map_kv_bin   (&p, e, "note",    t->note, t->note_len);
+  fields += T(PAYMENT,      map_kv_bin   (&p, e, "rcv",     t->payment.receiver, sizeof(t->payment.receiver)));
+  fields +=                 map_kv_bin   (&p, e, "rekey",   t->rekey, sizeof(t->rekey));
+  fields += T(KEYREG,       map_kv_bin   (&p, e, "selkey",  t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
+  fields +=                 map_kv_bin   (&p, e, "snd",     t->sender, sizeof(t->sender));
+  fields +=                 map_kv_str   (&p, e, "type",    typestr, SIZE_MAX);
+  fields += T(KEYREG,       map_kv_uint64(&p, e, "votefst", t->keyreg.voteFirst));
+  fields += T(KEYREG,       map_kv_uint64(&p, e, "votekd",  t->keyreg.keyDilution));
+  fields += T(KEYREG,       map_kv_bin   (&p, e, "votekey", t->keyreg.votepk, sizeof(t->keyreg.votepk)));
+  fields += T(KEYREG,       map_kv_uint64(&p, e, "votelst", t->keyreg.voteLast));
+  fields += T(ASSET_XFER,   map_kv_uint64(&p, e, "xaid",    t->asset_xfer.id));
 #undef T
 
-  return p-buf;
+  // If there are more fields than we can fit in the one-byte map encoding,
+  // use the three-byte map encoding
+  if (fields > FIXMAP_15 - FIXMAP_0) {
+    buf[0] = MAP16;
+    buf[1] = 0;
+    buf[2] = fields;
+    return p - buf;
+  }
+
+  // Otherwise, we fit in a FIXMAP
+  buf[0] = FIXMAP_0 + fields;
+
+  // Shift map contents back by two bytes, leaving first header byte in place
+  // p - buf - 3 == bytes written - header length
+  os_memmove(buf + 1, buf + 3, p - buf - 3);
+  return p - buf - 2;
 }
