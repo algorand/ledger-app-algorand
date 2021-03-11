@@ -55,7 +55,7 @@ static size_t min(size_t x, size_t y)
  * This convert a 5 bits value into a base32 character.
  * Only the 5 least significant bits are used.
  */
-static unsigned char encode_char(unsigned char c)
+static char encode_char(unsigned char c)
 {
 	static const unsigned char base32[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 	return base32[c & 0x1F];  // 0001 1111
@@ -119,7 +119,7 @@ static unsigned char shift_right(unsigned char byte, int offset)
  * sequences shorter than 5 octets is supported and padding will be added to the
  * output as per the specification.
  */
-static void encode_sequence(const unsigned char *plain, int len, unsigned char *coded)
+static void encode_sequence(const unsigned char *plain, int len, char *coded)
 {
 	assert(CHAR_BIT == 8);  // not sure this would work otherwise
 	assert(len >= 0 && len <= 5);
@@ -144,7 +144,7 @@ static void encode_sequence(const unsigned char *plain, int len, unsigned char *
 	}
 }
 
-void base32_encode(const unsigned char *plain, size_t len, unsigned char *coded)
+void base32_encode(const unsigned char *plain, size_t len, char *coded)
 {
 	// All the hard work is done in encode_sequence(),
 	// here we just need to feed it the data sequence by sequence.
