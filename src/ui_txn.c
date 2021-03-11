@@ -191,9 +191,7 @@ static int step_sender() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.sender, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.sender);
   return 1;
 }
 
@@ -202,9 +200,7 @@ static int step_rekey() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.rekey, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.rekey);
   return 1;
 }
 
@@ -271,9 +267,7 @@ static int step_note() {
 }
 
 static int step_receiver() {
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.payment.receiver, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.payment.receiver);
   return 1;
 }
 
@@ -287,9 +281,7 @@ static int step_close() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.payment.close, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.payment.close);
   return 1;
 }
 
@@ -364,9 +356,7 @@ static int step_asset_xfer_sender() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.asset_xfer.sender, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.asset_xfer.sender);
   return 1;
 }
 
@@ -376,9 +366,7 @@ static int step_asset_xfer_receiver() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.asset_xfer.receiver, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.asset_xfer.receiver);
   return 1;
 }
 
@@ -387,9 +375,7 @@ static int step_asset_xfer_close() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.asset_xfer.close, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.asset_xfer.close);
   return 1;
 }
 
@@ -403,9 +389,7 @@ static int step_asset_freeze_account() {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.asset_freeze.account, &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.asset_freeze.account);
   return 1;
 }
 
@@ -500,9 +484,7 @@ static int step_asset_config_addr_helper(uint8_t *addr) {
   if (all_zero_key(addr)) {
     ui_text_put("Zero");
   } else {
-    struct addr_s checksummed;
-    checksummed_addr(addr, &checksummed);
-    ui_text_put(checksummed.data);
+    ui_text_put_addr(addr);
   }
   return 1;
 }
@@ -607,9 +589,7 @@ static int step_application_account(unsigned int idx) {
     return 0;
   }
 
-  struct addr_s checksummed;
-  checksummed_addr(current_txn.application.accounts[idx], &checksummed);
-  ui_text_put(checksummed.data);
+  ui_text_put_addr(current_txn.application.accounts[idx]);
   return 1;
 }
 

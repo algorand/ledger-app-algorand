@@ -245,7 +245,6 @@ static void handle_sign_msgpack(volatile unsigned int *tx, volatile unsigned int
 static void handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx, volatile unsigned int *flags)
 {
   uint32_t accountId = 0;
-  struct addr_s checksummed;
   uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
 
   if (rx > OFFSET_LC) {
@@ -266,8 +265,7 @@ static void handle_get_public_key(volatile unsigned int rx, volatile unsigned in
   fetch_public_key(accountId, pubkey);
 
   if(user_approval_required){
-    checksummed_addr(G_io_apdu_buffer, &checksummed);
-    ui_text_put(checksummed.data);
+    ui_text_put_addr(G_io_apdu_buffer);
     ui_address_approval();
     *flags |= IO_ASYNCH_REPLY;
   }

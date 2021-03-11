@@ -1,6 +1,7 @@
 #include "os.h"
 #include "os_io_seproxyhal.h"
 
+#include "algo_addr.h"
 #include "algo_ui.h"
 
 #define MAX_CHARS_PER_LINE 8
@@ -35,4 +36,12 @@ ui_text_put(const char *msg)
   ui_text_putn(msg, SIZE_MAX);
 
   /* Caller should invoke ui_text_more() after ui_text_put(). */
+}
+
+void
+ui_text_put_addr(const uint8_t *public_key)
+{
+  struct addr_s checksummed;
+  checksummed_addr(public_key, &checksummed);
+  ui_text_put(checksummed.data);
 }

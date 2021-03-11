@@ -11,6 +11,7 @@ void ux_approve_txn();
 
 void ui_text_put(const char *msg);
 void ui_text_putn(const char *msg, size_t maxlen);
+void ui_text_put_addr(const uint8_t *public_key);
 
 #define ALGORAND_PUBLIC_KEY_SIZE 32
 #define ALGORAND_DECIMALS 6
