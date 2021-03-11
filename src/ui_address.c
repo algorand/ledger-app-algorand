@@ -3,7 +3,6 @@
 
 #include "algo_ui.h"
 #include "algo_tx.h"
-#include "algo_keys.h"
 #include "algo_addr.h"
 
 

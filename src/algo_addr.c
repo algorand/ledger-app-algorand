@@ -7,7 +7,7 @@
 #include "base64.h"
 
 void
-checksummed_addr(const uint8_t *publicKey, struct addr_s *addr)
+checksummed_addr(const struct pubkey_s *public_key, struct addr_s *addr)
 {
   // The SDK does not provide a ready-made SHA512/256, so we set up a SHA512
   // hash context, and then overwrite the IV with the SHA512/256-specific IV.
@@ -29,11 +29,11 @@ checksummed_addr(const uint8_t *publicKey, struct addr_s *addr)
   }
 
   uint8_t hash[64];
-  cx_hash(&h.header, CX_LAST, publicKey, 32, hash, sizeof(hash));
+  cx_hash(&h.header, CX_LAST, public_key->data, 32, hash, sizeof(hash));
 
-  uint8_t checksummed[36];
-  os_memmove(&checksummed[0], publicKey, 32);
-  os_memmove(&checksummed[32], &hash[28], 4);
+  uint8_t checksummed[PUBKEY_SIZE+4];
+  os_memmove(&checksummed[0], public_key->data, PUBKEY_SIZE);
+  os_memmove(&checksummed[PUBKEY_SIZE], &hash[28], 4);
 
   os_memset(addr, 0, sizeof(*addr));
   base32_encode(checksummed, sizeof(checksummed), addr->data);

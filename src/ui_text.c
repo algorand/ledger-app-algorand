@@ -38,10 +38,11 @@ ui_text_put(const char *msg)
   /* Caller should invoke ui_text_more() after ui_text_put(). */
 }
 
+/* TODO: change public_key type to struct pubkey_s */
 void
 ui_text_put_addr(const uint8_t *public_key)
 {
   struct addr_s checksummed;
-  checksummed_addr(public_key, &checksummed);
+  checksummed_addr((const struct pubkey_s *)public_key, &checksummed);
   ui_text_put(checksummed.data);
 }
