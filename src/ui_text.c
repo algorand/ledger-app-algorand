@@ -13,6 +13,26 @@ static int lineBufferPos;
 // 1 extra byte for the null termination
 char lineBuffer[MAX_CHARS_PER_LINE+2+1];
 
+char *u64str(uint64_t v)
+{
+  static char buf[27];
+
+  char *p = &buf[sizeof(buf)];
+  *(--p) = '\0';
+
+  if (v == 0) {
+    *(--p) = '0';
+    return p;
+  }
+
+  while (v > 0) {
+    *(--p) = '0' + (v % 10);
+    v = v/10;
+  }
+
+  return p;
+}
+
 void
 ui_text_putn(const char *msg, size_t maxlen)
 {
@@ -45,4 +65,10 @@ ui_text_put_addr(const uint8_t *public_key)
   struct addr_s checksummed;
   checksummed_addr((const struct pubkey_s *)public_key, &checksummed);
   ui_text_put(checksummed.data);
+}
+
+void ui_text_put_u64(uint64_t v)
+{
+  char *p = u64str(v);
+  ui_text_put(p);
 }
