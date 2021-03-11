@@ -185,9 +185,9 @@ static int step_txn_type() {
 }
 
 static int step_sender() {
-  uint8_t publicKey[32];
-  fetch_public_key(current_txn.accountId, publicKey);
-  if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
+  struct pubkey_s public_key;
+  fetch_public_key(current_txn.accountId, &public_key);
+  if (os_memcmp(public_key.data, current_txn.sender, sizeof(current_txn.sender)) == 0) {
     return 0;
   }
 

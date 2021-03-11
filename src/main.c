@@ -125,7 +125,10 @@ copy_and_advance(void *dst, uint8_t **p, size_t len)
 void init_globals(){
   memset(&current_txn, 0, sizeof(current_txn));
   memset(&current_pubkey, 0, sizeof(current_pubkey));
-  fetch_public_key(0, text);
+
+  _Static_assert(sizeof(text) >= sizeof(struct pubkey_s), "assert");
+  struct pubkey_s *pubkey = (struct pubkey_s *)&text[0];
+  fetch_public_key(0, pubkey);
 }
 
 static void handle_sign_payment(uint8_t ins, volatile unsigned int *flags)
@@ -246,7 +249,7 @@ static void handle_get_public_key(volatile unsigned int rx, volatile unsigned in
     if (lc == sizeof(uint32_t)) {
       accountId = U4BE(G_io_apdu_buffer, OFFSET_CDATA);
     } else if (lc != 0) {
-      return THROW(0x6a85);
+      THROW(0x6a85);
     }
   }
 
@@ -254,7 +257,9 @@ static void handle_get_public_key(volatile unsigned int rx, volatile unsigned in
    * Push derived key to `G_io_apdu_buffer`
    * and return pushed buffer length.
    */
-  fetch_public_key(accountId, G_io_apdu_buffer);
+  _Static_assert(sizeof(G_io_apdu_buffer) >= sizeof(struct pubkey_s), "assert");
+  struct pubkey_s *pubkey = (struct pubkey_s *)&G_io_apdu_buffer[0];
+  fetch_public_key(accountId, pubkey);
 
   if(user_approval_required){
     checksummed_addr(G_io_apdu_buffer, checksummed);

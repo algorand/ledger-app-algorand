@@ -52,16 +52,16 @@ algorand_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
   return 32;
 }
 
-size_t fetch_public_key(uint32_t accountId, uint8_t* pubkey){
-  if(!current_pubkey.initialized ||
-     current_pubkey.accountID != accountId){
+void fetch_public_key(uint32_t accountId, struct pubkey_s *pubkey)
+{
+  if (!current_pubkey.initialized || current_pubkey.accountID != accountId) {
     cx_ecfp_private_key_t privateKey;
     algorand_key_derive(accountId, &privateKey);
-    algorand_public_key(&privateKey, current_pubkey.pubkey);
+    algorand_public_key(&privateKey, current_pubkey.pubkey.data);
     memset(&privateKey, 0, sizeof(privateKey));
     current_pubkey.accountID = accountId;
     current_pubkey.initialized = true;
   }
-  memcpy(pubkey, current_pubkey.pubkey, sizeof(current_pubkey.pubkey));
-  return sizeof(current_pubkey.pubkey);
+
+  *pubkey = current_pubkey.pubkey;
 }
