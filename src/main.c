@@ -117,7 +117,7 @@ user_approval_denied()
 static void
 copy_and_advance(void *dst, uint8_t **p, size_t len)
 {
-  os_memmove(dst, *p, len);
+  memmove(dst, *p, len);
   *p += len;
 }
 
@@ -132,7 +132,7 @@ void init_globals(){
 
 static void handle_sign_payment(uint8_t ins, volatile unsigned int *flags)
 {
-  os_memset(&current_txn, 0, sizeof(current_txn));
+  memset(&current_txn, 0, sizeof(current_txn));
   uint8_t *p;
   if (ins == INS_SIGN_PAYMENT_V2) {
     p = &G_io_apdu_buffer[2];
@@ -159,7 +159,7 @@ static void handle_sign_payment(uint8_t ins, volatile unsigned int *flags)
 
 static void handle_sign_keyreg(uint8_t ins, volatile unsigned int *flags)
 {
-  os_memset(&current_txn, 0, sizeof(current_txn));
+  memset(&current_txn, 0, sizeof(current_txn));
   uint8_t *p;
   if (ins == INS_SIGN_KEYREG_V2) {
     p = &G_io_apdu_buffer[2];
@@ -190,7 +190,7 @@ static void handle_sign_msgpack(volatile unsigned int *tx, volatile unsigned int
 
   switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
   case P1_FIRST:
-    os_memset(&current_txn, 0, sizeof(current_txn));
+    memset(&current_txn, 0, sizeof(current_txn));
     current_txn.accountId = 0;
     if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
       if (lc < sizeof(uint32_t)) {
@@ -212,7 +212,7 @@ static void handle_sign_msgpack(volatile unsigned int *tx, volatile unsigned int
     THROW(0x6700);
   }
 
-  os_memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
+  memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
   msgpack_next_off += lc;
 
   switch (G_io_apdu_buffer[OFFSET_P2]) {
@@ -224,8 +224,8 @@ static void handle_sign_msgpack(volatile unsigned int *tx, volatile unsigned int
          * the usual ed25519 signature.
          */
         int errlen = strlen(err);
-        os_memset(G_io_apdu_buffer, 0, 65);
-        os_memmove(&G_io_apdu_buffer[65], err, errlen);
+        memset(G_io_apdu_buffer, 0, 65);
+        memmove(&G_io_apdu_buffer[65], err, errlen);
         *tx = 65 + errlen;
         THROW(0x9000);
       }

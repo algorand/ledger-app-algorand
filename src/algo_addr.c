@@ -32,9 +32,9 @@ checksummed_addr(const struct pubkey_s *public_key, struct addr_s *addr)
   cx_hash(&h.header, CX_LAST, public_key->data, 32, hash, sizeof(hash));
 
   uint8_t checksummed[PUBKEY_SIZE+4];
-  os_memmove(&checksummed[0], public_key->data, PUBKEY_SIZE);
-  os_memmove(&checksummed[PUBKEY_SIZE], &hash[28], 4);
+  memmove(&checksummed[0], public_key->data, PUBKEY_SIZE);
+  memmove(&checksummed[PUBKEY_SIZE], &hash[28], 4);
 
-  os_memset(addr, 0, sizeof(*addr));
+  memset(addr, 0, sizeof(*addr));
   base32_encode(checksummed, sizeof(checksummed), addr->data);
 }

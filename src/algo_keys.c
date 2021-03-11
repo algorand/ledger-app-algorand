@@ -24,8 +24,8 @@ algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
 
   io_seproxyhal_io_heartbeat();
 
-  os_memset(bip32Path, 0, sizeof(bip32Path));
-  os_memset(privateKeyData, 0, sizeof(privateKeyData));
+  memset(bip32Path, 0, sizeof(bip32Path));
+  memset(privateKeyData, 0, sizeof(privateKeyData));
 }
 
 size_t

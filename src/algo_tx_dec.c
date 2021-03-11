@@ -87,7 +87,7 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
     return false;
   }
 
-  os_memmove(strbuf, *bufp, str_len);
+  memmove(strbuf, *bufp, str_len);
   if (str_len < strbuflen) {
     strbuf[str_len] = 0;
   }
@@ -134,7 +134,7 @@ decode_bin_fixed(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t reslen)
     return false;
   }
 
-  os_memmove(res, *bufp, bin_len);
+  memmove(res, *bufp, bin_len);
   *bufp += bin_len;
 
   return true;
@@ -169,7 +169,7 @@ decode_bin_var(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t *reslen, s
     return false;
   }
 
-  os_memmove(res, *bufp, bin_len);
+  memmove(res, *bufp, bin_len);
   *bufp += bin_len;
   *reslen = bin_len;
 
@@ -507,7 +507,7 @@ tx_decode(uint8_t *buf, int buflen, txn_t *t)
   uint8_t* buf_end = buf + buflen;
   uint32_t accountId = t->accountId; // Save `accountId`
 
-  os_memset(t, 0, sizeof(*t));
+  memset(t, 0, sizeof(*t));
   t->accountId = accountId;
 
   if (!tx_decode_helper(buf, buf_end, t)) {
