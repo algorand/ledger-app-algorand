@@ -65,22 +65,27 @@ bool adjustDecimals(char *src, uint32_t srcLength, char *target,
     return true;
 }
 
+static char u64_buf[27];
+
 char *amount_to_str(uint64_t amount, uint8_t decimals)
 {
   char* result = u64str(amount);
-  char tmp[24];
-  memcpy(tmp, result, sizeof(tmp));
-  memset(result, 0, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, 27, decimals);
-  result[26] = '\0';
-  return result;
+  char tmp[sizeof(u64_buf)];
+  size_t len;
+
+  len = strlen(result);
+  memcpy(tmp, result, len + 1); /* include nul-byte */
+
+  memset(u64_buf, 0, sizeof(u64_buf));
+  adjustDecimals(tmp, len, u64_buf, sizeof(u64_buf), decimals);
+  u64_buf[sizeof(u64_buf)-1] = '\0';
+
+  return u64_buf;
 }
 
 char *u64str(uint64_t v)
 {
-  static char buf[27];
-
-  char *p = &buf[sizeof(buf)];
+  char *p = &u64_buf[sizeof(u64_buf)];
   *(--p) = '\0';
 
   if (v == 0) {
