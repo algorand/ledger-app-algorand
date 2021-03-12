@@ -9,6 +9,7 @@
 #include "algo_asa.h"
 #include "base64.h"
 #include "ui_txn.h"
+#include "str.h"
 
 bool is_opt_in_tx(){
   if(current_txn.type == ASSET_XFER &&
@@ -23,81 +24,6 @@ bool is_opt_in_tx(){
 }
 
 char caption[20];
-
-bool adjustDecimals(char *src, uint32_t srcLength, char *target,
-                    uint32_t targetLength, uint8_t decimals) {
-    uint32_t startOffset;
-    uint32_t lastZeroOffset = 0;
-    uint32_t offset = 0;
-    if ((srcLength == 1) && (*src == '0')) {
-        if (targetLength < 2) {
-                return false;
-        }
-        target[0] = '0';
-        target[1] = '\0';
-        return true;
-    }
-    if (srcLength <= decimals) {
-        uint32_t delta = decimals - srcLength;
-        if (targetLength < srcLength + 1 + 2 + delta) {
-            return false;
-        }
-        target[offset++] = '0';
-        target[offset++] = '.';
-        for (uint32_t i = 0; i < delta; i++) {
-            target[offset++] = '0';
-        }
-        startOffset = offset;
-        for (uint32_t i = 0; i < srcLength; i++) {
-            target[offset++] = src[i];
-        }
-        target[offset] = '\0';
-    } else {
-        uint32_t sourceOffset = 0;
-        uint32_t delta = srcLength - decimals;
-        if (targetLength < srcLength + 1 + 1) {
-            return false;
-        }
-        while (offset < delta) {
-            target[offset++] = src[sourceOffset++];
-        }
-        if (decimals != 0) {
-            target[offset++] = '.';
-        }
-        startOffset = offset;
-        while (sourceOffset < srcLength) {
-            target[offset++] = src[sourceOffset++];
-        }
-  target[offset] = '\0';
-    }
-    for (uint32_t i = startOffset; i < offset; i++) {
-        if (target[i] == '0') {
-            if (lastZeroOffset == 0) {
-                lastZeroOffset = i;
-            }
-        } else {
-            lastZeroOffset = 0;
-        }
-    }
-    if (lastZeroOffset != 0) {
-        target[lastZeroOffset] = '\0';
-        if (target[lastZeroOffset - 1] == '.') {
-                target[lastZeroOffset - 1] = '\0';
-        }
-    }
-    return true;
-}
-
-static char*
-amount_to_str(uint64_t amount, uint8_t decimals){
-  char* result = u64str(amount);
-  char tmp[24];
-  memcpy(tmp, result, sizeof(tmp));
-  memset(result, 0, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, 27, decimals);
-  result[26] = '\0';
-  return result;
-}
 
 static int
 all_zero_key(uint8_t *buf)

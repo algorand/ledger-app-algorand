@@ -2,6 +2,7 @@
 
 #include "algo_addr.h"
 #include "algo_ui.h"
+#include "str.h"
 
 #define MAX_CHARS_PER_LINE 8
 
@@ -11,26 +12,6 @@ static int lineBufferPos;
 // 2 extra bytes for ".." on continuation
 // 1 extra byte for the null termination
 char lineBuffer[MAX_CHARS_PER_LINE+2+1];
-
-char *u64str(uint64_t v)
-{
-  static char buf[27];
-
-  char *p = &buf[sizeof(buf)];
-  *(--p) = '\0';
-
-  if (v == 0) {
-    *(--p) = '0';
-    return p;
-  }
-
-  while (v > 0) {
-    *(--p) = '0' + (v % 10);
-    v = v/10;
-  }
-
-  return p;
-}
 
 void
 ui_text_putn(const char *msg, size_t maxlen)
