@@ -1,5 +1,4 @@
 #include "os.h"
-#include "os_io_seproxyhal.h"
 
 #include "algo_addr.h"
 #include "algo_ui.h"

@@ -1,6 +1,8 @@
 #ifndef __ALGO_ASA_H__
 #define __ALGO_ASA_H__
 
+#include <stdint.h>
+
 #define __packed            __attribute__((packed))
 
 
