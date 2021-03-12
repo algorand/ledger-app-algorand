@@ -1,4 +1,4 @@
-#include "ux.h"
+#include <stdint.h>
 
 extern char lineBuffer[];
 extern char caption[20];
