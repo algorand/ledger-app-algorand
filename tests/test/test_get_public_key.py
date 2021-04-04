@@ -35,15 +35,21 @@ def test_ins_with_4_bytes_payload(dongle):
         assert False
 
 labels = {
-    'verify', 'address', 'approve'
+    'verify', 'address'
 }
 
 def getPubKey_ui_handler(event, buttons):
     logging.warning(event)
-    label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
+    if type(event) == dict:
+        label = event['text'].lower()
+    elif type(event) == list:
+        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
+    else:
+        raise Exception(f"enexpceted events type is {type(event)}")
     logging.warning('label => %s' % label)
+    logging.warning(len(list(filter(lambda l: l in label, labels))))
     if len(list(filter(lambda l: l in label, labels))) > 0:
-        if label == "approve":
+        if label == "address":
             buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
         else:
             buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
