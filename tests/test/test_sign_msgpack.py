@@ -73,6 +73,7 @@ def test_sign_msgpack_returns_same_signature(dongle, txn):
     """
     with dongle.screen_event_handler(txn_ui_handler):
         defaultTxnSig = sign_algo_txn(dongle, txn)
+        
 
     with dongle.screen_event_handler(txn_ui_handler):
         txnSig = sign_algo_txn(dongle=dongle,
@@ -84,7 +85,14 @@ def test_sign_msgpack_returns_same_signature(dongle, txn):
 
 def txn_ui_handler(event, buttons):
     logging.warning(event)
-    label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
+    # we have only one text
+    if type(event) == dict:
+        label = event['text'].lower()
+    elif type(event) == list:
+        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
+    else:
+        raise Exception(f"enexpceted events type is {type(event)}")
+
     logging.warning('label => %s' % label)
     if len(list(filter(lambda l: l in label, labels))) > 0:
         if label == "sign":

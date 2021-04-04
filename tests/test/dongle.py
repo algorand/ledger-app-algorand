@@ -57,6 +57,7 @@ class Dongle:
                              daemon=True)
         t.start()
         yield self
+        s.shutdown(socket.SHUT_RDWR)
         fd.close()
         t.join()
 
