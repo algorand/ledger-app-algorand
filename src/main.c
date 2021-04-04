@@ -37,7 +37,7 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 /* The transaction that we might ask the user to approve. */
 txn_t current_txn;
-already_computed_key_t current_pubkey;
+
 
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
@@ -45,15 +45,14 @@ already_computed_key_t current_pubkey;
 #if defined(TARGET_NANOX)
 static uint8_t msgpack_buf[2048];
 #else
-static uint8_t msgpack_buf[900];
+static uint8_t msgpack_buf[800];
 #endif
 static unsigned int msgpack_next_off;
 
 void
 txn_approve()
 {
-  unsigned int tx = 0;
-
+  int sign_size = 0;
   unsigned int msg_len;
 
   msgpack_buf[0] = 'T';
@@ -63,26 +62,15 @@ txn_approve()
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
   PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
 
-  cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(current_txn.accountId, &privateKey);
+  
+  sign_size = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer);
+  
 
-  io_seproxyhal_io_heartbeat();
-
-  tx = cx_eddsa_sign(&privateKey,
-                     0, CX_SHA512,
-                     &msgpack_buf[0], msg_len,
-                     NULL, 0,
-                     G_io_apdu_buffer,
-                     6+2*(32+1), // Formerly from cx_compliance_141.c
-                     NULL);
-
-  io_seproxyhal_io_heartbeat();
-
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
+  G_io_apdu_buffer[sign_size++] = 0x90;
+  G_io_apdu_buffer[sign_size++] = 0x00;
 
   // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
 
   // Display back the original UX
   ui_idle();
@@ -124,8 +112,6 @@ copy_and_advance(void *dst, uint8_t **p, size_t len)
 
 void init_globals(){
   memset(&current_txn, 0, sizeof(current_txn));
-  memset(&current_pubkey, 0, sizeof(current_pubkey));
-  fetch_public_key(0, text);
 }
 
 static void

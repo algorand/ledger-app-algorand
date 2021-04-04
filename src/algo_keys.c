@@ -5,7 +5,9 @@
 #include "algo_keys.h"
 
 
-void
+
+
+static void
 algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
 {
   uint8_t  privateKeyData[64];
@@ -28,8 +30,8 @@ algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
   os_memset(privateKeyData, 0, sizeof(privateKeyData));
 }
 
-size_t
-algorand_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
+static size_t
+generate_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
 {
   cx_ecfp_public_key_t publicKey;
 
@@ -52,16 +54,33 @@ algorand_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
   return 32;
 }
 
-size_t fetch_public_key(uint32_t accountId, uint8_t* pubkey){
-  if(!current_pubkey.initialized ||
-     current_pubkey.accountID != accountId){
-    cx_ecfp_private_key_t privateKey;
-    algorand_key_derive(accountId, &privateKey);
-    algorand_public_key(&privateKey, current_pubkey.pubkey);
-    memset(&privateKey, 0, sizeof(privateKey));
-    current_pubkey.accountID = accountId;
-    current_pubkey.initialized = true;
-  }
-  memcpy(pubkey, current_pubkey.pubkey, sizeof(current_pubkey.pubkey));
-  return sizeof(current_pubkey.pubkey);
+void fetch_public_key(uint32_t accountId, uint8_t* pubkey)
+{
+  cx_ecfp_private_key_t privateKey;
+  os_memset(&privateKey, 0, sizeof(privateKey));
+
+  algorand_key_derive(accountId, &privateKey);
+  generate_public_key(&privateKey, pubkey);
+  os_memset(&privateKey, 0, sizeof(privateKey));
+}
+
+
+int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign , const uint32_t msg_len, uint8_t* out_buffer)
+{
+  int sign_size = 0;
+  cx_ecfp_private_key_t privateKey;
+  algorand_key_derive(account_id, &privateKey);
+
+  io_seproxyhal_io_heartbeat();
+  sign_size = cx_eddsa_sign(&privateKey,
+                     0, CX_SHA512,
+                     msg_to_sign, msg_len,
+                     NULL, 0,
+                     out_buffer,
+                     6+2*(32+1), // Formerly from cx_compliance_141.c
+                     NULL);
+
+  
+  io_seproxyhal_io_heartbeat();
+  return sign_size;
 }
