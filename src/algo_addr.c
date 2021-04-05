@@ -35,6 +35,5 @@ checksummed_addr(const uint8_t *publicKey, char *out)
   os_memmove(&checksummed[0], publicKey, 32);
   os_memmove(&checksummed[32], &hash[28], 4);
 
-  os_memset(out, 0, 65);
   base32_encode(checksummed, sizeof(checksummed), (unsigned char*) out);
 }

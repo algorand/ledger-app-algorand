@@ -7,8 +7,7 @@
 
 
 
-static void
-algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
+static void algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
 {
   uint8_t  privateKeyData[64];
   uint32_t bip32Path[5];
@@ -30,8 +29,7 @@ algorand_key_derive(uint32_t accountId, cx_ecfp_private_key_t *privateKey)
   os_memset(privateKeyData, 0, sizeof(privateKeyData));
 }
 
-static size_t
-generate_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
+static size_t generate_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
 {
   cx_ecfp_public_key_t publicKey;
 

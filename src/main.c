@@ -45,7 +45,7 @@ txn_t current_txn;
 #if defined(TARGET_NANOX)
 static uint8_t msgpack_buf[2048];
 #else
-static uint8_t msgpack_buf[800];
+static uint8_t msgpack_buf[900];
 #endif
 static unsigned int msgpack_next_off;
 
@@ -114,8 +114,41 @@ void init_globals(){
   memset(&current_txn, 0, sizeof(current_txn));
 }
 
-static void
-algorand_main(void)
+int parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint8_t* should_request_approve, uint32_t* account_id )
+{
+  *account_id = 0;
+  *should_request_approve = buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+
+  if (buffer_len <= OFFSET_LC) 
+  {
+    PRINTF("using default account id 0 ");
+    return 0;
+  }
+
+  uint8_t lc = buffer[OFFSET_LC];
+  if (lc == 0)
+  {
+    PRINTF("using default account id 0 ");
+    return 0;
+  }
+  if (lc != sizeof(uint32_t)) 
+  {
+    return 0x6a85;
+  } 
+  *account_id = U4BE(buffer, OFFSET_CDATA);
+  return 0;
+}
+
+
+void send_pubkey_to_ui(const uint8_t* buffer)
+{
+  char checksummed[65];
+  os_memset(checksummed,0,65);
+  checksummed_addr(G_io_apdu_buffer, checksummed);
+  ui_text_put(checksummed);
+}
+
+static void algorand_main(void)
 {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
@@ -263,19 +296,13 @@ algorand_main(void)
         } break;
 
         case INS_GET_PUBLIC_KEY: {
-          uint32_t accountId = 0;
-          char checksummed[65];
-          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-
-          if (rx > OFFSET_LC) {
-              uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
-              if (lc == sizeof(uint32_t)) {
-                accountId = U4BE(G_io_apdu_buffer, OFFSET_CDATA);
-              } else if (lc != 0) {
-                return THROW(0x6a85);
-              }
+          uint32_t accountId =0 ;
+          uint8_t user_approval_required = 0;
+          int error = parse_input_get_public_key(G_io_apdu_buffer, rx, &user_approval_required, &accountId );
+          if (error != 0)
+          {
+            THROW(error);
           }
-
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
@@ -283,8 +310,7 @@ algorand_main(void)
           fetch_public_key(accountId, G_io_apdu_buffer);
 
           if(user_approval_required){
-            checksummed_addr(G_io_apdu_buffer, checksummed);
-            ui_text_put(checksummed);
+            send_pubkey_to_ui(G_io_apdu_buffer);
             ui_address_approval();
             flags |= IO_ASYNCH_REPLY;
           }
@@ -339,6 +365,7 @@ io_seproxyhal_display(const bagl_element_t *element)
 }
 
 unsigned char io_event(unsigned char channel) {
+  UNUSED(channel);
   // nothing done with the event, throw an error on the transport layer if
   // needed
 
