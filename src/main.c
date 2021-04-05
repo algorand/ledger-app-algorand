@@ -65,7 +65,7 @@ txn_approve()
   
   sign_size = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer);
   
-
+  
   G_io_apdu_buffer[sign_size++] = 0x90;
   G_io_apdu_buffer[sign_size++] = 0x00;
 
