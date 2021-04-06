@@ -239,7 +239,7 @@ static int step_genesisID() {
     return 0;
   }
 
-  ui_text_putn(current_txn.genesisID, sizeof(current_txn.genesisID));
+  ui_text_put(current_txn.genesisID);
   return 1;
 }
 
@@ -446,7 +446,7 @@ static int step_asset_config_unitname() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.unitname, sizeof(current_txn.asset_config.params.unitname));
+  ui_text_put(current_txn.asset_config.params.unitname);
   return 1;
 }
 
@@ -464,7 +464,7 @@ static int step_asset_config_assetname() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.assetname, sizeof(current_txn.asset_config.params.assetname));
+  ui_text_put(current_txn.asset_config.params.assetname);
   return 1;
 }
 
@@ -473,7 +473,7 @@ static int step_asset_config_url() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.url, sizeof(current_txn.asset_config.params.url));
+  ui_text_put(current_txn.asset_config.params.url);
   return 1;
 }
 

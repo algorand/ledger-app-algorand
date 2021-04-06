@@ -453,7 +453,7 @@ main(void)
   __asm volatile("cpsie i");
 
   // What kind of horrible program loader fails to zero out the BSS?
-  lineBuffer[0] = '\0';
+  text[0] = '\0';
 
   // ensure exception will work as planned
   os_boot();
