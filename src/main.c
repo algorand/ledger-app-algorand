@@ -6,34 +6,13 @@
 #include "algo_ui.h"
 #include "algo_addr.h"
 #include "algo_tx.h"
+#include "command_handler.h"
+#include "apdu_protocol_defines.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-#define OFFSET_CLA    0
-#define OFFSET_INS    1
-#define OFFSET_P1     2
-#define OFFSET_P2     3
-#define OFFSET_LC     4
-#define OFFSET_CDATA  5
 
-#define CLA           0x80
 
-#define P1_FIRST 0x00
-#define P1_MORE  0x80
-#define P1_WITH_ACCOUNT_ID  0x01
-#define P1_WITH_REQUEST_USER_APPROVAL  0x80
-
-#define P2_LAST  0x00
-#define P2_MORE  0x80
-
-#define INS_SIGN_PAYMENT    0x01    // Deprecated, unused
-#define INS_SIGN_KEYREG     0x02    // Deprecated, unused
-#define INS_GET_PUBLIC_KEY  0x03
-#define INS_SIGN_PAYMENT_V2 0x04
-#define INS_SIGN_KEYREG_V2  0x05
-#define INS_SIGN_PAYMENT_V3 0x06
-#define INS_SIGN_KEYREG_V3  0x07
-#define INS_SIGN_MSGPACK    0x08
 
 /* The transaction that we might ask the user to approve. */
 txn_t current_txn;
@@ -42,10 +21,13 @@ txn_t current_txn;
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
  */
+
 #if defined(TARGET_NANOX)
-static uint8_t msgpack_buf[2048];
+#define TNX_BUFFER_SIZE 2048
+static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 #else
-static uint8_t msgpack_buf[900];
+#define TNX_BUFFER_SIZE 900
+static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 #endif
 static unsigned int msgpack_next_off;
 
@@ -103,8 +85,7 @@ user_approval_denied()
   ui_idle();
 }
 
-static void
-copy_and_advance(void *dst, uint8_t **p, size_t len)
+static void copy_and_advance(void *dst, uint8_t **p, size_t len)
 {
   os_memmove(dst, *p, len);
   *p += len;
@@ -114,39 +95,6 @@ void init_globals(){
   memset(&current_txn, 0, sizeof(current_txn));
 }
 
-int parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint8_t* should_request_approve, uint32_t* account_id )
-{
-  *account_id = 0;
-  *should_request_approve = buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-
-  if (buffer_len <= OFFSET_LC) 
-  {
-    PRINTF("using default account id 0 ");
-    return 0;
-  }
-
-  uint8_t lc = buffer[OFFSET_LC];
-  if (lc == 0)
-  {
-    PRINTF("using default account id 0 ");
-    return 0;
-  }
-  if (lc != sizeof(uint32_t)) 
-  {
-    return 0x6a85;
-  } 
-  *account_id = U4BE(buffer, OFFSET_CDATA);
-  return 0;
-}
-
-
-void send_pubkey_to_ui(const uint8_t* buffer)
-{
-  char checksummed[65];
-  os_memset(checksummed,0,65);
-  checksummed_addr(G_io_apdu_buffer, checksummed);
-  ui_text_put(checksummed);
-}
 
 static void algorand_main(void)
 {
@@ -173,7 +121,8 @@ static void algorand_main(void)
         rx = io_exchange(CHANNEL_APDU | flags, rx);
         flags = 0;
 
-        PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
+        PRINTF("New APDU received size: %d:\n%.*H\n",rx,  rx, G_io_apdu_buffer);
+
 
         // no apdu received, well, reset the session, and reset the
         // bootloader configuration
@@ -238,77 +187,36 @@ static void algorand_main(void)
           flags |= IO_ASYNCH_REPLY;
         } break;
 
-        case INS_SIGN_MSGPACK: {
-          uint8_t *cdata = &G_io_apdu_buffer[OFFSET_CDATA];
-          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
-
-          switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
-          case P1_FIRST:
-            os_memset(&current_txn, 0, sizeof(current_txn));
-            current_txn.accountId = 0;
-            if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
-              if (lc < sizeof(uint32_t)) {
-                THROW(0x6700);
-              }
-              current_txn.accountId = U4BE(cdata, 0);
-              cdata += sizeof(uint32_t);
-              lc -= sizeof(uint32_t);
-            }
-            msgpack_next_off = 0;
-            break;
-          case P1_MORE:
-            break;
-          default:
-            THROW(0x6B00);
-          }
-
-          if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
-            THROW(0x6700);
-          }
-
-          os_memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
-          msgpack_next_off += lc;
-
-          switch (G_io_apdu_buffer[OFFSET_P2]) {
-          case P2_LAST:
-            {
-              char *err = tx_decode(msgpack_buf, msgpack_next_off, &current_txn);
-              if (err != NULL) {
-                /* Return error by sending a response length longer than
-                 * the usual ed25519 signature.
-                 */
-                int errlen = strlen(err);
-                os_memset(G_io_apdu_buffer, 0, 65);
-                os_memmove(&G_io_apdu_buffer[65], err, errlen);
-                tx = 65 + errlen;
-                THROW(0x9000);
-              }
-
-              ui_txn();
-              flags |= IO_ASYNCH_REPLY;
-            }
-            break;
-          case P2_MORE:
+        case INS_SIGN_MSGPACK: 
+        {
+          uint8_t need_more_data = 0;
+          char* error = parse_input_msgpack(G_io_apdu_buffer,rx ,msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &need_more_data);
+          if (error != NULL)
+          {
+            int errlen = strlen(error);
+            os_memset(G_io_apdu_buffer, 0, 65);
+            os_memmove(&G_io_apdu_buffer[65], error, errlen);
+            tx = 65 + errlen;
             THROW(0x9000);
-          default:
-            THROW(0x6B00);
           }
-        } break;
-
+          if (!need_more_data)
+          {
+            ui_txn();
+            flags |= IO_ASYNCH_REPLY;
+          }
+        }
+        break;
         case INS_GET_PUBLIC_KEY: {
           uint32_t accountId =0 ;
           uint8_t user_approval_required = 0;
-          int error = parse_input_get_public_key(G_io_apdu_buffer, rx, &user_approval_required, &accountId );
-          if (error != 0)
-          {
-            THROW(error);
-          }
+          parse_input_get_public_key(G_io_apdu_buffer, rx, &accountId );
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
           fetch_public_key(accountId, G_io_apdu_buffer);
 
+          user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
           if(user_approval_required){
             send_pubkey_to_ui(G_io_apdu_buffer);
             ui_address_approval();

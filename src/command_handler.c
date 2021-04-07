@@ -1,0 +1,103 @@
+#include "command_handler.h"
+#include "apdu_protocol_defines.h"
+#include "algo_ui.h"
+#include "algo_addr.h"
+
+
+
+void parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint32_t* account_id )
+{
+  *account_id = 0;
+
+
+  if (buffer_len <= OFFSET_LC) 
+  {
+    PRINTF("using default account id 0 ");
+    return;
+  }
+
+  uint8_t lc = buffer[OFFSET_LC];
+  if (lc == 0)
+  {
+    PRINTF("using default account id 0 ");
+    return ;
+  }
+  if (lc < sizeof(uint32_t)) 
+  {
+    THROW(0x6a85);
+  } 
+  *account_id = U4BE(buffer, OFFSET_CDATA);
+}
+
+
+void send_pubkey_to_ui(const uint8_t* buffer)
+{
+  char checksummed[65];
+  os_memset(checksummed,0,65);
+  checksummed_addr(buffer, checksummed);
+  ui_text_put(checksummed);
+}
+
+// start of data - &G_io_apdu_buffer
+// 
+char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len, 
+                        uint8_t* current_tnx_buffer, const uint32_t current_tnx_buffer_size, uint32_t *current_tnx_buffer_offset,
+                        txn_t* current_tnx, uint8_t* need_more_data)
+{
+  *need_more_data = 1;
+  const uint8_t *cdata = data_buffer + OFFSET_CDATA;
+  uint8_t lc = data_buffer[OFFSET_LC];
+
+  if (buffer_len < lc + OFFSET_CDATA)
+  {
+    THROW(0x6a85);
+  }
+  switch (data_buffer[OFFSET_P1] & 0x80)
+  {
+    case P1_FIRST:
+      os_memset(&current_txn, 0, sizeof(current_txn));
+      *current_tnx_buffer_offset = 0;
+      current_txn.accountId = 0;
+      if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
+      {
+        parse_input_get_public_key(data_buffer, buffer_len, &current_txn.accountId);
+        cdata += sizeof(uint32_t);
+        lc -= sizeof(uint32_t);
+      }
+      break;
+    case P1_MORE:
+            break;
+    default:
+      THROW(0x6B00);
+  }
+
+  if (*current_tnx_buffer_offset + lc > current_tnx_buffer_size) 
+  {
+      THROW(0x6700);
+  }
+
+  os_memmove(&current_tnx_buffer[*current_tnx_buffer_offset], cdata, lc);
+  *current_tnx_buffer_offset += lc;
+
+  switch (data_buffer[OFFSET_P2]) 
+  {
+    case P2_LAST:
+    {
+      char *err = tx_decode(current_tnx_buffer, *current_tnx_buffer_offset, &current_txn);
+      if (err != NULL) 
+      {
+        PRINTF("got error from decoder:\n");
+        PRINTF("%s\n",err);
+        return err;
+      }
+      *need_more_data = 0;
+      return NULL;
+    }
+    break;
+    case P2_MORE:
+      THROW(0x9000);
+    default:
+      THROW(0x6B00);
+  }
+
+}

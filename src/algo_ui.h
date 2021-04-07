@@ -1,3 +1,5 @@
+#ifndef _ALGO_UI_H_
+#define _ALGO_UI_H_
 #include "ux.h"
 
 extern char lineBuffer[];
@@ -13,3 +15,4 @@ void ui_text_put(const char *msg);
 
 #define ALGORAND_PUBLIC_KEY_SIZE 32
 #define ALGORAND_DECIMALS 6
+#endif

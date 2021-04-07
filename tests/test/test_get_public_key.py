@@ -72,7 +72,7 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
         assert False
 
 
-@pytest.fixture(params=[1, 2, 3, 5, 8, 14])
+@pytest.fixture(params=[1, 2, 3])
 def invalid_size_apdu(request):
     l = request.param
     return struct.pack('>BBBBB%ds' % l, 0x80, 0x3, 0x0, 0x0, l, bytes(l))
