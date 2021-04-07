@@ -208,15 +208,14 @@ static void algorand_main(void)
         break;
         case INS_GET_PUBLIC_KEY: {
           uint32_t accountId =0 ;
-          uint8_t user_approval_required = 0;
+          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
           parse_input_get_public_key(G_io_apdu_buffer, rx, &accountId );
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
           fetch_public_key(accountId, G_io_apdu_buffer);
-
-          user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+          
           if(user_approval_required){
             send_pubkey_to_ui(G_io_apdu_buffer);
             ui_address_approval();
