@@ -51,24 +51,19 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len,
   {
     THROW(0x6a85);
   }
-  switch (data_buffer[OFFSET_P1] & 0x80)
+
+  if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
   {
-    case P1_FIRST:
-      os_memset(&current_txn, 0, sizeof(current_txn));
-      *current_tnx_buffer_offset = 0;
-      current_txn.accountId = 0;
-      if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
-      {
-        parse_input_get_public_key(data_buffer, buffer_len, &current_txn.accountId);
-        PRINTF("signing the transaction using account id: %d\n",current_txn.accountId);
-        cdata += sizeof(uint32_t);
-        lc -= sizeof(uint32_t);
-      }
-      break;
-    case P1_MORE:
-            break;
-    default:
-      THROW(0x6B00);
+    os_memset(&current_txn, 0, sizeof(current_txn));
+    *current_tnx_buffer_offset = 0;
+    current_txn.accountId = 0;
+    if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
+    {
+      parse_input_get_public_key(data_buffer, buffer_len, &current_txn.accountId);
+      PRINTF("signing the transaction using account id: %d\n",current_txn.accountId);
+      cdata += sizeof(uint32_t);
+      lc -= sizeof(uint32_t);
+    }
   }
 
   if (*current_tnx_buffer_offset + lc > current_tnx_buffer_size) 
