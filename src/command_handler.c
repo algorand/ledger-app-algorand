@@ -38,8 +38,7 @@ void send_pubkey_to_ui(const uint8_t* buffer)
   ui_text_put(checksummed);
 }
 
-// start of data - &G_io_apdu_buffer
-// 
+
 char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len, 
                         uint8_t* current_tnx_buffer, const uint32_t current_tnx_buffer_size, uint32_t *current_tnx_buffer_offset,
                         txn_t* current_tnx, uint8_t* need_more_data)
@@ -61,6 +60,7 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len,
       if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
       {
         parse_input_get_public_key(data_buffer, buffer_len, &current_txn.accountId);
+        PRINTF("signing the transaction using account id: %d\n",current_txn.accountId);
         cdata += sizeof(uint32_t);
         lc -= sizeof(uint32_t);
       }

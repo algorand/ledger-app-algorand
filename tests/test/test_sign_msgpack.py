@@ -37,6 +37,22 @@ def txn():
     return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_tnx()))
 
 
+@pytest.mark.parametrize('account_id', [0,1,2,10,50])
+def test_sign_msgpack_with_spcific_account(dongle, txn, account_id):
+    """
+    """
+    apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0,0x4, account_id)
+    pubKey = dongle.exchange(apdu)
+
+    with dongle.screen_event_handler(txn_ui_handler):
+        logging.info(txn)
+        txnSig = sign_algo_txn_with_account(dongle, txn, account_id)
+
+    assert len(txnSig) == 64
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + txn, signature=txnSig)
+
+
 def test_sign_msgpack_with_default_account(dongle, txn):
     """
     """
@@ -171,7 +187,10 @@ def apdus(chunks, p1=0x00, p2=0x80):
 
 
 def sign_algo_txn(dongle, txn,chunk_size=250, p1=0x00):
-    for apdu in apdus(chunks(txn,chunk_size), p1=p1 & 0x7f):
+    for apdu in apdus(chunks(txn, chunk_size), p1=(p1 & 0x7f)):
         sig = dongle.exchange(apdu)
     return sig
 
+def sign_algo_txn_with_account(dongle, txn, account_id, chunk_size=250, p1=0x00):
+    return sign_algo_txn(dongle, struct.pack('>I',account_id) +txn, chunk_size, p1 | 0x1)
+    
