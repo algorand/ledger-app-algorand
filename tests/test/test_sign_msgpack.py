@@ -7,15 +7,10 @@ import msgpack
 import nacl.signing
 
 import algosdk
+from . import txn_utils
 
 from . import speculos
-
-
-labels = {
-    'review', 'txn type', 'sender', 'fee', 'first valid', 'last valid',
-    'genesis', 'note', 'receiver', 'amount', 'sign'
-}
-
+from . import txn_utils
 
 def get_default_tnx():
     return  algosdk.transaction.PaymentTxn(
@@ -68,13 +63,38 @@ def get_expected_messages(tnx):
     return messages
 
 
+txn_labels = {
+    'review', 'txn type', 'sender', 'fee', 'first valid', 'last valid',
+    'genesis', 'note', 'receiver', 'amount', 'sign'
+} 
+
+def txn_ui_handler(event, buttons, messages_seen):
+    logging.warning(event)
+    # we have only one text
+    if type(event) == dict:
+        label = event['text'].lower()
+    elif type(event) == list:
+        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
+    else:
+        raise Exception(f"enexpceted events type is {type(event)}")
+
+    messages_seen.append(label)
+    logging.warning('label => %s' % label)
+    if len(list(filter(lambda l: l in label, txn_labels))) > 0:
+        if label == "sign":
+            buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
+        else:
+            buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
+    return messages_seen
+
+
 def test_sign_msgpack_validate_display(dongle, txn):
     """
     """
 
     with dongle.screen_event_handler(txn_ui_handler):
         logging.info(txn)
-        _ = sign_algo_txn(dongle, txn)
+        _ = txn_utils.sign_algo_txn(dongle, txn)
         messages = dongle.get_messages()
     logging.info(messages)
     logging.info(get_expected_messages(get_default_tnx()))
@@ -92,7 +112,7 @@ def test_sign_msgpack_with_spcific_account(dongle, txn, account_id):
 
     with dongle.screen_event_handler(txn_ui_handler):
         logging.info(txn)
-        txnSig = sign_algo_txn_with_account(dongle, txn, account_id)
+        txnSig = txn_utils.sign_algo_txn_with_account(dongle, txn, account_id)
 
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
@@ -107,7 +127,7 @@ def test_sign_msgpack_with_default_account(dongle, txn):
 
     with dongle.screen_event_handler(txn_ui_handler):
         logging.info(txn)
-        txnSig = sign_algo_txn(dongle, txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, txn)
 
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
@@ -131,7 +151,7 @@ def test_sign_msgpack_differnet_chunk_size(dongle, txn,chunk_size):
 
     with dongle.screen_event_handler(txn_ui_handler):
         logging.info(txn)
-        txnSig = sign_algo_txn(dongle, txn,chunk_size)
+        txnSig = txn_utils.sign_algo_txn(dongle, txn,chunk_size)
 
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
@@ -144,7 +164,7 @@ def test_sign_tnx_larger_then_internal_buffer(dongle, txn):
         tnx = get_default_tnx()
         tnx.note = ("1"*800).encode()  
         
-        dongle.exchange(sign_algo_txn(dongle, base64.b64decode(algosdk.encoding.msgpack_encode(tnx))))
+        dongle.exchange(txn_utils.sign_algo_txn(dongle, base64.b64decode(algosdk.encoding.msgpack_encode(tnx))))
         
     assert excinfo.value.sw == 0x6700
 
@@ -156,7 +176,7 @@ def test_sign_tnx_long_field(dongle, txn):
         tnx = get_default_tnx()
         tnx.note = ("1"*500).encode()  
         
-        dongle.exchange(sign_algo_txn(dongle, base64.b64decode(algosdk.encoding.msgpack_encode(tnx))))
+        dongle.exchange(txn_utils.sign_algo_txn(dongle, base64.b64decode(algosdk.encoding.msgpack_encode(tnx))))
         
     assert excinfo.value.sw == 0x6e00
 
@@ -170,7 +190,7 @@ def test_sign_msgpack_with_valid_account_id(dongle, txn, account_id):
 
     with dongle.screen_event_handler(txn_ui_handler):
         logging.info(txn)
-        txnSig = sign_algo_txn(dongle=dongle,
+        txnSig = txn_utils.sign_algo_txn(dongle=dongle,
                                txn=struct.pack('>I', account_id) + txn,
                                p1=0x1)
 
@@ -183,63 +203,14 @@ def test_sign_msgpack_returns_same_signature(dongle, txn):
     """
     """
     with dongle.screen_event_handler(txn_ui_handler):
-        defaultTxnSig = sign_algo_txn(dongle, txn)
+        defaultTxnSig = txn_utils.sign_algo_txn(dongle, txn)
         
 
     with dongle.screen_event_handler(txn_ui_handler):
-        txnSig = sign_algo_txn(dongle=dongle,
+        txnSig = txn_utils.sign_algo_txn(dongle=dongle,
                                txn=struct.pack('>I', 0x0) + txn,
                                p1=0x1)
 
     assert txnSig == defaultTxnSig
 
-
-def txn_ui_handler(event, buttons, messages_seen):
-    logging.warning(event)
-    # we have only one text
-    if type(event) == dict:
-        label = event['text'].lower()
-    elif type(event) == list:
-        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
-    else:
-        raise Exception(f"enexpceted events type is {type(event)}")
-
-    messages_seen.append(label)
-    logging.warning('label => %s' % label)
-    if len(list(filter(lambda l: l in label, labels))) > 0:
-        if label == "sign":
-            buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
-        else:
-            buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
-    return messages_seen
-
-
-def chunks(txn, chunk_size=250):
-    size = chunk_size
-    last = False
-    while not last:
-        chunk = txn[:size]
-        txn = txn[len(chunk):]
-        last = not txn
-        size = chunk_size
-        yield chunk, last
-
-
-def apdus(chunks, p1=0x00, p2=0x80):
-    for chunk, last in chunks:
-        if last:
-            p2 &= ~0x80
-        size = len(chunk)
-        yield struct.pack('>BBBBB%ds' % size, 0x80, 0x08, p1, p2, size, chunk)
-        p1 |= 0x80
-
-
-def sign_algo_txn(dongle, txn,chunk_size=250, p1=0x00):
-    for apdu in apdus(chunks(txn, chunk_size), p1=(p1 & 0x7f)):
-        sig = dongle.exchange(apdu)
-    return sig
-
-def sign_algo_txn_with_account(dongle, txn, account_id, chunk_size=250, p1=0x00):
-    return sign_algo_txn(dongle, struct.pack('>I',account_id) +txn, chunk_size, p1 | 0x1)
-    
 
