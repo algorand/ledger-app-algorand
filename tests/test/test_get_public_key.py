@@ -1,6 +1,7 @@
 import pytest
 import logging
 import struct
+import algosdk
 
 from . import speculos
 
@@ -34,11 +35,12 @@ def test_ins_with_4_bytes_payload(dongle):
         logging.error(e)
         assert False
 
-labels = {
-    'verify', 'address'
+clicked_labels = {
+    'verify', 
+    'address'
 }
 
-def getPubKey_ui_handler(event, buttons):
+def getPubKey_ui_handler(event, buttons, messages_seen):
     logging.warning(event)
     if type(event) == dict:
         label = event['text'].lower()
@@ -47,12 +49,16 @@ def getPubKey_ui_handler(event, buttons):
     else:
         raise Exception(f"enexpceted events type is {type(event)}")
     logging.warning('label => %s' % label)
-    logging.warning(len(list(filter(lambda l: l in label, labels))))
-    if len(list(filter(lambda l: l in label, labels))) > 0:
+
+    messages_seen.append(label)
+
+    logging.warning(len(list(filter(lambda l: l in label, clicked_labels))))
+    if len(list(filter(lambda l: l in label, clicked_labels))) > 0:
         if label == "address":
             buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
         else:
             buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
+    return messages_seen
 
 def test_ins_with_4_bytes_payload_and_user_approval(dongle):
     """
@@ -61,12 +67,25 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
     32-byte long `bytes`, after asking the user to approve the corresponding address
     """
     try:
+
+        excpected_messages = [
+        ['verify',''],
+        ['address',''],
+        [],
+        ['approve',''],
+        ['address','']]
+
+
         apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x80, 0x0, 0x0, 0x0)
 
         with dongle.screen_event_handler(getPubKey_ui_handler):
             key = dongle.exchange(apdu)
+            messages = dongle.get_messages()
+            logging.info(messages)
 
-        assert len(key) == 32
+        excpected_messages[2] = ['address',algosdk.encoding.encode_address(key).lower()]
+        assert messages == excpected_messages
+        
     except speculos.CommException as e:
         logging.error(e)
         assert False
@@ -126,4 +145,5 @@ def test_ins_with_non_0_account_does_not_return_account_0_key(dongle, account_ap
     except speculos.CommException as e:
         logging.error(e)
         assert False
+
 

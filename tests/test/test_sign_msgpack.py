@@ -37,6 +37,52 @@ def txn():
     return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_tnx()))
 
 
+def get_expected_messages(tnx):
+    messages =  [['review', ''],
+             ['transaction', ''],
+
+             ['txn type', ''],
+             ['payment', ''], 
+
+             ['sender', tnx.sender.lower()],
+
+             ['fee (alg)', ''], 
+             [str(tnx.fee*0.000001),''],
+
+             ['genesis id', ''], 
+             [tnx.genesis_id.lower(),''],
+
+             ['genesis hash', tnx.genesis_hash.lower()],
+
+             ['note', ''], 
+             [f'{len(tnx.note)} bytes', ''], 
+
+             ['receiver', tnx.receiver.lower()], 
+
+             ['amount (alg)', ''], 
+             [str(int(tnx.amt/1000000)), ''], 
+
+             ['sign', ''], 
+             ['transaction', '']]
+
+    return messages
+
+
+def test_sign_msgpack_validate_display(dongle, txn):
+    """
+    """
+
+    with dongle.screen_event_handler(txn_ui_handler):
+        logging.info(txn)
+        _ = sign_algo_txn(dongle, txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    logging.info(get_expected_messages(get_default_tnx()))
+    assert get_expected_messages(get_default_tnx()) == messages
+
+    
+    
+
 @pytest.mark.parametrize('account_id', [0,1,2,10,50])
 def test_sign_msgpack_with_spcific_account(dongle, txn, account_id):
     """
@@ -148,7 +194,7 @@ def test_sign_msgpack_returns_same_signature(dongle, txn):
     assert txnSig == defaultTxnSig
 
 
-def txn_ui_handler(event, buttons):
+def txn_ui_handler(event, buttons, messages_seen):
     logging.warning(event)
     # we have only one text
     if type(event) == dict:
@@ -158,12 +204,14 @@ def txn_ui_handler(event, buttons):
     else:
         raise Exception(f"enexpceted events type is {type(event)}")
 
+    messages_seen.append(label)
     logging.warning('label => %s' % label)
     if len(list(filter(lambda l: l in label, labels))) > 0:
         if label == "sign":
             buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
         else:
             buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
+    return messages_seen
 
 
 def chunks(txn, chunk_size=250):
@@ -194,3 +242,4 @@ def sign_algo_txn(dongle, txn,chunk_size=250, p1=0x00):
 def sign_algo_txn_with_account(dongle, txn, account_id, chunk_size=250, p1=0x00):
     return sign_algo_txn(dongle, struct.pack('>I',account_id) +txn, chunk_size, p1 | 0x1)
     
+

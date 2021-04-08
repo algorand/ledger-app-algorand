@@ -3,6 +3,7 @@ import threading
 import socket
 import json
 import logging
+import re
 from contextlib import contextmanager
 
 import traceback
@@ -23,6 +24,7 @@ class Dongle:
         self.dongle = ledgerblue.commTCP.getDongle(server='127.0.0.1',
                                                    port=self.apdu_port,
                                                    debug=debug)
+        self.messages_seen = []
 
     def exchange(self, apdu, timeout=20000):
         return bytes(self.dongle.exchange(apdu, timeout))
@@ -30,14 +32,42 @@ class Dongle:
     def close(self):
         self.dongle.close()
 
+    def append_dived_messages(self):
+        new_labels = []
+        i = 0 
+        while i < len(self.messages_seen):
+            if len(re.findall(r'\([0-9]+\/[0-9]\)',self.messages_seen[i])) == 0 :
+                if self.messages_seen[i] != 'application' and self.messages_seen[i] != 'is ready':
+                    new_labels.append([self.messages_seen[i],""])
+                i += 1
+                continue
+            else:
+                title = self.messages_seen[i][:self.messages_seen[i].find(" (")]
+                number_of_chunks_exp = int(self.messages_seen[i][self.messages_seen[i].find("/")+1:self.messages_seen[i].find(")")])
+                element = [title,""]
+                j = i +1 
+                while j < i + number_of_chunks_exp*2:
+                    element = [title,element[1]+self.messages_seen[j]]
+                    j+=2
+                i = i + number_of_chunks_exp*2
+                new_labels.append(element)
+                
+
+        return new_labels
+
+
+    def get_messages(self):
+        return self.append_dived_messages()
+
     @contextmanager
     def screen_event_handler(self, handler):
         def do_handle_events(_handler, _fd):
             buttons = Buttons(self.button_port)
             try:
+                self.messages_seen
                 for line in _fd:
                     if callable(handler):
-                        handler(json.loads(line.strip('\n')), buttons)
+                        self.messages_seen = handler(json.loads(line.strip('\n')), buttons, self.messages_seen)
             except ValueError:
                 pass
             except Exception as e:
@@ -63,6 +93,7 @@ class Dongle:
 
         logger.info('Closing connection to 127.0.0.1:%d' % self.automation_port)
         s.close()
+        self.messages_seen = []
 
 
 class Buttons:
