@@ -4,7 +4,16 @@ import struct
 import algosdk
 
 from . import speculos
+from . import txn_utils
+from . import ui_interaction
 
+
+clicked_labels = {
+    'verify', 
+    'address'
+}
+
+conf_label = "address"
 
 def test_ins_with_no_payload(dongle):
     """
@@ -35,30 +44,7 @@ def test_ins_with_4_bytes_payload(dongle):
         logging.error(e)
         assert False
 
-clicked_labels = {
-    'verify', 
-    'address'
-}
 
-def getPubKey_ui_handler(event, buttons, messages_seen):
-    logging.warning(event)
-    if type(event) == dict:
-        label = event['text'].lower()
-    elif type(event) == list:
-        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
-    else:
-        raise Exception(f"enexpceted events type is {type(event)}")
-    logging.warning('label => %s' % label)
-
-    messages_seen.append(label)
-
-    logging.warning(len(list(filter(lambda l: l in label, clicked_labels))))
-    if len(list(filter(lambda l: l in label, clicked_labels))) > 0:
-        if label == "address":
-            buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
-        else:
-            buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
-    return messages_seen
 
 def test_ins_with_4_bytes_payload_and_user_approval(dongle):
     """
@@ -69,21 +55,19 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
     try:
 
         excpected_messages = [
-        ['verify',''],
-        ['address',''],
+        ['verify','address'],
         [],
-        ['approve',''],
-        ['address','']]
+        ['approve','address']]
 
 
         apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x80, 0x0, 0x0, 0x0)
 
-        with dongle.screen_event_handler(getPubKey_ui_handler):
+        with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, clicked_labels, conf_label):
             key = dongle.exchange(apdu)
             messages = dongle.get_messages()
             logging.info(messages)
 
-        excpected_messages[2] = ['address',algosdk.encoding.encode_address(key).lower()]
+        excpected_messages[1] = ['address',algosdk.encoding.encode_address(key).lower()]
         assert messages == excpected_messages
         
     except speculos.CommException as e:

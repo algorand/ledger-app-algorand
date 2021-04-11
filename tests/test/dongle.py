@@ -32,42 +32,65 @@ class Dongle:
     def close(self):
         self.dongle.close()
 
-    def append_dived_messages(self):
+    def join_title_and_values(self):
         new_labels = []
         i = 0 
         while i < len(self.messages_seen):
-            if len(re.findall(r'\([0-9]+\/[0-9]\)',self.messages_seen[i])) == 0 :
-                if self.messages_seen[i] != 'application' and self.messages_seen[i] != 'is ready':
-                    new_labels.append([self.messages_seen[i],""])
+            if self.messages_seen[i][0] == 'application' or self.messages_seen[i][0] == 'is ready':
+                i += 1
+                continue    
+            # assuming the label is a title
+            if self.messages_seen[i][1] < 5:
+                new_labels.append([self.messages_seen[i][0],""])
+            else:
+            # assuming the label is the content
+                new_labels[len(new_labels)-1] = [new_labels[len(new_labels)-1][0],self.messages_seen[i][0]]
+            i += 1 
+
+        self.messages_seen = new_labels
+       
+
+
+    def append_divded_messages(self):
+        new_labels = []
+        i =0 
+        while i < len(self.messages_seen):
+            title = self.messages_seen[i][0]
+            body = self.messages_seen[i][1]
+            if len(re.findall(r'\([0-9]+\/[0-9]\)',title)) == 0 :
+                new_labels.append([title,body])
                 i += 1
                 continue
             else:
-                title = self.messages_seen[i][:self.messages_seen[i].find(" (")]
-                number_of_chunks_exp = int(self.messages_seen[i][self.messages_seen[i].find("/")+1:self.messages_seen[i].find(")")])
-                element = [title,""]
+                no_parentheses_title = title[:title.find(" (")]
+                number_of_chunks_exp = int(title[title.find("/")+1:title.find(")")])
+                
                 j = i +1 
-                while j < i + number_of_chunks_exp*2:
-                    element = [title,element[1]+self.messages_seen[j]]
-                    j+=2
-                i = i + number_of_chunks_exp*2
-                new_labels.append(element)
+                while j < i + number_of_chunks_exp:
+                    body += self.messages_seen[j][1]
+                    j+=1
+                i = i + number_of_chunks_exp
+                new_labels.append([no_parentheses_title,body])
                 
 
-        return new_labels
+        self.messages_seen = new_labels
 
 
     def get_messages(self):
-        return self.append_dived_messages()
+        self.join_title_and_values()
+        self.append_divded_messages()
+        return self.messages_seen
+        
 
     @contextmanager
-    def screen_event_handler(self, handler):
+    def screen_event_handler(self, handler, expected_txn_labels, confirm_label):
         def do_handle_events(_handler, _fd):
             buttons = Buttons(self.button_port)
             try:
                 self.messages_seen
                 for line in _fd:
                     if callable(handler):
-                        self.messages_seen = handler(json.loads(line.strip('\n')), buttons, self.messages_seen)
+                        self.messages_seen = handler(json.loads(line.strip('\n')), buttons, expected_txn_labels, confirm_label, self.messages_seen)
             except ValueError:
                 pass
             except Exception as e:

@@ -8,6 +8,7 @@ import nacl.signing
 
 import algosdk
 from . import txn_utils
+from . import ui_interaction
 
 from . import speculos
 
@@ -35,7 +36,6 @@ def get_default_tnx():
 
 @pytest.fixture
 def txn():
-    # txn = {"txn": txn.dictify()}
     return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_tnx()))
 
 
@@ -44,43 +44,22 @@ def txn():
 
 
 def get_expected_messages(current_tnx):
-    messages =  [['review', ''], 
-                 ['transaction', ''], 
-                 
-                 ['txn type', ''], 
-                 ['asset config', ''], 
-
+    messages =  [['review', 'transaction'], 
+                 ['txn type','asset config'],
                  ['sender', current_tnx.sender.lower()], 
-
-                 ['fee (alg)', ''], 
-                 [str(current_tnx.fee*0.000001),''],
-                 
+                 ['fee (alg)', str(current_tnx.fee*0.000001)],
                  ['genesis hash', current_tnx.genesis_hash.lower()],
-
-                 ['asset id', ''], 
-                 ['create', ''], 
-
-                 ['total units', ''], 
-                 ['1000', ''],
-
-                 ['default frozen', ''], 
-
-                 ['unfrozen', ''],
-
-                 ['unit name', ''], 
-                 ['latinum', ''], 
-
-                 ['asset name', ''], 
-                 ['latinum', ''], 
-
+                 ['asset id', 'create'],
+                 ['total units', '1000'],
+                 ['default frozen', 'unfrozen'],
+                 ['unit name', 'latinum'],
+                 ['asset name', 'latinum'],
                  ['url', current_tnx.url.lower()],
                  ['manager', current_tnx.manager.lower()], 
                  ['reserve', current_tnx.reserve.lower()],
                  ['freezer', current_tnx.freeze.lower()],
                  ['clawback', current_tnx.clawback.lower()], 
-                 
-                 ['sign', ''],
-                 ['transaction', '']]
+                 ['sign', 'transaction']]
 
     return messages
 
@@ -92,24 +71,7 @@ txn_labels = {
     'reserve', 'freezer', 'clawback',  'transaction'
 } 
 
-def txn_ui_handler(event, buttons, messages_seen):
-    logging.warning(event)
-    # we have only one text
-    if type(event) == dict:
-        label = event['text'].lower()
-    elif type(event) == list:
-        label = sorted(event, key=lambda e: e['y'])[0]['text'].lower()
-    else:
-        raise Exception(f"enexpceted events type is {type(event)}")
-
-    messages_seen.append(label)
-    logging.warning('label => %s' % label)
-    if len(list(filter(lambda l: l in label, txn_labels))) > 0:
-        if label == "transaction":
-            buttons.press(buttons.RIGHT, buttons.LEFT, buttons.RIGHT_RELEASE, buttons.LEFT_RELEASE)
-        else:
-            buttons.press(buttons.RIGHT, buttons.RIGHT_RELEASE)
-    return messages_seen
+conf_label = "transaction"
 
 
 
@@ -117,7 +79,7 @@ def test_sign_msgpack_asset_validate_display(dongle, txn):
     """
     """
 
-    with dongle.screen_event_handler(txn_ui_handler):
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
         logging.info(txn)
         _ = txn_utils.sign_algo_txn(dongle, txn)
         messages = dongle.get_messages()
@@ -133,7 +95,7 @@ def test_sign_msgpack_with_default_account(dongle, txn):
     apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
     pubKey = dongle.exchange(apdu)
 
-    with dongle.screen_event_handler(txn_ui_handler):
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
         logging.info(txn)
         txnSig = txn_utils.sign_algo_txn(dongle, txn)
 
