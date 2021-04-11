@@ -33,13 +33,13 @@ void parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint32_t*
 void send_pubkey_to_ui(const uint8_t* buffer)
 {
   char checksummed[65];
-  os_memset(checksummed,0,65);
+  explicit_bzero(checksummed, 65);
   checksummed_addr(buffer, checksummed);
   ui_text_put(checksummed);
 }
 
 
-char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len, 
+char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len, 
                         uint8_t* current_tnx_buffer, const uint32_t current_tnx_buffer_size, uint32_t *current_tnx_buffer_offset,
                         txn_t* current_tnx, uint8_t* need_more_data)
 {
@@ -54,7 +54,7 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len,
 
   if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
   {
-    os_memset(&current_txn, 0, sizeof(current_txn));
+    explicit_bzero(&current_txn, sizeof(current_txn));
     *current_tnx_buffer_offset = 0;
     current_txn.accountId = 0;
     if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
@@ -71,7 +71,7 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint8_t buffer_len,
       THROW(0x6700);
   }
 
-  os_memmove(&current_tnx_buffer[*current_tnx_buffer_offset], cdata, lc);
+  os_memmove(current_tnx_buffer + *current_tnx_buffer_offset, cdata, lc);
   *current_tnx_buffer_offset += lc;
 
   switch (data_buffer[OFFSET_P2]) 

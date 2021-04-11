@@ -92,7 +92,7 @@ static void copy_and_advance(void *dst, uint8_t **p, size_t len)
 }
 
 void init_globals(){
-  memset(&current_txn, 0, sizeof(current_txn));
+  explicit_bzero(&current_txn, sizeof(current_txn));
 }
 
 
@@ -139,7 +139,7 @@ static void algorand_main(void)
         case INS_SIGN_PAYMENT_V2:
         case INS_SIGN_PAYMENT_V3:
         {
-          os_memset(&current_txn, 0, sizeof(current_txn));
+          explicit_bzero(&current_txn, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_PAYMENT_V2) {
             p = &G_io_apdu_buffer[2];
@@ -165,7 +165,7 @@ static void algorand_main(void)
         case INS_SIGN_KEYREG_V2:
         case INS_SIGN_KEYREG_V3:
         {
-          os_memset(&current_txn, 0, sizeof(current_txn));
+          explicit_bzero(&current_txn, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_KEYREG_V2) {
             p = &G_io_apdu_buffer[2];
@@ -190,11 +190,11 @@ static void algorand_main(void)
         case INS_SIGN_MSGPACK: 
         {
           uint8_t need_more_data = 0;
-          char* error = parse_input_msgpack(G_io_apdu_buffer,rx ,msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &need_more_data);
+          char* error = parse_input_msgpack(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &need_more_data);
           if (error != NULL)
           {
             int errlen = strlen(error);
-            os_memset(G_io_apdu_buffer, 0, 65);
+            explicit_bzero(G_io_apdu_buffer, 65);
             os_memmove(&G_io_apdu_buffer[65], error, errlen);
             tx = 65 + errlen;
             THROW(0x9000);

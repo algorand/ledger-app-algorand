@@ -11,6 +11,7 @@
 #include "glyphs.h"
 
 #define CHECKEDSUM_BUFFER_SIZE 65
+#define MAX_DIGITS_IN_UINT64 27
 
 
 bool is_opt_in_tx(){
@@ -30,7 +31,7 @@ char caption[20];
 static char *
 u64str(uint64_t v)
 {
-  static char buf[27];
+  static char buf[MAX_DIGITS_IN_UINT64];
 
   char *p = &buf[sizeof(buf)];
   *(--p) = '\0';
@@ -115,11 +116,11 @@ bool adjustDecimals(char *src, uint32_t srcLength, char *target,
 static char*
 amount_to_str(uint64_t amount, uint8_t decimals){
   char* result = u64str(amount);
-  char tmp[24];
+  char tmp[MAX_DIGITS_IN_UINT64];
   memcpy(tmp, result, sizeof(tmp));
-  memset(result, 0, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, 27, decimals);
-  result[26] = '\0';
+  explicit_bzero(result, sizeof(tmp));
+  adjustDecimals(tmp, strlen(tmp), result, MAX_DIGITS_IN_UINT64, decimals);
+  result[MAX_DIGITS_IN_UINT64-1] = '\0';
   return result;
 }
 

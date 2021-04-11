@@ -42,7 +42,7 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
   io_seproxyhal_io_heartbeat();
 }
 
-static size_t generate_public_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
+static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *privateKey, uint8_t *buf)
 {
   cx_ecfp_public_key_t publicKey;
 
@@ -75,7 +75,7 @@ void fetch_public_key(uint32_t account_id, uint8_t* pub_key)
     TRY
     {
       algorand_key_derive(account_id, &private_key);
-      generate_public_key(&private_key, pub_key);
+      get_public_key_from_private_key(&private_key, pub_key);
     }
     FINALLY
     {

@@ -302,7 +302,7 @@ tx_decode(uint8_t *buf, int buflen, txn_t *t)
   uint8_t* buf_end = buf + buflen;
   uint32_t accountId = t->accountId; // Save `accountId`
 
-  os_memset(t, 0, sizeof(*t));
+  explicit_bzero(t, sizeof(*t));
   t->accountId = accountId;
 
   BEGIN_TRY {

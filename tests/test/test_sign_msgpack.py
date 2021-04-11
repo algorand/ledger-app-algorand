@@ -17,7 +17,7 @@ def get_default_tnx():
     return  algosdk.transaction.PaymentTxn(
         sender="YK54TGVZ37C7P76GKLXTY2LAH2522VD3U2434HRKE7NMXA65VHJVLFVOE4",
         receiver="RNZZNMS5L35EF6IQHH24ISSYQIKTUTWKGCB4Q5PBYYSTVB5EYDQRVYWMLE",
-        fee=0.001,
+        fee=30000,
         flat_fee=True,
         amt=1000000,
         first=5667360,
@@ -36,7 +36,7 @@ def get_expected_messages(tnx):
     messages =  [['review', 'transaction'],
              ['txn type', 'payment'],
              ['sender', tnx.sender.lower()],
-             ['fee (alg)', str(tnx.fee*0.000001)],
+             ['fee (alg)', str(tnx.fee /1000000)],
              ['genesis id', tnx.genesis_id.lower()],
              ['genesis hash', tnx.genesis_hash.lower()],
              ['note', f'{len(tnx.note)} bytes'],
@@ -60,7 +60,7 @@ def test_sign_msgpack_validate_display(dongle, txn):
     """
 
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(txn)
+        logging.info(txn)        
         _ = txn_utils.sign_algo_txn(dongle, txn)
         messages = dongle.get_messages()
     logging.info(messages)
@@ -105,7 +105,7 @@ def test_sign_msgpack_wrong_size_in_payload(dongle, txn):
     """
     """
     with pytest.raises(speculos.CommException) as excinfo:
-        dongle.exchange(struct.pack('>BBBBB10s' , 0x80, 0x8, 0x0, 0x0, 20, bytes(10)))
+        dongle.exchange(struct.pack('>BBBBB10s' , 0x80, 0x8, 0x0, 0x0, 250, bytes(10)))
         
     assert excinfo.value.sw == 0x6a85
 
