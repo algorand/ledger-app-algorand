@@ -15,8 +15,9 @@
 
 
 bool is_opt_in_tx(){
+
   if(current_txn.type == ASSET_XFER &&
-     current_txn.payment.amount == 0 &&
+     current_txn.asset_xfer.amount == 0 &&
      current_txn.asset_xfer.id != 0 &&
      memcmp(current_txn.asset_xfer.receiver,
             current_txn.asset_xfer.sender,

@@ -13,8 +13,9 @@ from . import ui_interaction
 from . import speculos
 
 
-def get_default_tnx():
 
+@pytest.fixture
+def keyreg_txn():
     b64votekey = "eXq34wzh2UIxCZaI1leALKyAvSz/+XOe0wqdHagM+bw="
     votekey_addr = algosdk.encoding.encode_address(base64.b64decode(b64votekey))
     b64selkey = "X84ReKTmp+yfgmMCbbokVqeFFFrKQeFZKEXG89SXwm4="
@@ -23,8 +24,8 @@ def get_default_tnx():
         sender="YTOO52XR6UWNM6OUUDOGWVTNJYBWR5NJ3VCJTZUSR42JERFJFAG3NFD47U",
         votekey=votekey_addr,
         selkey=selkey_addr,
-        votefst= 6000000,
-        votelst=9000000,
+        votefst= 6200000,
+        votelst=9500000,
         votekd= 1730,
         fee= 2000,
         flat_fee=True,
@@ -36,63 +37,65 @@ def get_default_tnx():
     )
     return txn
 
-@pytest.fixture
-def txn():
-    return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_tnx()))
 
-
-def get_expected_messages(current_tnx):
-    votepk = str(base64.b64encode(algosdk.encoding.decode_address(current_tnx.votepk)),'ascii').lower()
-    vrfpk = str(base64.b64encode(algosdk.encoding.decode_address(current_tnx.selkey)),'ascii').lower()
+def get_expected_messages(current_txn):
+    votepk = str(base64.b64encode(algosdk.encoding.decode_address(current_txn.votepk)),'ascii').lower()
+    vrfpk = str(base64.b64encode(algosdk.encoding.decode_address(current_txn.selkey)),'ascii').lower()
+    # if current_txn.? == True:
+    #     participating_flag = 'yes'
+    # else:
+    #     participating_flag = 'no'
     messages =  [['review', 'transaction'],
                  ['txn type', 'key reg'], 
-                 ['sender', current_tnx.sender.lower()], 
-                 ['fee (alg)', str(current_tnx.fee*0.000001)], 
-                 ['genesis id', current_tnx.genesis_id.lower()], 
-                 ['genesis hash', current_tnx.genesis_hash.lower()],
+                 ['sender', current_txn.sender.lower()], 
+                 ['fee (alg)', str(current_txn.fee*0.000001)], 
+                 ['genesis id', current_txn.genesis_id.lower()], 
+                 ['genesis hash', current_txn.genesis_hash.lower()],
                  ['vote pk', votepk],
                  ['vrf pk', vrfpk], 
-                 ['vote first', str(current_tnx.votefst)], 
-                 ['vote last', str(current_tnx.votelst)], 
-                 ['key dilution', str(current_tnx.votekd)], 
+                 ['vote first', str(current_txn.votefst)], 
+                 ['vote last', str(current_txn.votelst)], 
+                 ['key dilution', str(current_txn.votekd)], 
                  ['participating', 'yes'],
                  ['sign', 'transaction']]
 
     return messages
 
 
+
 txn_labels = {
     'review', 'txn type', 'sender', 'vote pk','fee (alg)', 'genesis id', 'genesis hash', 'vrf pk', 
-    'vote first',  'vote last', 'key dilution', 'participating', 'transaction'
+    'vote first',  'vote last', 'key dilution', 'participating'
 } 
 
-conf_label = "transaction"
+conf_label = "sign"
 
 
 
-def test_sign_msgpack_asset_validate_display(dongle, txn):
+def test_sign_msgpack_asset_validate_display(dongle, keyreg_txn):
     """
     """
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(keyreg_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(txn)
-        _ = txn_utils.sign_algo_txn(dongle, txn)
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
         messages = dongle.get_messages()
     logging.info(messages)
-    logging.info(get_expected_messages(get_default_tnx()))
-    assert get_expected_messages(get_default_tnx()) == messages
+    logging.info(get_expected_messages(keyreg_txn))
+    assert get_expected_messages(keyreg_txn) == messages
 
     
     
-def test_sign_msgpack_with_default_account(dongle, txn):
+def test_sign_msgpack_with_default_account(dongle, keyreg_txn):
     """
     """
     apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
     pubKey = dongle.exchange(apdu)
-
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(keyreg_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(txn)
-        txnSig = txn_utils.sign_algo_txn(dongle, txn)
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
 
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
-    verify_key.verify(smessage=b'TX' + txn, signature=txnSig)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)

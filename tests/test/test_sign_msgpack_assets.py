@@ -13,7 +13,11 @@ from . import ui_interaction
 from . import speculos
 
 
-def get_default_asset_config_tnx():
+
+
+
+@pytest.fixture
+def config_asset_txn():
     return  algosdk.transaction.AssetConfigTxn(
         index=343434,
         first=100000,
@@ -34,62 +38,54 @@ def get_default_asset_config_tnx():
         decimals=0
     )
 
-@pytest.fixture
-def config_asset_txn():
-    return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_asset_config_tnx()))
-
-
-def get_expected_messages_for_asset_config(current_tnx):
-    messages =  [['review', 'transaction'], 
+def expected_messages_for_asset_config(current_txn):
+    return [['review', 'transaction'], 
                  ['txn type','asset config'],
-                 ['sender', current_tnx.sender.lower()], 
-                 ['fee (alg)', str(current_tnx.fee*0.000001)],
-                 ['genesis hash', current_tnx.genesis_hash.lower()],
-                 ['asset id', str(current_tnx.index)],
-                 ['total units', str(current_tnx.total)],
-                 ['unit name', current_tnx.unit_name.lower()],
-                 ['asset name', current_tnx.asset_name.lower()],
-                 ['url', current_tnx.url.lower()],
-                 ['manager', current_tnx.manager.lower()], 
-                 ['reserve', current_tnx.reserve.lower()],
-                 ['freezer', current_tnx.freeze.lower()],
-                 ['clawback', current_tnx.clawback.lower()], 
+                 ['sender', current_txn.sender.lower()], 
+                 ['fee (alg)', str(current_txn.fee*0.000001)],
+                 ['genesis hash', current_txn.genesis_hash.lower()],
+                 ['asset id', str(current_txn.index)],
+                 ['total units', str(current_txn.total)],
+                 ['unit name', current_txn.unit_name.lower()],
+                 ['asset name', current_txn.asset_name.lower()],
+                 ['url', current_txn.url.lower()],
+                 ['manager', current_txn.manager.lower()], 
+                 ['reserve', current_txn.reserve.lower()],
+                 ['freezer', current_txn.freeze.lower()],
+                 ['clawback', current_txn.clawback.lower()], 
                  ['sign', 'transaction']]
 
-    return messages
 
 
-def get_default_asset_xfer_tnx():
-    return  algosdk.transaction.AssetTransferTxn(
+@pytest.fixture
+def xfer_asset_txn():
+        return  algosdk.transaction.AssetTransferTxn(
         index=343434,
         first=100000,
         last=20000,
         gh="SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
         sender="YK54TGVZ37C7P76GKLXTY2LAH2522VD3U2434HRKE7NMXA65VHJVLFVOE4",
         receiver="NWBZBIROXZQEETCDKX6IZVVBV4EY637KCIX56LE5EHIQERCTSDYGXWG6PU",
-        amt=1,
+        amt=4,
         fee=10000       
     )
 
-@pytest.fixture
-def xfer_asset_txn():
-    return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_asset_xfer_tnx()))
 
-
-def get_expected_messages_for_asset_xfer(current_tnx):
-    messages =  [['review', 'transaction'],
+def expected_messages_for_asset_xfer(current_txn):
+    return  [['review', 'transaction'],
                 ['txn type', 'asset xfer'],
-                ['sender', current_tnx.sender.lower()],
-                ['fee (alg)', str(current_tnx.fee*0.000001)],
-                ['genesis hash', current_tnx.genesis_hash.lower()], 
-                ['asset id', f'#{current_tnx.index}'],
-                ['amount (base unit)', str(current_tnx.amount)], 
-                ['asset dst', current_tnx.receiver.lower()],
+                ['sender', current_txn.sender.lower()],
+                ['fee (alg)', str(current_txn.fee*0.000001)],
+                ['genesis hash', current_txn.genesis_hash.lower()], 
+                ['asset id', f'#{current_txn.index}'],
+                ['amount (base unit)', str(current_txn.amount)], 
+                ['asset dst', current_txn.receiver.lower()],
                 ['sign', 'transaction']]
 
-    return messages
 
-def get_default_asset_freeze_tnx():
+
+@pytest.fixture
+def freeze_asset_txn():
     return  algosdk.transaction.AssetFreezeTxn(
         index=343434,
         first=100000,
@@ -101,78 +97,141 @@ def get_default_asset_freeze_tnx():
         fee=10  
     )
 
-@pytest.fixture
-def freeze_asset_txn():
-    return base64.b64decode(algosdk.encoding.msgpack_encode(get_default_asset_freeze_tnx()))
-
-
-def get_expected_messages_for_asset_freeze(current_tnx):
-    if current_tnx.new_freeze_state:
+def expected_messages_for_asset_freeze(current_txn):
+    if current_txn.new_freeze_state:
         state = 'frozen'
     else:
         state = 'unfrozen'
     messages =  [['review', 'transaction'],
                 ['txn type', 'asset freeze'],
-                ['sender', current_tnx.sender.lower()],
-                ['fee (alg)', str(current_tnx.fee*0.000001)],
-                ['genesis hash', current_tnx.genesis_hash.lower()], 
-                ['asset id', f'{current_tnx.index}'],
-                ['asset account', current_tnx.target.lower()],
+                ['sender', current_txn.sender.lower()],
+                ['fee (alg)', str(current_txn.fee*0.000001)],
+                ['genesis hash', current_txn.genesis_hash.lower()], 
+                ['asset id', f'{current_txn.index}'],
+                ['asset account', current_txn.target.lower()],
                 ['freeze flag', state],
                 ['sign', 'transaction']]
     return messages
 
 
 
-txn_labels = {
-    'review', 'txn type', 'sender', 'fee', 'first valid', 'last valid',
-    'genesis', 'asset id', 'create' , 'default frozen', 'unit name', 'total units',
-    'decimals', 'asset name', 'url', 'metadata hash', 'manager',
-    'reserve', 'freezer', 'clawback', 'amount (base unit)', 'asset dst','freeze flag', 'asset account','transaction'
+
+
+
+txn_labels = {'review', 'txn type', 'sender',
+             'fee (alg)', 'genesis hash', 'asset id', 'amount', 'asset src', 'asset dst',
+             'total units', 'unit name', 'asset account', 'freeze flag', 'sign', 'asset name',
+             'default frozen',
+              'url', 'manager', 'reserve',
+               'freezer', 'clawback', 'sign' 
 } 
 
-conf_label = "transaction"
+conf_label = "sign"
     
+
+
+
+def test_sign_msgpack_asset_xfer_asa_validate_display(dongle, xfer_asset_txn):
+    """
+    """
+    xfer_asset_txn.index = 31566704 #the USDC index
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(xfer_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    
+    expected_messages = expected_messages_for_asset_xfer(xfer_asset_txn)
+    expected_messages[5] = ['asset id','usdc (#31566704)']
+    expected_messages[6] = ['amount (usdc)', f'{xfer_asset_txn.amount*0.000001:.6f}']
+
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+def test_sign_msgpack_asset_config_create_asset_validate_display(dongle, config_asset_txn):
+    """
+    """
+    config_asset_txn.index = 0
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    expected_messages = expected_messages_for_asset_config(config_asset_txn)
+    expected_messages[5] = ['asset id','create']
+    expected_messages.insert(7,['default frozen', 'unfrozen'])
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+        
 
 
 def test_sign_msgpack_asset_freeze_validate_display(dongle, freeze_asset_txn):
     """
     """
-
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(freeze_asset_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(freeze_asset_txn)
-        _ = txn_utils.sign_algo_txn(dongle, freeze_asset_txn)
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
         messages = dongle.get_messages()
     logging.info(messages)
-    logging.info(get_expected_messages_for_asset_freeze(get_default_asset_freeze_tnx()))
-    assert get_expected_messages_for_asset_freeze(get_default_asset_freeze_tnx()) == messages
+    logging.info(expected_messages_for_asset_freeze(freeze_asset_txn))
+    assert expected_messages_for_asset_freeze(freeze_asset_txn) == messages
+
+
+def test_sign_msgpack_asset_optin_validate_display(dongle, xfer_asset_txn):
+    """
+    """
+    optin_asset_txn = xfer_asset_txn
+    optin_asset_txn.amount = 0
+    logging.error(optin_asset_txn.receiver)
+    logging.error(optin_asset_txn.sender)
+    optin_asset_txn.receiver = optin_asset_txn.sender
+    optin_asset_txn.revocation_target = optin_asset_txn.sender
+    
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(optin_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    expected_messages = expected_messages_for_asset_xfer(optin_asset_txn)
+    expected_messages[1] =  ['txn type', 'opt-in']
+    expected_messages[6] =  ['asset src', optin_asset_txn.receiver.lower()]
+    del expected_messages[7]
+    
+    logging.info(messages)
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
 
 
 
 def test_sign_msgpack_asset_xfer_validate_display(dongle, xfer_asset_txn):
     """
     """
-
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(xfer_asset_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(xfer_asset_txn)
-        _ = txn_utils.sign_algo_txn(dongle, xfer_asset_txn)
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
         messages = dongle.get_messages()
     logging.info(messages)
-    logging.info(get_expected_messages_for_asset_xfer(get_default_asset_xfer_tnx()))
-    assert get_expected_messages_for_asset_xfer(get_default_asset_xfer_tnx()) == messages
+    logging.info(expected_messages_for_asset_xfer(xfer_asset_txn))
+    assert expected_messages_for_asset_xfer(xfer_asset_txn) == messages
 
 
 def test_sign_msgpack_asset_config_validate_display(dongle, config_asset_txn):
     """
     """
-
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(config_asset_txn)
-        _ = txn_utils.sign_algo_txn(dongle, config_asset_txn)
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
         messages = dongle.get_messages()
     logging.info(messages)
-    logging.info(get_expected_messages_for_asset_config(get_default_asset_config_tnx()))
-    assert get_expected_messages_for_asset_config(get_default_asset_config_tnx()) == messages
+    logging.info(expected_messages_for_asset_config(config_asset_txn))
+    assert expected_messages_for_asset_config(config_asset_txn) == messages
 
     
     
@@ -182,10 +241,11 @@ def test_sign_msgpack_with_default_account(dongle, config_asset_txn):
     apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
     pubKey = dongle.exchange(apdu)
 
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(config_asset_txn)
-        txnSig = txn_utils.sign_algo_txn(dongle, config_asset_txn)
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
 
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
-    verify_key.verify(smessage=b'TX' + config_asset_txn, signature=txnSig)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
