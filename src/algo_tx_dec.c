@@ -61,8 +61,7 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
     snprintf(decode_err, sizeof(decode_err), "expected string, found %d", b);
     THROW(INVALID_PARAMETER);
   }
-
-  if (str_len > strbuflen) {
+  if (str_len >= strbuflen) {
     snprintf(decode_err, sizeof(decode_err), "%d-byte string too big for %d-byte buf", str_len, strbuflen);
     THROW(INVALID_PARAMETER);
   }
@@ -73,10 +72,9 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
   }
 
   os_memmove(strbuf, *bufp, str_len);
-  if (str_len < strbuflen) {
-    strbuf[str_len] = 0;
-  }
+  strbuf[str_len] = 0;
   *bufp += str_len;
+
 }
 
 static void
@@ -110,7 +108,6 @@ decode_bin_fixed(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t reslen)
     snprintf(decode_err, sizeof(decode_err), "%d-byte bin overruns input", bin_len);
     THROW(INVALID_PARAMETER);
   }
-
   os_memmove(res, *bufp, bin_len);
   *bufp += bin_len;
 }
@@ -198,7 +195,6 @@ decode_asset_params(uint8_t **bufp, uint8_t *buf_end, struct asset_params *res)
   for (int i = 0; i < map_count; i++) {
     char key[32];
     decode_string_nullterm(bufp, buf_end, key, sizeof(key));
-
     if (!strcmp(key, "t")) {
       decode_uint64(bufp, buf_end, &res->total);
     } else if (!strcmp(key, "dc")) {
