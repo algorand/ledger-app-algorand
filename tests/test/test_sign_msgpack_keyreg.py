@@ -64,8 +64,8 @@ def get_expected_messages(current_txn):
 
 
 txn_labels = {
-    'review', 'txn type', 'sender', 'vote pk','fee (alg)', 'genesis id', 'genesis hash', 'vrf pk', 
-    'vote first',  'vote last', 'key dilution', 'participating'
+    'review', 'txn type', 'sender', 'fee (alg)', 'genesis id', 'genesis hash', 'vote pk','vrf pk', 
+    'vote first',  'vote last', 'key dilution', 'participating', 'sign'
 } 
 
 conf_label = "sign"

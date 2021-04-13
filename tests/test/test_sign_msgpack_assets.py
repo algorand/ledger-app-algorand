@@ -34,7 +34,8 @@ def config_asset_txn():
         reserve="R4DCCBODM4L7C6CKVOV5NYDPEYS2G5L7KC7LUYPLUCKBCOIZMYJPFUDTKE",
         freeze="NWBZBIROXZQEETCDKX6IZVVBV4EY637KCIX56LE5EHIQERCTSDYGXWG6PU",
         clawback="7PKXMJB2577SQ6R6IGYRAZQ27TOOOTIGTOQGJB3L5SGZFBVVI4AHMKLCEI",
-        url="https://path/to/my/asset/details", 
+        url="https://path/to/my/asset/detail", 
+        metadata_hash=bytes.fromhex("0e07cf830957701d43c183f1515f63e6b68027e528f43ef52b1527a520ddec82"),
         decimals=0
     )
 
@@ -49,6 +50,7 @@ def expected_messages_for_asset_config(current_txn):
                  ['unit name', current_txn.unit_name.lower()],
                  ['asset name', current_txn.asset_name.lower()],
                  ['url', current_txn.url.lower()],
+                 ['metadata hash', base64.b64encode(current_txn.metadata_hash).decode('ascii').lower()],
                  ['manager', current_txn.manager.lower()], 
                  ['reserve', current_txn.reserve.lower()],
                  ['freezer', current_txn.freeze.lower()],
@@ -119,10 +121,9 @@ def expected_messages_for_asset_freeze(current_txn):
 
 
 txn_labels = {'review', 'txn type', 'sender',
-             'fee (alg)', 'genesis hash', 'asset id', 'amount', 'asset src', 'asset dst',
-             'total units', 'unit name', 'asset account', 'freeze flag', 'sign', 'asset name',
-             'default frozen',
-              'url', 'manager', 'reserve',
+             'fee (alg)', 'genesis hash', 'asset id', 'amount', 'asset src', 'asset dst',  
+             'asset close', 'total units', 'unit name', 'decimals', 'asset account', 'freeze flag', 
+             'sign', 'asset name', 'default frozen', 'url','metadata hash', 'manager', 'reserve',
                'freezer', 'clawback', 'sign' 
 } 
 
@@ -130,8 +131,104 @@ conf_label = "sign"
     
 
 
+def test_sign_msgpack_asset_config_validate_display(dongle, config_asset_txn):
+    """
+    """
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    logging.info(expected_messages_for_asset_config(config_asset_txn))
+    assert expected_messages_for_asset_config(config_asset_txn) == messages
+    
 
-def test_sign_msgpack_asset_xfer_asa_validate_display(dongle, xfer_asset_txn):
+def test_sign_msgpack_asset_config_create_validate_display(dongle, config_asset_txn):
+    """
+    """
+    config_asset_txn.index = 0
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    expected_messages = expected_messages_for_asset_config(config_asset_txn)
+
+    expected_messages[5] = ['asset id','create']
+    expected_messages.insert(7,['default frozen', 'unfrozen'])
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+def test_sign_msgpack_asset_config_create_frozen_validate_display(dongle, config_asset_txn):
+    """
+    """
+    config_asset_txn.index = 0
+    config_asset_txn.default_frozen = True
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    expected_messages = expected_messages_for_asset_config(config_asset_txn)
+
+    expected_messages[5] = ['asset id','create']
+    expected_messages.insert(7,['default frozen', 'frozen'])
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+
+def test_sign_msgpack_asset_config_create_with_decimals_validate_display(dongle, config_asset_txn):
+    """
+    """
+    config_asset_txn.index = 0
+    config_asset_txn.decimals = 100
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    expected_messages = expected_messages_for_asset_config(config_asset_txn)
+
+    expected_messages[5] = ['asset id','create']
+    expected_messages.insert(7,['default frozen', 'unfrozen'])
+    expected_messages.insert(9,['decimals', str(config_asset_txn.decimals)])
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+def test_sign_msgpack_asset_freeze_validate_display(dongle, freeze_asset_txn):
+    """
+    """
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(freeze_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    logging.info(expected_messages_for_asset_freeze(freeze_asset_txn))
+    assert expected_messages_for_asset_freeze(freeze_asset_txn) == messages
+
+
+def test_sign_msgpack_asset_xfer_validate_display(dongle, xfer_asset_txn):
+    """
+    """
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(xfer_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    logging.info(expected_messages_for_asset_xfer(xfer_asset_txn))
+    assert expected_messages_for_asset_xfer(xfer_asset_txn) == messages
+
+
+def test_sign_msgpack_asset_xfer_verified_asa_validate_display(dongle, xfer_asset_txn):
     """
     """
     xfer_asset_txn.index = 31566704 #the USDC index
@@ -149,47 +246,13 @@ def test_sign_msgpack_asset_xfer_asa_validate_display(dongle, xfer_asset_txn):
     logging.info(expected_messages)
     assert expected_messages == messages
 
-def test_sign_msgpack_asset_config_create_asset_validate_display(dongle, config_asset_txn):
-    """
-    """
-    config_asset_txn.index = 0
-    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
-    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(decoded_txn)
-        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
-        messages = dongle.get_messages()
-    logging.info(messages)
-    expected_messages = expected_messages_for_asset_config(config_asset_txn)
-    expected_messages[5] = ['asset id','create']
-    expected_messages.insert(7,['default frozen', 'unfrozen'])
-    logging.info(expected_messages)
-    assert expected_messages == messages
-
-        
-
-
-def test_sign_msgpack_asset_freeze_validate_display(dongle, freeze_asset_txn):
-    """
-    """
-    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(freeze_asset_txn))
-    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(decoded_txn)
-        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
-        messages = dongle.get_messages()
-    logging.info(messages)
-    logging.info(expected_messages_for_asset_freeze(freeze_asset_txn))
-    assert expected_messages_for_asset_freeze(freeze_asset_txn) == messages
-
-
 def test_sign_msgpack_asset_optin_validate_display(dongle, xfer_asset_txn):
     """
     """
     optin_asset_txn = xfer_asset_txn
     optin_asset_txn.amount = 0
-    logging.error(optin_asset_txn.receiver)
-    logging.error(optin_asset_txn.sender)
-    optin_asset_txn.receiver = optin_asset_txn.sender
-    optin_asset_txn.revocation_target = optin_asset_txn.sender
+    #optin_asset_txn.receiver = optin_asset_txn.sender
+    optin_asset_txn.revocation_target = optin_asset_txn.receiver
     
     decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(optin_asset_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
@@ -206,34 +269,44 @@ def test_sign_msgpack_asset_optin_validate_display(dongle, xfer_asset_txn):
     assert expected_messages == messages
 
 
-
-
-def test_sign_msgpack_asset_xfer_validate_display(dongle, xfer_asset_txn):
+def test_sign_msgpack_clawback_validate_display(dongle, xfer_asset_txn):
     """
     """
-    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(xfer_asset_txn))
-    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(decoded_txn)
-        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
-        messages = dongle.get_messages()
-    logging.info(messages)
-    logging.info(expected_messages_for_asset_xfer(xfer_asset_txn))
-    assert expected_messages_for_asset_xfer(xfer_asset_txn) == messages
-
-
-def test_sign_msgpack_asset_config_validate_display(dongle, config_asset_txn):
-    """
-    """
-    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
-    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
-        logging.info(decoded_txn)
-        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
-        messages = dongle.get_messages()
-    logging.info(messages)
-    logging.info(expected_messages_for_asset_config(config_asset_txn))
-    assert expected_messages_for_asset_config(config_asset_txn) == messages
-
+    clawback_txn = xfer_asset_txn
+    clawback_txn.revocation_target = "7PKXMJB2577SQ6R6IGYRAZQ27TOOOTIGTOQGJB3L5SGZFBVVI4AHMKLCEI"
     
+    
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(clawback_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    expected_messages = expected_messages_for_asset_xfer(clawback_txn)
+    expected_messages.insert(7,['asset src',clawback_txn.revocation_target.lower()])
+    logging.info(messages)
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+def test_sign_msgpack_closeto_validate_display(dongle, xfer_asset_txn):
+    """
+    """
+    close_txn = xfer_asset_txn
+    close_txn.close_assets_to = "7PKXMJB2577SQ6R6IGYRAZQ27TOOOTIGTOQGJB3L5SGZFBVVI4AHMKLCEI"
+    
+    
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(close_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    expected_messages = expected_messages_for_asset_xfer(close_txn)
+    expected_messages.insert(8,['asset close',close_txn.close_assets_to.lower()])
+    logging.info(messages)
+    logging.info(expected_messages)
+    assert expected_messages == messages
+
+
+
     
 def test_sign_msgpack_with_default_account(dongle, config_asset_txn):
     """
