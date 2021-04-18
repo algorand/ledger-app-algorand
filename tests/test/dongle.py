@@ -37,8 +37,10 @@ class Dongle:
         i = 0 
         while i < len(self.messages_seen):
             if self.messages_seen[i][0] == 'application' or self.messages_seen[i][0] == 'is ready':
-                i += 1
-                continue    
+                #validate that we will not dispose the :"txn type" "application" text
+                if i <= 0 or self.messages_seen[i][0] != 'application' or self.messages_seen[i-1][0] != 'txn type':
+                    i += 1
+                    continue    
             # assuming the label is a title
             if self.messages_seen[i][1] < 5:
                 new_labels.append([self.messages_seen[i][0],""])
@@ -62,8 +64,8 @@ class Dongle:
                 i += 1
                 continue
             else:
-                no_parentheses_title = title[:title.find(" (")]
-                number_of_chunks_exp = int(title[title.find("/")+1:title.find(")")])
+                no_parentheses_title = title[:title.rfind(" (")]
+                number_of_chunks_exp = int(title[title.rfind("/")+1:title.rfind(")")])
                 
                 j = i +1 
                 while j < i + number_of_chunks_exp:
