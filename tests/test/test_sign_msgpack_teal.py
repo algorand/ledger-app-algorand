@@ -47,13 +47,14 @@ def app_call_txn():
 def get_hash_of_pgm(program_bytes):
     h = SHA256.new()
     h.update(program_bytes)
-    return base64.b64encode(h.digest()).decode('ascii')
+    return base64.b64encode(h.digest()) 
 
 def get_expected_messages(current_txn):
-    if current_txn.on_complete < len(OPERATION_UI_TEXT):
-        operation_text = OPERATION_UI_TEXT[current_txn.on_complete].lower()
+    if current_txn.on_complete in OPERATION_UI_TEXT:
+        operation_text = OPERATION_UI_TEXT[current_txn.on_complete]
     else:
         operation_text = UNKOWN_UI_TEXT
+    
     
     messages =  [['review', 'transaction'],
                  ['txn type', 'application'], 
@@ -61,7 +62,7 @@ def get_expected_messages(current_txn):
                  ['fee (alg)', str(current_txn.fee*0.000001)],
                  ['genesis id', current_txn.genesis_id.lower()], 
                  ['genesis hash', current_txn.genesis_hash.lower()],
-                 ['app id', str(current_txn.index)],
+                 ['app id', current_txn.index],
                  ['on completion', operation_text],
                  ['global schema', f'uint: {current_txn.global_schema.num_uints}, byte: {current_txn.global_schema.num_byte_slices}'],
                  ['local schema', f'uint: {current_txn.local_schema.num_uints}, byte: {current_txn.local_schema.num_byte_slices}'],
