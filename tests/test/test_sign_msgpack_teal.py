@@ -25,7 +25,7 @@ def app_create_txn():
     approve_app = b'\x02 \x05\x00\x05\x04\x02\x01&\x07\x04vote\tVoteBegin\x07VoteEnd\x05voted\x08RegBegin\x06RegEnd\x07Creator1\x18"\x12@\x00\x951\x19\x12@\x00\x871\x19$\x12@\x00y1\x19%\x12@\x00R1\x19!\x04\x12@\x00<6\x1a\x00(\x12@\x00\x01\x002\x06)d\x0f2\x06*d\x0e\x10@\x00\x01\x00"2\x08+c5\x005\x014\x00A\x00\x02"C6\x1a\x016\x1a\x01d!\x04\x08g"+6\x1a\x01f!\x04C2\x06\'\x04d\x0f2\x06\'\x05d\x0e\x10C"2\x08+c5\x005\x012\x06*d\x0e4\x00\x10A\x00\t4\x014\x01d!\x04\tg!\x04C1\x00\'\x06d\x12C1\x00\'\x06d\x12C\'\x061\x00g1\x1b$\x12@\x00\x01\x00\'\x046\x1a\x00\x17g\'\x056\x1a\x01\x17g)6\x1a\x02\x17g*6\x1a\x03\x17g!\x04C'
     clear_pgm = b'\x02 \x01\x01'
 
-    # the approve_app is comipled Tealscript taken from https://pyteal.readthedocs.io/en/stable/examples.html#periodic-payment
+    # the approve_app is a compiled Tealscript taken from https://pyteal.readthedocs.io/en/stable/examples.html#periodic-payment
     # we truncated the pgm because of the memory limit on the Ledeger 
     approve_app = approve_app[:128]
     local_ints = 2
@@ -38,7 +38,9 @@ def app_create_txn():
                                     gen="testnet-v1.0",
                                     gh="SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",flat_fee=True)
     txn = algosdk.future.transaction.ApplicationCreateTxn(sender="YK54TGVZ37C7P76GKLXTY2LAH2522VD3U2434HRKE7NMXA65VHJVLFVOE4",
-                                                         sp=local_sp, approval_program=approve_app, on_complete=transaction.OnComplete.NoOpOC.real,clear_program= clear_pgm, global_schema=global_schema, local_schema=local_schema )
+                                                         sp=local_sp, approval_program=approve_app, on_complete=transaction.OnComplete.NoOpOC.real,clear_program= clear_pgm, global_schema=global_schema, foreign_apps=[55], foreign_assets=[31566704], accounts=["7PKXMJB2577SQ6R6IGYRAZQ27TOOOTIGTOQGJB3L5SGZFBVVI4AHMKLCEI", "NWBZBIROXZQEETCDKX6IZVVBV4EY637KCIX56LE5EHIQERCTSDYGXWG6PU"],
+                                                         app_args=[b'\x00\x00\0x00\x00',b'\x02\x00\0x00\x00'],
+                                                         local_schema=local_schema )
     return txn
 
 
@@ -50,13 +52,14 @@ def app_call_txn():
                                     gh="SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",flat_fee=True)
     txn = algosdk.future.transaction.ApplicationCallTxn(sender="YK54TGVZ37C7P76GKLXTY2LAH2522VD3U2434HRKE7NMXA65VHJVLFVOE4", sp=local_sp, index=68,
                                                         foreign_apps=[55], foreign_assets=[31566704], accounts=["7PKXMJB2577SQ6R6IGYRAZQ27TOOOTIGTOQGJB3L5SGZFBVVI4AHMKLCEI","NWBZBIROXZQEETCDKX6IZVVBV4EY637KCIX56LE5EHIQERCTSDYGXWG6PU"],
+                                                        app_args=[b'\x00\x00\0x00\x00',b'\x02\x00\0x00\x00'],
                                                         on_complete=transaction.OnComplete.NoOpOC.real )
     return txn
 
 
-def get_hash_of_pgm(program_bytes):
+def hash_bytes(bytes_array):
     h = SHA256.new()
-    h.update(program_bytes)
+    h.update(bytes_array)
     return base64.b64encode(h.digest()).decode('ascii')
 
 
@@ -79,6 +82,8 @@ def get_expected_messages_for_call_pgm(current_txn):
                  ['foreign asset 0', str(current_txn.foreign_assets[0])],
                  ['app account 0', str(current_txn.accounts[0]).lower()],
                  ['app account 1', str(current_txn.accounts[1]).lower()],
+                 ['app arg 0 (sha256)', hash_bytes(current_txn.app_args[0]).lower()],
+                 ['app arg 1 (sha256)', hash_bytes(current_txn.app_args[1]).lower()],
                  ['sign', 'transaction']]
                  
     return messages
@@ -90,8 +95,8 @@ def get_expected_messages_for_create_pgm(current_txn):
 
     create_messages =  [['global schema', f'uint: {current_txn.global_schema.num_uints}, byte: {current_txn.global_schema.num_byte_slices}'],
                  ['local schema', f'uint: {current_txn.local_schema.num_uints}, byte: {current_txn.local_schema.num_byte_slices}'],
-                 ['apprv (sha256)', get_hash_of_pgm(current_txn.approval_program).lower()],
-                 ['clear (sha256)', get_hash_of_pgm(current_txn.clear_program).lower()],
+                 ['apprv (sha256)', hash_bytes(current_txn.approval_program).lower()],
+                 ['clear (sha256)', hash_bytes(current_txn.clear_program).lower()],
                  ['sign', 'transaction']]
                  
     return messages + create_messages
@@ -100,7 +105,7 @@ def get_expected_messages_for_create_pgm(current_txn):
 
 txn_labels = {
     'review', 'txn type','sender','fee (alg)', 'genesis id', 'genesis hash', 'app id', 'on completion', 
-    'foreign app 0', 'foreign asset 0','app account 0', 'app account 1',
+    'foreign app 0', 'foreign asset 0','app account 0', 'app account 1', 'app arg 0 (sha256)', 'app arg 1 (sha256)',
     'global schema', 'local schema',  'apprv (sha256)', 'clear (sha256)','sign'
 } 
 
@@ -173,6 +178,16 @@ def test_sign_msgpack_call_app_more_than_two_accounts(dongle, app_call_txn):
         
     assert excinfo.value.sw == 0x6e00
 
+def test_sign_msgpack_call_app_more_than_two_args(dongle, app_call_txn):
+    """
+    """
+    app_call_txn.app_args.append(b'\0x02\0x00\0x00\0x00')
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(app_call_txn))
+    with pytest.raises(speculos.CommException) as excinfo:
+        dongle.exchange(txn_utils.sign_algo_txn(dongle, decoded_txn))
+        
+    assert excinfo.value.sw == 0x6e00
+
 
 def test_sign_msgpack_create_app_validate_display(dongle, app_create_txn):
     """
@@ -206,8 +221,8 @@ def test_sign_msgpack_call_app_differnet_on_complete_validate_display(dongle, ap
 
     expected_messages = get_expected_messages_for_call_pgm(app_call_txn)
     if app_call_txn.on_complete == transaction.OnComplete.UpdateApplicationOC.real :
-        pgm_messages = [['apprv (sha256)', get_hash_of_pgm(app_call_txn.approval_program).lower()],
-                        ['clear (sha256)', get_hash_of_pgm(app_call_txn.clear_program).lower()],
+        pgm_messages = [['apprv (sha256)', hash_bytes(app_call_txn.approval_program).lower()],
+                        ['clear (sha256)', hash_bytes(app_call_txn.clear_program).lower()],
                         ['sign', 'transaction']]
         expected_messages = expected_messages[:len(expected_messages)-1] + pgm_messages
        
