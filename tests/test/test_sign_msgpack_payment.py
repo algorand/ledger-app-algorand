@@ -29,8 +29,6 @@ def payment_txn():
     )
 
 
-
-
 def get_expected_messages(txn):
     messages =  [['review', 'transaction'],
              ['txn type', 'payment'],
@@ -49,12 +47,10 @@ def get_expected_messages(txn):
 
 txn_labels = {
     'review', 'txn type', 'sender', 'fee',
-    'genesis id', 'genesis hash', 'note', 'receiver', 'amount', 'rekey to', 'close to', 'sign'
+    'genesis id', 'genesis hash', 'note', 'receiver', 'amount', 'rekey to', 'close to', 'sign','cancel'
 } 
 
 conf_label = "sign"
-
-
 
 
 
@@ -92,6 +88,16 @@ def test_sign_msgpack_validate_display(dongle, payment_txn):
 
     
     
+def test_sign_msgpack_cancel_validate_display(dongle, payment_txn):
+    """
+    """
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, "cancel"):
+            with pytest.raises(speculos.CommException) as excinfo:
+                _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+            assert excinfo.value.sw == 0x6985
+        
+
 
 @pytest.mark.parametrize('account_id', [0,1,2,10,50])
 def test_sign_msgpack_with_spcific_account(dongle, payment_txn, account_id):
