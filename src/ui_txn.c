@@ -893,8 +893,9 @@ void ui_txn(void) {
 
   current_data_index = -1;
   current_state = OUT_OF_BORDERS;
+  ux_flow_relayout();
   if (G_ux.stack_count == 0) {
-    ux_stack_push();
+    ux_stack_push(); 
   }
   ux_flow_init(0, ux_txn_flow, NULL);
 }

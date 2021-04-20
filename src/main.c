@@ -189,8 +189,7 @@ static void algorand_main(void)
 
         case INS_SIGN_MSGPACK: 
         {
-          uint8_t need_more_data = 0;
-          char* error = parse_input_msgpack(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &need_more_data);
+          char* error = parse_input_msgpack(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
           if (error != NULL)
           {
             int errlen = strlen(error);
@@ -199,11 +198,10 @@ static void algorand_main(void)
             tx = 65 + errlen;
             THROW(0x9000);
           }
-          if (!need_more_data)
-          {
-            ui_txn();
-            flags |= IO_ASYNCH_REPLY;
-          }
+          // we get here when all the data was received, otherwise an exception is thrown
+          ui_txn();
+          flags |= IO_ASYNCH_REPLY;
+          
         }
         break;
         case INS_GET_PUBLIC_KEY: {
