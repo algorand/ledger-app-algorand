@@ -5,7 +5,7 @@
 
 
 
-void parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint32_t* account_id )
+void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* account_id )
 {
   *account_id = 0;
 
@@ -22,7 +22,13 @@ void parse_input_get_public_key(const uint8_t* buffer, int buffer_len, uint32_t*
     PRINTF("using default account id 0 ");
     return ;
   }
+
   if (lc < sizeof(uint32_t)) 
+  {
+    THROW(0x6a85);
+  } 
+  
+  if (buffer_len < lc + OFFSET_CDATA)
   {
     THROW(0x6a85);
   } 

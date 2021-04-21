@@ -15,6 +15,7 @@ clicked_labels = {
 
 conf_label = "address"
 
+
 def test_ins_with_no_payload(dongle):
     """
     Test that sending `INS_GET_PUBLIC_KEY` (0x03) APDU without payload
@@ -81,11 +82,20 @@ def invalid_size_apdu(request):
     return struct.pack('>BBBBB%ds' % l, 0x80, 0x3, 0x0, 0x0, l, bytes(l))
 
 
-def test_ins_with_invalid_paylod_sizes(dongle, invalid_size_apdu):
+def test_ins_with_small_paylod(dongle, invalid_size_apdu):
     """
     """
     with pytest.raises(speculos.CommException) as excinfo:
         dongle.exchange(invalid_size_apdu)
+    assert excinfo.value.sw == 0x6a85
+
+
+
+def test_ins_with_invalid_paylod_sizes(dongle):
+    """
+    """
+    with pytest.raises(speculos.CommException) as excinfo:
+        dongle.exchange(struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x4))
     assert excinfo.value.sw == 0x6a85
 
 
@@ -97,7 +107,7 @@ def test_ins_without_payload_returns_account_0_key(dongle):
         key1 = dongle.exchange(apdu)
         assert type(key1) == bytes
         assert len(key1) == 32
-        apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x0, 0x0)
+        apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x4, 0x0)
         key2 = dongle.exchange(apdu)
         assert type(key2) == bytes
         assert len(key2) == 32
@@ -108,20 +118,15 @@ def test_ins_without_payload_returns_account_0_key(dongle):
         assert False
 
 
-@pytest.fixture(params=[1, 2, 3, 5, 8, 14])
-def account_apdu(request):
-    account = request.param
-    return struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x4, account)
-
-
-def test_ins_with_non_0_account_does_not_return_account_0_key(dongle, account_apdu):
+@pytest.mark.parametrize('account_id', [1,2,10,50])
+def test_ins_with_non_0_account_does_not_return_account_0_key(dongle, account_id):
     """
     """
     try:
         key1 = dongle.exchange(struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0))
         assert type(key1) == bytes
         assert len(key1) == 32
-        key2 = dongle.exchange(account_apdu)
+        key2 = dongle.exchange(struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x4, account_id))
         assert type(key2) == bytes
         assert len(key2) == 32
 
