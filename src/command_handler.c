@@ -25,12 +25,12 @@ void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len
 
   if (lc < sizeof(uint32_t)) 
   {
-    THROW(0x6a85);
+    THROW(0x6a86);
   } 
   
   if (buffer_len < lc + OFFSET_CDATA)
   {
-    THROW(0x6a85);
+    THROW(0x6a87);
   } 
   *account_id = U4BE(buffer, OFFSET_CDATA);
 }
@@ -52,6 +52,10 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len
   const uint8_t *cdata = data_buffer + OFFSET_CDATA;
   uint8_t lc = data_buffer[OFFSET_LC];
 
+  if (lc == 0 )
+  {
+    THROW(0x6a84);
+  }
   if (buffer_len < lc + OFFSET_CDATA)
   {
     THROW(0x6a85);

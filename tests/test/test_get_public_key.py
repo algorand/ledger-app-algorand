@@ -9,11 +9,9 @@ from . import ui_interaction
 
 
 clicked_labels = {
-    'verify', 
-    'address'
+    'verify' ,'address (', 'approve', 'reject'
 }
 
-conf_label = "address"
 
 
 def test_ins_with_no_payload(dongle):
@@ -63,7 +61,7 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
 
         apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x80, 0x0, 0x0, 0x0)
 
-        with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, clicked_labels, conf_label):
+        with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, clicked_labels, 'approve'):
             key = dongle.exchange(apdu)
             messages = dongle.get_messages()
             logging.info(messages)
@@ -74,6 +72,19 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
     except speculos.CommException as e:
         logging.error(e)
         assert False
+
+
+
+def test_ins_with_4_bytes_payload_and_user_reject(dongle):
+    """
+    """
+    apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x80, 0x0, 0x0, 0x0)
+    
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, clicked_labels, "reject"):
+            with pytest.raises(speculos.CommException) as excinfo:
+                _ = dongle.exchange(apdu)
+            assert excinfo.value.sw == 0x6985
+    
 
 
 @pytest.fixture(params=[1, 2, 3])
@@ -87,7 +98,7 @@ def test_ins_with_small_paylod(dongle, invalid_size_apdu):
     """
     with pytest.raises(speculos.CommException) as excinfo:
         dongle.exchange(invalid_size_apdu)
-    assert excinfo.value.sw == 0x6a85
+    assert excinfo.value.sw == 0x6a86
 
 
 
@@ -96,7 +107,7 @@ def test_ins_with_invalid_paylod_sizes(dongle):
     """
     with pytest.raises(speculos.CommException) as excinfo:
         dongle.exchange(struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x4))
-    assert excinfo.value.sw == 0x6a85
+    assert excinfo.value.sw == 0x6a87
 
 
 def test_ins_without_payload_returns_account_0_key(dongle):

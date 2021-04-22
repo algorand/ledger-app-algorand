@@ -140,7 +140,16 @@ def test_sign_msgpack_wrong_size_in_payload(dongle, payment_txn):
         
     assert excinfo.value.sw == 0x6a85
 
-@pytest.mark.parametrize('chunk_size', [10, 20 ,50, 250])
+
+def test_sign_msgpack_zero_size_in_payload(dongle, payment_txn):
+    """
+    """
+    with pytest.raises(speculos.CommException) as excinfo:
+        dongle.exchange(struct.pack('>BBBBB' , 0x80, 0x8, 0x0, 0x0, 0))
+        
+    assert excinfo.value.sw == 0x6a84
+
+@pytest.mark.parametrize('chunk_size', [1, 10, 20, 50, 250])
 def test_sign_msgpack_differnet_chunk_size(dongle, payment_txn, chunk_size):
     """
     """
@@ -162,7 +171,10 @@ def test_sign_msgpack_differnet_chunk_size(dongle, payment_txn, chunk_size):
 def test_sign_txn_larger_then_internal_buffer(dongle, payment_txn):
     """
     """
-    payment_txn.note = ("1"*800).encode()  
+    INTERNAL_BUFFER_SIZE = 900
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
+
+    payment_txn.note = ("1"*(INTERNAL_BUFFER_SIZE - len(decoded_txn) + len(payment_txn.note))).encode()  
     decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
 
     with pytest.raises(speculos.CommException) as excinfo:    

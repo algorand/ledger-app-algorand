@@ -31,8 +31,9 @@ static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 #endif
 static unsigned int msgpack_next_off;
 
-void
-txn_approve()
+static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];
+
+void txn_approve()
 {
   int sign_size = 0;
   unsigned int msg_len;
@@ -61,6 +62,7 @@ txn_approve()
 void address_approve()
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
+  os_memmove(G_io_apdu_buffer,public_key,ALGORAND_PUBLIC_KEY_SIZE);
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
@@ -93,6 +95,8 @@ static void copy_and_advance(void *dst, uint8_t **p, size_t len)
 
 void init_globals(){
   explicit_bzero(&current_txn, sizeof(current_txn));
+  explicit_bzero(&public_key, sizeof(public_key));
+  msgpack_next_off = 0;
 }
 
 
@@ -102,7 +106,7 @@ static void algorand_main(void)
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
-  msgpack_next_off = 0;
+
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -212,14 +216,15 @@ static void algorand_main(void)
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
-          fetch_public_key(accountId, G_io_apdu_buffer);
+          fetch_public_key(accountId, public_key);
           
           if(user_approval_required){
-            send_pubkey_to_ui(G_io_apdu_buffer);
+            send_pubkey_to_ui(public_key);
             ui_address_approval();
             flags |= IO_ASYNCH_REPLY;
           }
           else{
+            os_memmove(G_io_apdu_buffer,public_key,ALGORAND_PUBLIC_KEY_SIZE);
             tx = ALGORAND_PUBLIC_KEY_SIZE;
             THROW(0x9000);
           }
