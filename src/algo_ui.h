@@ -13,6 +13,5 @@ void ux_approve_txn();
 
 void ui_text_put(const char *msg);
 
-#define ALGORAND_PUBLIC_KEY_SIZE 32
 #define ALGORAND_DECIMALS 6
 #endif

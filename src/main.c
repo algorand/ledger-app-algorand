@@ -225,15 +225,15 @@ static void algorand_main(void)
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
-          fetch_public_key(account_id, public_key);
+          fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
           
           if(user_approval_required){
-            send_address_to_ui(public_key);
+            send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
             ui_address_approval();
             flags |= IO_ASYNCH_REPLY;
           }
           else{
-            os_memmove(G_io_apdu_buffer,public_key,ALGORAND_PUBLIC_KEY_SIZE);
+            os_memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
             tx = ALGORAND_PUBLIC_KEY_SIZE;
             THROW(0x9000);
           }

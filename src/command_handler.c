@@ -2,6 +2,8 @@
 #include "apdu_protocol_defines.h"
 #include "algo_ui.h"
 #include "algo_addr.h"
+#include "algo_keys.h"
+
 
 
 
@@ -37,12 +39,16 @@ void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len
 
 
 /*
-* This function takes a binary public key, converts it to Algorand public address,
-* and send it to the UI note.
-* The function assumes that the public_key is 32 bytes long.
+* This function takes a binary 32 bytes public key, converts it to Algorand public address,
+* and send it to the UI.
+* this function fails if the public_key buffer is small than 32 bytes.
 */
-void send_address_to_ui(const uint8_t* public_key)
+void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_size)
 {
+  if (public_key_size < ALGORAND_PUBLIC_KEY_SIZE)
+  {
+     THROW(0x6a71);
+  }
   char public_address[65];
   explicit_bzero(public_address, 65);
   convert_to_public_address(public_key, public_address);
@@ -50,6 +56,14 @@ void send_address_to_ui(const uint8_t* public_key)
 }
 
 
+/*
+* This function parses the input buffer (from the application) and tries to construct 
+* the txn_output.
+* this function might be called multiple times. each time the function will fill the 
+* current_txn_buffer untill the end of the input.
+* the function will throw 0x9000 when more data is needed to decode the transaction.
+* if a decode error occucrs the fuction returns non null value.
+*/
 
 char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len, 
                         uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
