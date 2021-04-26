@@ -296,10 +296,6 @@ tx_decode(uint8_t *buf, int buflen, txn_t *t)
 {
   char* ret = NULL;
   uint8_t* buf_end = buf + buflen;
-  uint32_t accountId = t->accountId; // Save `accountId`
-
-  explicit_bzero(t, sizeof(*t));
-  t->accountId = accountId;
 
   BEGIN_TRY {
     TRY {

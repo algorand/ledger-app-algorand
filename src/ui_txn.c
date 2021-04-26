@@ -130,7 +130,7 @@ static void checksum_and_put_text(const uint8_t * buffer)
 {
   char checksummed[CHECKEDSUM_BUFFER_SIZE];
   memset(checksummed,0,CHECKEDSUM_BUFFER_SIZE);
-  checksummed_addr(buffer, checksummed);
+  convert_to_public_address(buffer, checksummed);
   ui_text_put(checksummed);
 }
 

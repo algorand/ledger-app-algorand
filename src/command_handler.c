@@ -5,9 +5,9 @@
 
 
 
-void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* account_id )
+void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id )
 {
-  *account_id = 0;
+  *output_account_id = 0;
 
 
   if (buffer_len <= OFFSET_LC) 
@@ -32,22 +32,28 @@ void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len
   {
     THROW(0x6a87);
   } 
-  *account_id = U4BE(buffer, OFFSET_CDATA);
+  *output_account_id = U4BE(buffer, OFFSET_CDATA);
 }
 
 
-void send_pubkey_to_ui(const uint8_t* buffer)
+/*
+* This function takes a binary public key, converts it to Algorand public address,
+* and send it to the UI note.
+* The function assumes that the public_key is 32 bytes long.
+*/
+void send_address_to_ui(const uint8_t* public_key)
 {
-  char checksummed[65];
-  explicit_bzero(checksummed, 65);
-  checksummed_addr(buffer, checksummed);
-  ui_text_put(checksummed);
+  char public_address[65];
+  explicit_bzero(public_address, 65);
+  convert_to_public_address(public_key, public_address);
+  ui_text_put(public_address);
 }
+
 
 
 char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len, 
-                        uint8_t* current_tnx_buffer, const uint32_t current_tnx_buffer_size, uint32_t *current_tnx_buffer_offset,
-                        txn_t* current_tnx)
+                        uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
+                        uint32_t *current_txn_buffer_offset, txn_t* txn_output)
 {
   const uint8_t *cdata = data_buffer + OFFSET_CDATA;
   uint8_t lc = data_buffer[OFFSET_LC];
@@ -63,31 +69,31 @@ char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len
 
   if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
   {
-    explicit_bzero(&current_txn, sizeof(current_txn));
-    *current_tnx_buffer_offset = 0;
-    current_txn.accountId = 0;
+    explicit_bzero(txn_output, sizeof(txn_output));
+    *current_txn_buffer_offset = 0;
+    txn_output->accountId = 0;
     if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
     {
-      parse_input_get_public_key(data_buffer, buffer_len, &current_txn.accountId);
-      PRINTF("signing the transaction using account id: %d\n",current_txn.accountId);
+      parse_input_get_public_key(data_buffer, buffer_len, &txn_output->accountId);
+      PRINTF("signing the transaction using account id: %d\n",txn_output->accountId);
       cdata += sizeof(uint32_t);
       lc -= sizeof(uint32_t);
     }
   }
 
-  if (*current_tnx_buffer_offset + lc > current_tnx_buffer_size) 
+  if (*current_txn_buffer_offset + lc > current_txn_buffer_size) 
   {
       THROW(0x6700);
   }
 
-  os_memmove(current_tnx_buffer + *current_tnx_buffer_offset, cdata, lc);
-  *current_tnx_buffer_offset += lc;
+  os_memmove(current_txn_buffer + *current_txn_buffer_offset, cdata, lc);
+  *current_txn_buffer_offset += lc;
 
   switch (data_buffer[OFFSET_P2]) 
   {
     case P2_LAST:
     {
-      char *err = tx_decode(current_tnx_buffer, *current_tnx_buffer_offset, &current_txn);
+      char *err = tx_decode(current_txn_buffer, *current_txn_buffer_offset, txn_output);
       if (err != NULL) 
       {
         PRINTF("got error from decoder:\n");

@@ -37,8 +37,9 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
       explicit_bzero(&local_private_key,sizeof(local_private_key));
       explicit_bzero(private_key_data,sizeof(private_key_data));
     }
-    END_TRY
   }
+  END_TRY;
+  
   io_seproxyhal_io_heartbeat();
 }
 
@@ -82,7 +83,7 @@ void fetch_public_key(uint32_t account_id, uint8_t* pub_key)
       explicit_bzero(&private_key, sizeof(private_key));
     }
   }
-  END_TRY
+  END_TRY;
 }
 
 
@@ -112,7 +113,7 @@ int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign , cons
       explicit_bzero(&private_key,sizeof(private_key));
     }
   } 
-  END_TRY
+  END_TRY;
   
     
   io_seproxyhal_io_heartbeat();

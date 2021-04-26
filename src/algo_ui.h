@@ -2,7 +2,7 @@
 #define _ALGO_UI_H_
 #include "ux.h"
 
-extern char lineBuffer[];
+
 extern char caption[20];
 extern char text[128];
 

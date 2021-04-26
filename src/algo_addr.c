@@ -6,8 +6,7 @@
 #include "base32.h"
 #include "base64.h"
 
-void
-checksummed_addr(const uint8_t *publicKey, char *out)
+void convert_to_public_address(const uint8_t *publicKey, char *output_public_address)
 {
   // The SDK does not provide a ready-made SHA512/256, so we set up a SHA512
   // hash context, and then overwrite the IV with the SHA512/256-specific IV.
@@ -35,5 +34,5 @@ checksummed_addr(const uint8_t *publicKey, char *out)
   os_memmove(&checksummed[0], publicKey, 32);
   os_memmove(&checksummed[32], &hash[28], 4);
 
-  base32_encode(checksummed, sizeof(checksummed), (unsigned char*) out);
+  base32_encode(checksummed, sizeof(checksummed), (unsigned char*) output_public_address);
 }

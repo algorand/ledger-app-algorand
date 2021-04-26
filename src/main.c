@@ -33,6 +33,7 @@ static unsigned int msgpack_next_off;
 
 static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];
 
+
 void txn_approve()
 {
   int sign_size = 0;
@@ -52,6 +53,12 @@ void txn_approve()
   G_io_apdu_buffer[sign_size++] = 0x90;
   G_io_apdu_buffer[sign_size++] = 0x00;
 
+
+  // we've just signed the txn so we clear the static struct
+  explicit_bzero(&current_txn, sizeof(current_txn));
+  msgpack_next_off = 0;
+    
+
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
 
@@ -62,11 +69,13 @@ void txn_approve()
 void address_approve()
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
-  os_memmove(G_io_apdu_buffer,public_key,ALGORAND_PUBLIC_KEY_SIZE);
+  os_memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
 
+  
+  explicit_bzero(public_key, ALGORAND_PUBLIC_KEY_SIZE);
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 
@@ -209,17 +218,17 @@ static void algorand_main(void)
         }
         break;
         case INS_GET_PUBLIC_KEY: {
-          uint32_t accountId =0 ;
+          uint32_t account_id =0 ;
           uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-          parse_input_get_public_key(G_io_apdu_buffer, rx, &accountId );
+          parse_input_get_public_key(G_io_apdu_buffer, rx, &account_id );
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
-          fetch_public_key(accountId, public_key);
+          fetch_public_key(account_id, public_key);
           
           if(user_approval_required){
-            send_pubkey_to_ui(public_key);
+            send_address_to_ui(public_key);
             ui_address_approval();
             flags |= IO_ASYNCH_REPLY;
           }
