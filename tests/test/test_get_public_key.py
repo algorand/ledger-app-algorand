@@ -74,6 +74,34 @@ def test_ins_with_4_bytes_payload_and_user_approval(dongle):
         assert False
 
 
+@pytest.mark.parametrize('account_id', [1,2,10,50])
+def test_ins_with_4_bytes_payload_and_user_approval_non_default_account(dongle,account_id):
+    """
+    Test the display UI when the app receives INS_GET_PUBLIC_KEY with different account ids
+    """
+    try:
+
+        excpected_messages = [
+        ['verify','address'],
+        [],
+        ['approve','address']]
+
+
+        apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x80, 0x0, 0x0, account_id)
+
+        with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, clicked_labels, 'approve'):
+            key = dongle.exchange(apdu)
+            messages = dongle.get_messages()
+            logging.info(messages)
+
+        excpected_messages[1] = ['address',algosdk.encoding.encode_address(key).lower()]
+        assert messages == excpected_messages
+        
+    except speculos.CommException as e:
+        logging.error(e)
+        assert False
+
+
 
 def test_ins_with_4_bytes_payload_and_user_reject(dongle):
     """
@@ -145,5 +173,23 @@ def test_ins_with_non_0_account_does_not_return_account_0_key(dongle, account_id
     except speculos.CommException as e:
         logging.error(e)
         assert False
+
+@pytest.mark.parametrize('account_id', [1,2,10,50])
+def test_ins_with_getting_same_pub_key_for_non_zero_account(dongle, account_id):
+    """
+    """
+    try:
+        key1 = dongle.exchange(struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x4, account_id))
+        assert type(key1) == bytes
+        assert len(key1) == 32
+        key2 = dongle.exchange(struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0, 0x4, account_id))
+        assert type(key2) == bytes
+        assert len(key2) == 32
+
+        assert key1 == key2
+    except speculos.CommException as e:
+        logging.error(e)
+        assert False
+
 
 

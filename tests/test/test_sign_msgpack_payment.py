@@ -100,11 +100,9 @@ def test_sign_msgpack_cancel_validate_display(dongle, payment_txn):
 
 
 @pytest.mark.parametrize('account_id', [0,1,2,10,50])
-def test_sign_msgpack_with_spcific_account(dongle, payment_txn, account_id):
+def test_sign_msgpack_with_differnet_accounts(dongle, payment_txn, account_id):
     """
     """
-    apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0,0x4, account_id)
-    pubKey = dongle.exchange(apdu)
 
     decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
     with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
@@ -112,6 +110,10 @@ def test_sign_msgpack_with_spcific_account(dongle, payment_txn, account_id):
         txnSig = txn_utils.sign_algo_txn_with_account(dongle, decoded_txn, account_id)
 
     assert len(txnSig) == 64
+    #the public key is extracted after the signing in order to check that
+    # we don't accidentally cache the public key 
+    apdu = struct.pack('>BBBBBI', 0x80, 0x3, 0x0, 0x0,0x4, account_id)
+    pubKey = dongle.exchange(apdu)
     verify_key = nacl.signing.VerifyKey(pubKey)
     verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
 
@@ -130,6 +132,14 @@ def test_sign_msgpack_with_default_account(dongle, payment_txn):
     assert len(txnSig) == 64
     verify_key = nacl.signing.VerifyKey(pubKey)
     verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+def test_sign_msgpack_sending_lastblcok_without_start(dongle, payment_txn):
+    """
+    """
+    p2 = 0
+    p2 &= ~0x80
+    ret = dongle.exchange(struct.pack('>BBBBB1s' , 0x80, 0x8, 0x0 | 0x80, p2, 1, bytes(1)))
+    assert  ret[65:].decode('ascii') == 'expected map, found 0'
 
 
 def test_sign_msgpack_wrong_size_in_payload(dongle, payment_txn):
