@@ -239,3 +239,20 @@ def test_sign_msgpack_returns_same_signature(dongle, payment_txn):
     assert txnSig == defaultTxnSig
 
 
+def test_sign_msgpack_validate_display_on_mainnet(dongle, payment_txn):
+    """
+    """
+    payment_txn.genesis_id = "mainnet-v1.0"
+    payment_txn.genesis_hash="wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)        
+        _ = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    exp_messages = get_expected_messages(payment_txn)
+    #when signing transaction on main net. the genesis hash and the genesis id are not displayed
+    del exp_messages[4]
+    del exp_messages[4]
+    logging.info(messages)
+    logging.info(exp_messages)
+    assert exp_messages == messages
