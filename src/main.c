@@ -24,11 +24,10 @@ txn_t current_txn;
 
 #if defined(TARGET_NANOX)
 #define TNX_BUFFER_SIZE 2048
-static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 #else
 #define TNX_BUFFER_SIZE 900
-static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 #endif
+static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 static unsigned int msgpack_next_off;
 
 static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];

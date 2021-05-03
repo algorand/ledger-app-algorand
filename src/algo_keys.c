@@ -9,6 +9,7 @@
 
 static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *private_key)
 {
+  unsigned short error = 0;
   uint8_t  private_key_data[64];
   uint32_t bip32Path[5];
   cx_ecfp_private_key_t local_private_key;
@@ -32,6 +33,11 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
       cx_ecfp_init_private_key(CX_CURVE_Ed25519, private_key_data, 32, &local_private_key);
       os_memcpy(private_key, &local_private_key, sizeof(local_private_key));
     }
+    CATCH_OTHER(e) 
+    {
+        PRINTF("exception caught while deriving the private key\n");
+        error = e;
+    }
     FINALLY
     {
       explicit_bzero(&local_private_key,sizeof(local_private_key));
@@ -39,8 +45,13 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
     }
   }
   END_TRY;
-  
+
   io_seproxyhal_io_heartbeat();
+
+  if (error != 0)
+  {
+      THROW(error);
+  }
 }
 
 static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *privateKey, 
@@ -81,6 +92,7 @@ static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *priva
 */
 void fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t out_pub_key_size)
 {
+  unsigned short error = 0;
   cx_ecfp_private_key_t private_key;
   explicit_bzero(&private_key, sizeof(private_key));
 
@@ -91,12 +103,21 @@ void fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t 
       algorand_key_derive(account_id, &private_key);
       get_public_key_from_private_key(&private_key, out_pub_key, out_pub_key_size);
     }
+    CATCH_OTHER(e) 
+    {
+      PRINTF("exception caught while using fecthing the public key\n");
+      error = e;
+    }
     FINALLY
     {
       explicit_bzero(&private_key, sizeof(private_key));
     }
   }
   END_TRY;
+  if (error != 0)
+  {
+    THROW(error);
+  }
 }
 
 
@@ -104,6 +125,7 @@ void fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t 
 int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign , 
                           const uint32_t msg_len, uint8_t* out_signature_buffer)
 {
+  unsigned short error = 0;
   int sign_size = 0;
   cx_ecfp_private_key_t private_key;
   explicit_bzero(&private_key,sizeof(private_key));
@@ -123,6 +145,11 @@ int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign ,
                      6+2*(32+1), // Formerly from cx_compliance_141.c
                      NULL);
     }
+    CATCH_OTHER(e) 
+    {
+      PRINTF("exception caught while signing transaction\n");
+      error = e;
+    }
     FINALLY
     {
       explicit_bzero(&private_key,sizeof(private_key));
@@ -132,5 +159,9 @@ int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign ,
   
     
   io_seproxyhal_io_heartbeat();
+  if (error != 0)
+  {
+    THROW(error);
+  }
   return sign_size;
 }

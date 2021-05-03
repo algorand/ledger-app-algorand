@@ -39,13 +39,13 @@ void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len
 
 
 /*
-* This function takes a binary 32 bytes public key, converts it to Algorand public address,
+* This function takes a binary 32 bytes public key, converts it to Algorand address,
 * and send it to the UI.
-* this function fails if the public_key buffer is small than 32 bytes.
+* this function fails if the public_key buffer is smaller than 32 bytes.
 */
 void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_size)
 {
-  if (public_key_size < ALGORAND_PUBLIC_KEY_SIZE)
+  if (public_key_size != ALGORAND_PUBLIC_KEY_SIZE)
   {
      THROW(0x6a71);
   }
@@ -65,7 +65,7 @@ void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_siz
 * if a decode error occucrs the fuction returns non null value.
 */
 
-char* parse_input_msgpack(const uint8_t * data_buffer, const uint32_t buffer_len, 
+char* parse_input_msgpack(const uint8_t* data_buffer, const uint32_t buffer_len, 
                         uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
                         uint32_t *current_txn_buffer_offset, txn_t* txn_output)
 {
