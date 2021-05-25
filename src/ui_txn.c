@@ -10,9 +10,14 @@
 #include "base64.h"
 #include "glyphs.h"
 
+#define CHECKEDSUM_BUFFER_SIZE 65
+#define MAX_DIGITS_IN_UINT64 27
+
+
 bool is_opt_in_tx(){
+
   if(current_txn.type == ASSET_XFER &&
-     current_txn.payment.amount == 0 &&
+     current_txn.asset_xfer.amount == 0 &&
      current_txn.asset_xfer.id != 0 &&
      memcmp(current_txn.asset_xfer.receiver,
             current_txn.asset_xfer.sender,
@@ -27,7 +32,7 @@ char caption[20];
 static char *
 u64str(uint64_t v)
 {
-  static char buf[27];
+  static char buf[MAX_DIGITS_IN_UINT64];
 
   char *p = &buf[sizeof(buf)];
   *(--p) = '\0';
@@ -112,13 +117,23 @@ bool adjustDecimals(char *src, uint32_t srcLength, char *target,
 static char*
 amount_to_str(uint64_t amount, uint8_t decimals){
   char* result = u64str(amount);
-  char tmp[24];
+  char tmp[MAX_DIGITS_IN_UINT64];
   memcpy(tmp, result, sizeof(tmp));
-  memset(result, 0, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, 27, decimals);
-  result[26] = '\0';
+  explicit_bzero(result, sizeof(tmp));
+  adjustDecimals(tmp, strlen(tmp), result, MAX_DIGITS_IN_UINT64, decimals);
+  result[MAX_DIGITS_IN_UINT64-1] = '\0';
   return result;
 }
+
+
+static void checksum_and_put_text(const uint8_t * buffer)
+{
+  char checksummed[CHECKEDSUM_BUFFER_SIZE];
+  memset(checksummed,0,CHECKEDSUM_BUFFER_SIZE);
+  convert_to_public_address(buffer, checksummed);
+  ui_text_put(checksummed);
+}
+
 
 static int
 all_zero_key(uint8_t *buf)
@@ -185,15 +200,7 @@ static int step_txn_type() {
 }
 
 static int step_sender() {
-  uint8_t publicKey[32];
-  fetch_public_key(current_txn.accountId, publicKey);
-  if (os_memcmp(publicKey, current_txn.sender, sizeof(current_txn.sender)) == 0) {
-    return 0;
-  }
-
-  char checksummed[65];
-  checksummed_addr(current_txn.sender, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.sender);
   return 1;
 }
 
@@ -201,10 +208,7 @@ static int step_rekey() {
   if (all_zero_key(current_txn.rekey)) {
     return 0;
   }
-
-  char checksummed[65];
-  checksummed_addr(current_txn.rekey, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.rekey);
   return 1;
 }
 
@@ -237,7 +241,7 @@ static int step_genesisID() {
     return 0;
   }
 
-  ui_text_putn(current_txn.genesisID, sizeof(current_txn.genesisID));
+  ui_text_put(current_txn.genesisID);
   return 1;
 }
 
@@ -248,7 +252,7 @@ static int step_genesisHash() {
 
   if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0 ||
       current_txn.genesisID[0] == '\0') {
-    if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
+    if (memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
       return 0;
     }
   }
@@ -271,9 +275,7 @@ static int step_note() {
 }
 
 static int step_receiver() {
-  char checksummed[65];
-  checksummed_addr(current_txn.payment.receiver, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.payment.receiver);
   return 1;
 }
 
@@ -287,9 +289,7 @@ static int step_close() {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.payment.close, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.payment.close);
   return 1;
 }
 
@@ -364,9 +364,8 @@ static int step_asset_xfer_sender() {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer.sender, checksummed);
-  ui_text_put(checksummed);
+
+  checksum_and_put_text(current_txn.asset_xfer.sender);
   return 1;
 }
 
@@ -376,9 +375,8 @@ static int step_asset_xfer_receiver() {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer.receiver, checksummed);
-  ui_text_put(checksummed);
+
+  checksum_and_put_text(current_txn.asset_xfer.receiver);
   return 1;
 }
 
@@ -387,9 +385,7 @@ static int step_asset_xfer_close() {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.asset_xfer.close, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.asset_xfer.close);
   return 1;
 }
 
@@ -403,9 +399,7 @@ static int step_asset_freeze_account() {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.asset_freeze.account, checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.asset_freeze.account);
   return 1;
 }
 
@@ -454,7 +448,7 @@ static int step_asset_config_unitname() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.unitname, sizeof(current_txn.asset_config.params.unitname));
+  ui_text_put(current_txn.asset_config.params.unitname);
   return 1;
 }
 
@@ -472,7 +466,7 @@ static int step_asset_config_assetname() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.assetname, sizeof(current_txn.asset_config.params.assetname));
+  ui_text_put(current_txn.asset_config.params.assetname);
   return 1;
 }
 
@@ -481,7 +475,7 @@ static int step_asset_config_url() {
     return 0;
   }
 
-  ui_text_putn(current_txn.asset_config.params.url, sizeof(current_txn.asset_config.params.url));
+  ui_text_put(current_txn.asset_config.params.url);
   return 1;
 }
 
@@ -500,9 +494,7 @@ static int step_asset_config_addr_helper(uint8_t *addr) {
   if (all_zero_key(addr)) {
     ui_text_put("Zero");
   } else {
-    char checksummed[65];
-    checksummed_addr(addr, checksummed);
-    ui_text_put(checksummed);
+    checksum_and_put_text(addr);
   }
   return 1;
 }
@@ -607,9 +599,7 @@ static int step_application_account(unsigned int idx) {
     return 0;
   }
 
-  char checksummed[65];
-  checksummed_addr(current_txn.application.accounts[idx], checksummed);
-  ui_text_put(checksummed);
+  checksum_and_put_text(current_txn.application.accounts[idx]);
   return 1;
 }
 
@@ -903,8 +893,9 @@ void ui_txn(void) {
 
   current_data_index = -1;
   current_state = OUT_OF_BORDERS;
+  ux_flow_relayout();
   if (G_ux.stack_count == 0) {
-    ux_stack_push();
+    ux_stack_push(); 
   }
   ux_flow_init(0, ux_txn_flow, NULL);
 }

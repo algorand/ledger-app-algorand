@@ -72,6 +72,7 @@ class SpeculosContainer:
             '--automation-port 10000',
             '--button-port 10001',
             '--log-level button:DEBUG',
+            '--sdk 2.0',
             '/app/%s' % os.path.basename(self.app)
         ]
         c = self.docker.create(image='ledgerhq/speculos',

@@ -19,7 +19,7 @@ and assumes the [https://hub.docker.com/r/ledgerhq/speculos](`speculos`) image b
 Python environment may be installed within a virtualenv:
 
   ```
-  docker pull speculos
+  docker pull ghcr.io/ledgerhq/speculos
   virtualenv env
   env/bin/activate
   pip install -r requirements.txt

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  **/
 
-#ifndef __BASE32_H_
-#define __BASE32_H_
+#ifndef __BASE32_H__
+#define __BASE32_H__
 
 #include <stddef.h>   // size_t
 

@@ -1,3 +1,6 @@
+#ifndef __MSGPACK_H__
+#define __MSGPACK_H__
+
 #define FIXINT_0    0x00
 #define FIXINT_127  0x7f
 #define FIXMAP_0    0x80
@@ -16,3 +19,5 @@
 #define UINT64      0xcf
 #define STR8        0xd9
 #define MAP16       0xde
+
+#endif
