@@ -31,7 +31,7 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
     {
       os_perso_derive_node_bip32(CX_CURVE_Ed25519, bip32Path, sizeof(bip32Path) / sizeof(bip32Path[0]), private_key_data, NULL);
       cx_ecfp_init_private_key(CX_CURVE_Ed25519, private_key_data, 32, &local_private_key);
-      os_memcpy(private_key, &local_private_key, sizeof(local_private_key));
+      memcpy(private_key, &local_private_key, sizeof(local_private_key));
     }
     CATCH_OTHER(e) 
     {

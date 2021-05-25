@@ -252,7 +252,7 @@ static int step_genesisHash() {
 
   if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0 ||
       current_txn.genesisID[0] == '\0') {
-    if (os_memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
+    if (memcmp(current_txn.genesisHash, default_genesisHash, sizeof(current_txn.genesisHash)) == 0) {
       return 0;
     }
   }

@@ -68,7 +68,7 @@ void txn_approve()
 void address_approve()
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
-  os_memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
@@ -97,7 +97,7 @@ user_approval_denied()
 
 static void copy_and_advance(void *dst, uint8_t **p, size_t len)
 {
-  os_memmove(dst, *p, len);
+  memmove(dst, *p, len);
   *p += len;
 }
 
@@ -206,7 +206,7 @@ static void algorand_main(void)
           {
             int errlen = strlen(error);
             explicit_bzero(G_io_apdu_buffer, 65);
-            os_memmove(&G_io_apdu_buffer[65], error, errlen);
+            memmove(&G_io_apdu_buffer[65], error, errlen);
             tx = 65 + errlen;
             THROW(0x9000);
           }
@@ -232,7 +232,7 @@ static void algorand_main(void)
             flags |= IO_ASYNCH_REPLY;
           }
           else{
-            os_memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
+            memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
             tx = ALGORAND_PUBLIC_KEY_SIZE;
             THROW(0x9000);
           }

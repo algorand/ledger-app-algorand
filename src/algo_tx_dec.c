@@ -71,7 +71,7 @@ decode_string(uint8_t **bufp, uint8_t *buf_end, char *strbuf, size_t strbuflen)
     THROW(INVALID_PARAMETER);
   }
 
-  os_memmove(strbuf, *bufp, str_len);
+  memmove(strbuf, *bufp, str_len);
   strbuf[str_len] = 0;
   *bufp += str_len;
 
@@ -108,7 +108,7 @@ decode_bin_fixed(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t reslen)
     snprintf(decode_err, sizeof(decode_err), "%d-byte bin overruns input", bin_len);
     THROW(INVALID_PARAMETER);
   }
-  os_memmove(res, *bufp, bin_len);
+  memmove(res, *bufp, bin_len);
   *bufp += bin_len;
 }
 
@@ -138,7 +138,7 @@ decode_bin_var(uint8_t **bufp, uint8_t *buf_end, uint8_t *res, size_t *reslen, s
     THROW(INVALID_PARAMETER);
   }
 
-  os_memmove(res, *bufp, bin_len);
+  memmove(res, *bufp, bin_len);
   *bufp += bin_len;
   *reslen = bin_len;
 }

@@ -7,7 +7,7 @@
 
 
 
-void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id )
+void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
 {
   *output_account_id = 0;
 
@@ -100,7 +100,7 @@ char* parse_input_msgpack(const uint8_t* data_buffer, const uint32_t buffer_len,
       THROW(0x6700);
   }
 
-  os_memmove(current_txn_buffer + *current_txn_buffer_offset, cdata, lc);
+  memmove(current_txn_buffer + *current_txn_buffer_offset, cdata, lc);
   *current_txn_buffer_offset += lc;
 
   switch (data_buffer[OFFSET_P2]) 

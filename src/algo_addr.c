@@ -31,8 +31,8 @@ void convert_to_public_address(const uint8_t *publicKey, char *output_public_add
   cx_hash(&h.header, CX_LAST, publicKey, 32, hash, sizeof(hash));
 
   uint8_t checksummed[36];
-  os_memmove(&checksummed[0], publicKey, 32);
-  os_memmove(&checksummed[32], &hash[28], 4);
+  memmove(&checksummed[0], publicKey, 32);
+  memmove(&checksummed[32], &hash[28], 4);
 
   base32_encode(checksummed, sizeof(checksummed), (unsigned char*) output_public_address);
 }
