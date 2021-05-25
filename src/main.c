@@ -201,7 +201,7 @@ static void algorand_main(void)
 
         case INS_SIGN_MSGPACK: 
         {
-          char* error = parse_input_msgpack(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
+          char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
           if (error != NULL)
           {
             int errlen = strlen(error);
@@ -219,7 +219,7 @@ static void algorand_main(void)
         case INS_GET_PUBLIC_KEY: {
           uint32_t account_id =0 ;
           uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-          parse_input_get_public_key(G_io_apdu_buffer, rx, &account_id );
+          parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.

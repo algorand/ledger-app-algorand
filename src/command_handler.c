@@ -7,7 +7,13 @@
 
 
 
-void parse_input_get_public_key(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
+/*
+* this function validated the input of the APDU command buffer.
+* and extract the account id from the buffer.
+* if the input doesn't contain an account id, the returend account id is 0
+*/
+
+void parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
 {
   *output_account_id = 0;
 
@@ -65,7 +71,7 @@ void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_siz
 * if a decode error occucrs the fuction returns non null value.
 */
 
-char* parse_input_msgpack(const uint8_t* data_buffer, const uint32_t buffer_len, 
+char* parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t buffer_len, 
                         uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
                         uint32_t *current_txn_buffer_offset, txn_t* txn_output)
 {
@@ -88,7 +94,7 @@ char* parse_input_msgpack(const uint8_t* data_buffer, const uint32_t buffer_len,
     txn_output->accountId = 0;
     if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
     {
-      parse_input_get_public_key(data_buffer, buffer_len, &txn_output->accountId);
+      parse_input_for_get_public_key_command(data_buffer, buffer_len, &txn_output->accountId);
       PRINTF("signing the transaction using account id: %d\n",txn_output->accountId);
       cdata += sizeof(uint32_t);
       lc -= sizeof(uint32_t);
