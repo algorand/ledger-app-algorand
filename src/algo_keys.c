@@ -7,7 +7,7 @@
 
 
 
-static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *private_key)
+static int algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *private_key)
 {
   unsigned short error = 0;
   uint8_t  private_key_data[64];
@@ -33,7 +33,7 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
       cx_ecfp_init_private_key(CX_CURVE_Ed25519, private_key_data, 32, &local_private_key);
       memcpy(private_key, &local_private_key, sizeof(local_private_key));
     }
-    CATCH_OTHER(e) 
+    CATCH_OTHER(e)
     {
         PRINTF("exception caught while deriving the private key\n");
         error = e;
@@ -48,10 +48,7 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
 
   io_seproxyhal_io_heartbeat();
 
-  if (error != 0)
-  {
-      THROW(error);
-  }
+  return error;
 }
 
 static void get_public_key_from_private_key(const cx_ecfp_private_key_t *privateKey,
@@ -88,11 +85,15 @@ int fetch_public_key(uint32_t account_id, struct pubkey_s *out_pub_key)
   cx_ecfp_private_key_t private_key;
   explicit_bzero(&private_key, sizeof(private_key));
 
+  error = algorand_key_derive(account_id, &private_key);
+  if (error) {
+    return error;
+  }
+
   BEGIN_TRY
   {
     TRY
     {
-      algorand_key_derive(account_id, &private_key);
       get_public_key_from_private_key(&private_key, out_pub_key);
     }
     CATCH_OTHER(e) 
