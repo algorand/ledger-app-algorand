@@ -176,7 +176,7 @@ static void handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int 
 static void handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
 {
   uint32_t account_id = 0;
-  uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+  bool user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
   parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
   /*
    * Push derived key to `G_io_apdu_buffer`
