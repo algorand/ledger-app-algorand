@@ -182,7 +182,10 @@ static void handle_get_public_key(volatile unsigned int rx, volatile unsigned in
    * Push derived key to `G_io_apdu_buffer`
    * and return pushed buffer length.
    */
-  fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  int error = fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  if (error) {
+    THROW(error);
+  }
 
   if(user_approval_required){
     send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);

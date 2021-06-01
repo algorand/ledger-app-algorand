@@ -90,7 +90,7 @@ static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *priva
 * This function returns a public key conresponding to the account ID given.
 * The function fails if the the size of out_pub_key is smaller than 32 bytes (validated with out_pub_key_size arg) .
 */
-void fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t out_pub_key_size)
+int fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t out_pub_key_size)
 {
   unsigned short error = 0;
   cx_ecfp_private_key_t private_key;
@@ -114,10 +114,8 @@ void fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t 
     }
   }
   END_TRY;
-  if (error != 0)
-  {
-    THROW(error);
-  }
+
+  return error;
 }
 
 
