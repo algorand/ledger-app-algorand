@@ -4,3 +4,4 @@
 /obj
 *.swp
 /src/glyphs.*
+/tests/build
