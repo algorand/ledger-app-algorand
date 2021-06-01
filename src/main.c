@@ -107,6 +107,92 @@ void init_globals(){
   msgpack_next_off = 0;
 }
 
+static void handle_sign_payment(uint8_t ins)
+{
+  uint8_t *p;
+
+  explicit_bzero(&current_txn, sizeof(current_txn));
+
+  if (ins == INS_SIGN_PAYMENT_V2) {
+    p = &G_io_apdu_buffer[2];
+  } else {
+    p = &G_io_apdu_buffer[OFFSET_CDATA];
+  }
+
+  current_txn.type = PAYMENT;
+  copy_and_advance( current_txn.sender,           &p, 32);
+  copy_and_advance(&current_txn.fee,              &p, 8);
+  copy_and_advance(&current_txn.firstValid,       &p, 8);
+  copy_and_advance(&current_txn.lastValid,        &p, 8);
+  copy_and_advance( current_txn.genesisID,        &p, 32);
+  copy_and_advance( current_txn.genesisHash,      &p, 32);
+  copy_and_advance( current_txn.payment.receiver, &p, 32);
+  copy_and_advance(&current_txn.payment.amount,   &p, 8);
+  copy_and_advance( current_txn.payment.close,    &p, 32);
+
+  ui_txn();
+}
+
+static void handle_sign_keyreg(uint8_t ins)
+{
+  uint8_t *p;
+
+  explicit_bzero(&current_txn, sizeof(current_txn));
+
+  if (ins == INS_SIGN_KEYREG_V2) {
+    p = &G_io_apdu_buffer[2];
+  } else {
+    p = &G_io_apdu_buffer[OFFSET_CDATA];
+  }
+
+  current_txn.type = KEYREG;
+  copy_and_advance( current_txn.sender,        &p, 32);
+  copy_and_advance(&current_txn.fee,           &p, 8);
+  copy_and_advance(&current_txn.firstValid,    &p, 8);
+  copy_and_advance(&current_txn.lastValid,     &p, 8);
+  copy_and_advance( current_txn.genesisID,     &p, 32);
+  copy_and_advance( current_txn.genesisHash,   &p, 32);
+  copy_and_advance( current_txn.keyreg.votepk, &p, 32);
+  copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
+
+  ui_txn();
+}
+
+static void handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int *tx)
+{
+  char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
+  if (error != NULL)
+  {
+    int errlen = strlen(error);
+    explicit_bzero(G_io_apdu_buffer, 65);
+    memmove(&G_io_apdu_buffer[65], error, errlen);
+    *tx = 65 + errlen;
+  } else {
+    // we get here when all the data was received, otherwise an exception is thrown
+    ui_txn();
+  }
+}
+
+static void handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
+{
+  uint32_t account_id = 0;
+  uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+  parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
+  /*
+   * Push derived key to `G_io_apdu_buffer`
+   * and return pushed buffer length.
+   */
+  fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+
+  if(user_approval_required){
+    send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
+    ui_address_approval();
+  }
+  else{
+    memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
+    *tx = ALGORAND_PUBLIC_KEY_SIZE;
+  }
+}
 
 static void algorand_main(void)
 {
@@ -150,94 +236,33 @@ static void algorand_main(void)
         switch (ins) {
         case INS_SIGN_PAYMENT_V2:
         case INS_SIGN_PAYMENT_V3:
-        {
-          explicit_bzero(&current_txn, sizeof(current_txn));
-          uint8_t *p;
-          if (ins == INS_SIGN_PAYMENT_V2) {
-            p = &G_io_apdu_buffer[2];
-          } else {
-            p = &G_io_apdu_buffer[OFFSET_CDATA];
-          }
-
-          current_txn.type = PAYMENT;
-          copy_and_advance( current_txn.sender,           &p, 32);
-          copy_and_advance(&current_txn.fee,              &p, 8);
-          copy_and_advance(&current_txn.firstValid,       &p, 8);
-          copy_and_advance(&current_txn.lastValid,        &p, 8);
-          copy_and_advance( current_txn.genesisID,        &p, 32);
-          copy_and_advance( current_txn.genesisHash,      &p, 32);
-          copy_and_advance( current_txn.payment.receiver, &p, 32);
-          copy_and_advance(&current_txn.payment.amount,   &p, 8);
-          copy_and_advance( current_txn.payment.close,    &p, 32);
-
-          ui_txn();
+          handle_sign_payment(ins);
           flags |= IO_ASYNCH_REPLY;
-        } break;
+          break;
 
         case INS_SIGN_KEYREG_V2:
         case INS_SIGN_KEYREG_V3:
-        {
-          explicit_bzero(&current_txn, sizeof(current_txn));
-          uint8_t *p;
-          if (ins == INS_SIGN_KEYREG_V2) {
-            p = &G_io_apdu_buffer[2];
-          } else {
-            p = &G_io_apdu_buffer[OFFSET_CDATA];
-          }
-
-          current_txn.type = KEYREG;
-          copy_and_advance( current_txn.sender,        &p, 32);
-          copy_and_advance(&current_txn.fee,           &p, 8);
-          copy_and_advance(&current_txn.firstValid,    &p, 8);
-          copy_and_advance(&current_txn.lastValid,     &p, 8);
-          copy_and_advance( current_txn.genesisID,     &p, 32);
-          copy_and_advance( current_txn.genesisHash,   &p, 32);
-          copy_and_advance( current_txn.keyreg.votepk, &p, 32);
-          copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
-
-          ui_txn();
+          handle_sign_keyreg(ins);
           flags |= IO_ASYNCH_REPLY;
-        } break;
+          break;
 
-        case INS_SIGN_MSGPACK: 
-        {
-          char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
-          if (error != NULL)
-          {
-            int errlen = strlen(error);
-            explicit_bzero(G_io_apdu_buffer, 65);
-            memmove(&G_io_apdu_buffer[65], error, errlen);
-            tx = 65 + errlen;
+        case INS_SIGN_MSGPACK:
+          handle_sign_msgpack(rx, &tx);
+          if (tx != 0) {
             THROW(0x9000);
-          }
-          // we get here when all the data was received, otherwise an exception is thrown
-          ui_txn();
-          flags |= IO_ASYNCH_REPLY;
-          
-        }
-        break;
-        case INS_GET_PUBLIC_KEY: {
-          uint32_t account_id =0 ;
-          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-          parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
-          /*
-           * Push derived key to `G_io_apdu_buffer`
-           * and return pushed buffer length.
-           */
-          fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
-          
-          if(user_approval_required){
-            send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
-            ui_address_approval();
+          } else {
             flags |= IO_ASYNCH_REPLY;
           }
-          else{
-            memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
-            tx = ALGORAND_PUBLIC_KEY_SIZE;
+          break;
+
+        case INS_GET_PUBLIC_KEY:
+          handle_get_public_key(rx, &tx);
+          if (tx != 0) {
             THROW(0x9000);
+          } else {
+            flags |= IO_ASYNCH_REPLY;
           }
-          
-        } break;
+          break;
 
         case 0xFF: // return to dashboard
           CLOSE_TRY;
