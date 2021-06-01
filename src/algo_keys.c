@@ -113,22 +113,26 @@ int fetch_public_key(uint32_t account_id, struct pubkey_s *out_pub_key)
 
 
 
-int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign , 
-                          const uint32_t msg_len, uint8_t* out_signature_buffer)
+int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign,
+                          const uint32_t msg_len, uint8_t* out_signature_buffer,
+                          int *sign_size)
 {
-  unsigned short error = 0;
-  int sign_size = 0;
+  int error;
   cx_ecfp_private_key_t private_key;
   explicit_bzero(&private_key,sizeof(private_key));
 
-  algorand_key_derive(account_id, &private_key);
-  
+  error = algorand_key_derive(account_id, &private_key);
+  if (error) {
+    return error;
+  }
+
+  io_seproxyhal_io_heartbeat();
+
   BEGIN_TRY
   {
     TRY
     {
-      io_seproxyhal_io_heartbeat();
-      sign_size = cx_eddsa_sign(&private_key,
+      *sign_size = cx_eddsa_sign(&private_key,
                      0, CX_SHA512,
                      msg_to_sign, msg_len,
                      NULL, 0,
@@ -136,7 +140,7 @@ int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign ,
                      6+2*(32+1), // Formerly from cx_compliance_141.c
                      NULL);
     }
-    CATCH_OTHER(e) 
+    CATCH_OTHER(e)
     {
       PRINTF("exception caught while signing transaction\n");
       error = e;
@@ -145,14 +149,10 @@ int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign ,
     {
       explicit_bzero(&private_key,sizeof(private_key));
     }
-  } 
-  END_TRY;
-  
-    
-  io_seproxyhal_io_heartbeat();
-  if (error != 0)
-  {
-    THROW(error);
   }
-  return sign_size;
+  END_TRY;
+
+  io_seproxyhal_io_heartbeat();
+
+  return error;
 }

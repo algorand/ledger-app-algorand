@@ -45,10 +45,11 @@ void txn_approve()
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
   PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
 
-  
-  sign_size = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer);
-  
-  
+  int error = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer, &sign_size);
+  if (error) {
+    THROW(error);
+  }
+
   G_io_apdu_buffer[sign_size++] = 0x90;
   G_io_apdu_buffer[sign_size++] = 0x00;
 
@@ -56,7 +57,6 @@ void txn_approve()
   // we've just signed the txn so we clear the static struct
   explicit_bzero(&current_txn, sizeof(current_txn));
   msgpack_next_off = 0;
-    
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
