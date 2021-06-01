@@ -13,34 +13,35 @@
 * if the input doesn't contain an account id, the returend account id is 0
 */
 
-void parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
+int parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
 {
   *output_account_id = 0;
 
-
-  if (buffer_len <= OFFSET_LC) 
+  if (buffer_len <= OFFSET_LC)
   {
     PRINTF("using default account id 0 ");
-    return;
+    return 0;
   }
 
   uint8_t lc = buffer[OFFSET_LC];
   if (lc == 0)
   {
     PRINTF("using default account id 0 ");
-    return ;
+    return 0;
   }
 
-  if (lc < sizeof(uint32_t)) 
+  if (lc < sizeof(uint32_t))
   {
-    THROW(0x6a86);
-  } 
-  
+    return 0x6a86;
+  }
+
   if (buffer_len < lc + OFFSET_CDATA)
   {
-    THROW(0x6a87);
-  } 
+    return 0x6a87;
+  }
   *output_account_id = U4BE(buffer, OFFSET_CDATA);
+
+  return 0;
 }
 
 

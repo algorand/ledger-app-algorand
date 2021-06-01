@@ -173,18 +173,22 @@ static void handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int 
   }
 }
 
-static void handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
+static int handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
 {
   uint32_t account_id = 0;
   bool user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-  parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
+
+  int error = parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id);
+  if (error) {
+    return error;
+  }
   /*
    * Push derived key to `G_io_apdu_buffer`
    * and return pushed buffer length.
    */
-  int error = fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  error = fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
   if (error) {
-    THROW(error);
+    return error;
   }
 
   if(user_approval_required){
@@ -195,6 +199,8 @@ static void handle_get_public_key(volatile unsigned int rx, volatile unsigned in
     memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
     *tx = ALGORAND_PUBLIC_KEY_SIZE;
   }
+
+  return error;
 }
 
 static void algorand_main(void)
@@ -202,7 +208,7 @@ static void algorand_main(void)
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
-
+  int error;
 
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
@@ -259,7 +265,10 @@ static void algorand_main(void)
           break;
 
         case INS_GET_PUBLIC_KEY:
-          handle_get_public_key(rx, &tx);
+          error = handle_get_public_key(rx, &tx);
+          if (error) {
+            THROW(error);
+          }
           if (tx != 0) {
             THROW(0x9000);
           } else {
