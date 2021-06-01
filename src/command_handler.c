@@ -68,20 +68,20 @@ void send_address_to_ui(const struct pubkey_s *public_key)
 * if a decode error occucrs the fuction returns non null value.
 */
 
-char* parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t buffer_len, 
-                        uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
-                        uint32_t *current_txn_buffer_offset, txn_t* txn_output)
+int parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t buffer_len,
+                                    uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size,
+                                    uint32_t *current_txn_buffer_offset, txn_t* txn_output,
+                                    char **error_msg)
 {
   const uint8_t *cdata = data_buffer + OFFSET_CDATA;
   uint8_t lc = data_buffer[OFFSET_LC];
 
-  if (lc == 0 )
-  {
-    THROW(0x6a84);
+  if (lc == 0) {
+    return 0x6a84;
   }
-  if (buffer_len < lc + OFFSET_CDATA)
-  {
-    THROW(0x6a85);
+
+  if (buffer_len < lc + OFFSET_CDATA) {
+    return 0x6a85;
   }
 
   if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
@@ -98,32 +98,27 @@ char* parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t
     }
   }
 
-  if (*current_txn_buffer_offset + lc > current_txn_buffer_size) 
-  {
-      THROW(0x6700);
+  if (*current_txn_buffer_offset + lc > current_txn_buffer_size) {
+    return 0x6700;
   }
 
   memmove(current_txn_buffer + *current_txn_buffer_offset, cdata, lc);
   *current_txn_buffer_offset += lc;
 
-  switch (data_buffer[OFFSET_P2]) 
-  {
+  switch (data_buffer[OFFSET_P2]) {
     case P2_LAST:
-    {
-      char *err = tx_decode(current_txn_buffer, *current_txn_buffer_offset, txn_output);
-      if (err != NULL) 
-      {
-        PRINTF("got error from decoder:\n");
-        PRINTF("%s\n",err);
-        return err;
-      }
-      return NULL;
-    }
-    break;
+      break;
     case P2_MORE:
-      THROW(0x9000);
+      return 0x9000;
     default:
-      THROW(0x6B00);
+      return 0x6B00;
   }
 
+  *error_msg = tx_decode(current_txn_buffer, *current_txn_buffer_offset, txn_output);
+  if (*error_msg != NULL) {
+    PRINTF("got error from decoder:\n");
+    PRINTF("%s\n", *error_msg);
+  }
+
+  return 0;
 }

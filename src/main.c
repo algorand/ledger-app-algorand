@@ -157,19 +157,28 @@ static void handle_sign_keyreg(uint8_t ins)
   ui_txn();
 }
 
-static void handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int *tx)
+static int handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int *tx)
 {
-  char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
-  if (error != NULL)
+  char *error_msg;
+  int error;
+
+  error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &error_msg);
+  if (error) {
+    return error;
+  }
+
+  if (error_msg != NULL)
   {
-    int errlen = strlen(error);
+    int errlen = strlen(error_msg);
     explicit_bzero(G_io_apdu_buffer, 65);
-    memmove(&G_io_apdu_buffer[65], error, errlen);
+    memmove(&G_io_apdu_buffer[65], error_msg, errlen);
     *tx = 65 + errlen;
   } else {
     // we get here when all the data was received, otherwise an exception is thrown
     ui_txn();
   }
+
+  return 0;
 }
 
 static int handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
@@ -255,7 +264,10 @@ static void algorand_main(void)
           break;
 
         case INS_SIGN_MSGPACK:
-          handle_sign_msgpack(rx, &tx);
+          error = handle_sign_msgpack(rx, &tx);
+          if (error) {
+            THROW(error);
+          }
           if (tx != 0) {
             THROW(0x9000);
           } else {
