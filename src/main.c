@@ -30,7 +30,7 @@ txn_t current_txn;
 static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 static unsigned int msgpack_next_off;
 
-static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];
+static struct pubkey_s public_key;
 
 
 void txn_approve()
@@ -68,13 +68,12 @@ void txn_approve()
 void address_approve()
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
-  memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
 
-  
-  explicit_bzero(public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  explicit_bzero(public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 
@@ -186,17 +185,17 @@ static int handle_get_public_key(volatile unsigned int rx, volatile unsigned int
    * Push derived key to `G_io_apdu_buffer`
    * and return pushed buffer length.
    */
-  error = fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+  error = fetch_public_key(account_id, &public_key);
   if (error) {
     return error;
   }
 
   if(user_approval_required){
-    send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
+    send_address_to_ui(&public_key);
     ui_address_approval();
   }
   else{
-    memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
+    memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
     *tx = ALGORAND_PUBLIC_KEY_SIZE;
   }
 

@@ -54,16 +54,9 @@ static void algorand_key_derive(uint32_t account_id, cx_ecfp_private_key_t *priv
   }
 }
 
-static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *privateKey, 
-                                              uint8_t *public_key_out_buffer, 
-                                              const uint32_t public_key_out_buffer_size)
+static void get_public_key_from_private_key(const cx_ecfp_private_key_t *privateKey,
+                                            struct pubkey_s *public_key_out_buffer)
 {
-
-  if (public_key_out_buffer_size < ALGORAND_PUBLIC_KEY_SIZE)
-  {
-    THROW(0x6a70);
-  }
-  
   cx_ecfp_public_key_t publicKey;
 
   cx_ecfp_generate_pair(CX_CURVE_Ed25519,
@@ -75,14 +68,13 @@ static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *priva
   // x coordinate, followed by a 32-byte y coordinate.  The bytes
   // representing the coordinates are in reverse order.
 
-  for (int i = 0; i < 32; i++) {
-    public_key_out_buffer[i] = publicKey.W[64-i];
+  for (int i = 0; i < ALGORAND_PUBLIC_KEY_SIZE; i++) {
+    public_key_out_buffer->data[i] = publicKey.W[64-i];
   }
 
   if (publicKey.W[32] & 1) {
-    public_key_out_buffer[31] |= 0x80;
+    public_key_out_buffer->data[31] |= 0x80;
   }
-  return 32;
 }
 
 
@@ -90,9 +82,9 @@ static size_t get_public_key_from_private_key(const cx_ecfp_private_key_t *priva
 * This function returns a public key conresponding to the account ID given.
 * The function fails if the the size of out_pub_key is smaller than 32 bytes (validated with out_pub_key_size arg) .
 */
-int fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t out_pub_key_size)
+int fetch_public_key(uint32_t account_id, struct pubkey_s *out_pub_key)
 {
-  unsigned short error = 0;
+  int error = 0;
   cx_ecfp_private_key_t private_key;
   explicit_bzero(&private_key, sizeof(private_key));
 
@@ -101,7 +93,7 @@ int fetch_public_key(uint32_t account_id, uint8_t* out_pub_key, const uint32_t o
     TRY
     {
       algorand_key_derive(account_id, &private_key);
-      get_public_key_from_private_key(&private_key, out_pub_key, out_pub_key_size);
+      get_public_key_from_private_key(&private_key, out_pub_key);
     }
     CATCH_OTHER(e) 
     {

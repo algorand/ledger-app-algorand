@@ -50,15 +50,11 @@ int parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t
 * and send it to the UI.
 * this function fails if the public_key buffer is smaller than 32 bytes.
 */
-void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_size)
+void send_address_to_ui(const struct pubkey_s *public_key)
 {
-  if (public_key_size != ALGORAND_PUBLIC_KEY_SIZE)
-  {
-     THROW(0x6a71);
-  }
   char public_address[65];
   explicit_bzero(public_address, 65);
-  convert_to_public_address(public_key, public_address);
+  convert_to_public_address(public_key->data, public_address);
   ui_text_put(public_address);
 }
 
