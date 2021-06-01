@@ -29,27 +29,6 @@ bool is_opt_in_tx(){
 
 char caption[20];
 
-static char *
-u64str(uint64_t v)
-{
-  static char buf[MAX_DIGITS_IN_UINT64];
-
-  char *p = &buf[sizeof(buf)];
-  *(--p) = '\0';
-
-  if (v == 0) {
-    *(--p) = '0';
-    return p;
-  }
-
-  while (v > 0) {
-    *(--p) = '0' + (v % 10);
-    v = v/10;
-  }
-
-  return p;
-}
-
 bool adjustDecimals(char *src, uint32_t srcLength, char *target,
                     uint32_t targetLength, uint8_t decimals) {
     uint32_t startOffset;
@@ -308,17 +287,17 @@ static int step_vrfpk() {
 }
 
 static int step_votefirst() {
-  ui_text_put(u64str(current_txn.keyreg.voteFirst));
+  ui_text_put_u64(current_txn.keyreg.voteFirst);
   return 1;
 }
 
 static int step_votelast() {
-  ui_text_put(u64str(current_txn.keyreg.voteLast));
+  ui_text_put_u64(current_txn.keyreg.voteLast);
   return 1;
 }
 
 static int step_keydilution() {
-  ui_text_put(u64str(current_txn.keyreg.keyDilution));
+  ui_text_put_u64(current_txn.keyreg.keyDilution);
   return 1;
 }
 
@@ -354,7 +333,7 @@ static int step_asset_xfer_amount() {
     ui_text_put(amount_to_str(current_txn.asset_xfer.amount, asa->decimals));
   } else {
     snprintf(caption, sizeof(caption), "Amount (base unit)");
-    ui_text_put(u64str(current_txn.asset_xfer.amount));
+    ui_text_put_u64(current_txn.asset_xfer.amount);
   }
   return 1;
 }
@@ -390,7 +369,7 @@ static int step_asset_xfer_close() {
 }
 
 static int step_asset_freeze_id() {
-  ui_text_put(u64str(current_txn.asset_freeze.id));
+  ui_text_put_u64(current_txn.asset_freeze.id);
   return 1;
 }
 
@@ -416,7 +395,7 @@ static int step_asset_config_id() {
   if (current_txn.asset_config.id == 0) {
     ui_text_put("Create");
   } else {
-    ui_text_put(u64str(current_txn.asset_config.id));
+    ui_text_put_u64(current_txn.asset_config.id);
   }
   return 1;
 }
@@ -426,7 +405,7 @@ static int step_asset_config_total() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.asset_config.params.total));
+  ui_text_put_u64(current_txn.asset_config.params.total);
   return 1;
 }
 
@@ -457,7 +436,7 @@ static int step_asset_config_decimals() {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.asset_config.params.decimals));
+  ui_text_put_u64(current_txn.asset_config.params.decimals);
   return 1;
 }
 
@@ -516,7 +495,7 @@ static int step_asset_config_clawback() {
 }
 
 static int step_application_id() {
-  ui_text_put(u64str(current_txn.application.id));
+  ui_text_put_u64(current_txn.application.id);
   return 1;
 }
 
@@ -616,7 +595,7 @@ static int step_application_foreign_app(unsigned int idx) {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.application.foreign_apps[idx]));
+  ui_text_put_u64(current_txn.application.foreign_apps[idx]);
   return 1;
 }
 
@@ -629,7 +608,7 @@ static int step_application_foreign_asset(unsigned int idx) {
     return 0;
   }
 
-  ui_text_put(u64str(current_txn.application.foreign_assets[idx]));
+  ui_text_put_u64(current_txn.application.foreign_assets[idx]);
   return 1;
 }
 
