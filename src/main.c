@@ -60,6 +60,8 @@ static void handle_sign_payment(uint8_t ins)
     p = &G_io_apdu_buffer[OFFSET_CDATA];
   }
 
+  _Static_assert(sizeof(G_io_apdu_buffer) - OFFSET_CDATA >= 192, "assert");
+
   current_txn.type = PAYMENT;
   copy_and_advance( current_txn.sender,           &p, 32);
   copy_and_advance(&current_txn.fee,              &p, 8);
@@ -85,6 +87,8 @@ static void handle_sign_keyreg(uint8_t ins)
   } else {
     p = &G_io_apdu_buffer[OFFSET_CDATA];
   }
+
+  _Static_assert(sizeof(G_io_apdu_buffer) - OFFSET_CDATA >= 184, "assert");
 
   current_txn.type = KEYREG;
   copy_and_advance( current_txn.sender,        &p, 32);
