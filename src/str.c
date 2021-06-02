@@ -68,11 +68,11 @@ bool adjustDecimals(char *src, uint32_t srcLength, char *target,
     return true;
 }
 
+static char u64buf[MAX_DIGITS_IN_UINT64];
+
 char *u64str(uint64_t v)
 {
-  static char buf[27];
-
-  char *p = &buf[sizeof(buf)];
+  char *p = &u64buf[sizeof(u64buf)];
   *(--p) = '\0';
 
   if (v == 0) {
@@ -89,11 +89,14 @@ char *u64str(uint64_t v)
 }
 
 char* amount_to_str(uint64_t amount, uint8_t decimals){
-  char* result = u64str(amount);
   char tmp[MAX_DIGITS_IN_UINT64];
-  memcpy(tmp, result, sizeof(tmp));
-  explicit_bzero(result, sizeof(tmp));
-  adjustDecimals(tmp, strlen(tmp), result, MAX_DIGITS_IN_UINT64, decimals);
-  result[MAX_DIGITS_IN_UINT64-1] = '\0';
-  return result;
+
+  char *result = u64str(amount);
+  strncpy(tmp, result, sizeof(tmp));
+
+  memset(u64buf, 0, sizeof(u64buf));
+  adjustDecimals(tmp, strlen(tmp), u64buf, sizeof(u64buf), decimals);
+  u64buf[MAX_DIGITS_IN_UINT64-1] = '\0';
+
+  return u64buf;
 }
