@@ -10,6 +10,8 @@ struct pubkey_s {
   uint8_t data[ALGORAND_PUBLIC_KEY_SIZE];
 };
 
+extern struct pubkey_s public_key;
+
 int algorand_sign_message(uint32_t account_id, const uint8_t* msg_to_sign,
                           const uint32_t msg_len, uint8_t* out_signature_buffer,
                           int *sign_size);

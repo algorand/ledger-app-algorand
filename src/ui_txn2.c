@@ -17,10 +17,42 @@
 extern screen_t const screen_table[];
 extern const size_t screen_num;
 
-uint8_t current_state;
-uint8_t current_data_index;
+static uint8_t current_state;
+static uint8_t current_data_index;
 
-bool set_state_data(bool forward){
+static void txn_approve(void)
+{
+  int sign_size = 0;
+  unsigned int msg_len;
+
+  msgpack_buf[0] = 'T';
+  msgpack_buf[1] = 'X';
+  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
+
+  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
+  PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
+
+  int error = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer, &sign_size);
+  if (error) {
+    THROW(error);
+  }
+
+  G_io_apdu_buffer[sign_size++] = 0x90;
+  G_io_apdu_buffer[sign_size++] = 0x00;
+
+
+  // we've just signed the txn so we clear the static struct
+  explicit_bzero(&current_txn, sizeof(current_txn));
+  msgpack_next_off = 0;
+
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
+
+  // Display back the original UX
+  ui_idle();
+}
+
+static bool set_state_data(bool forward) {
     // Apply last formatter to fill the screen's buffer
     do{
       current_data_index = forward ? current_data_index+1 : current_data_index-1;
@@ -48,7 +80,7 @@ bool set_state_data(bool forward){
     return true;
 }
 
-void display_next_state(bool is_upper_border){
+static void display_next_state(bool is_upper_border) {
 
     if(is_upper_border){
         if(current_state == OUT_OF_BORDERS){ // -> from first screen

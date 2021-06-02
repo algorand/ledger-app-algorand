@@ -11,3 +11,11 @@ typedef struct {
   format_function_t value_setter;
   uint8_t type;
 } screen_t;
+
+#if defined(TARGET_NANOX)
+#define TNX_BUFFER_SIZE 2048
+#else
+#define TNX_BUFFER_SIZE 900
+#endif
+extern uint8_t msgpack_buf[TNX_BUFFER_SIZE];
+extern unsigned int msgpack_next_off;

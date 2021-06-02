@@ -7,6 +7,21 @@
 #include "algo_keys.h"
 #include "algo_addr.h"
 
+static void address_approve(void)
+{
+  unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
+  memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
+
+  G_io_apdu_buffer[tx++] = 0x90;
+  G_io_apdu_buffer[tx++] = 0x00;
+
+  explicit_bzero(public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
+  // Send back the response, do not restart the event loop
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+
+  // Display back the original UX
+  ui_idle();
+}
 
 UX_FLOW_DEF_NOCB(
     ux_display_public_flow_1_step,

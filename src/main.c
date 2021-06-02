@@ -9,81 +9,22 @@
 #include "algo_tx.h"
 #include "command_handler.h"
 #include "apdu_protocol_defines.h"
+#include "ui_txn.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
-
-
 
 /* The transaction that we might ask the user to approve. */
 txn_t current_txn;
 
-
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
  */
+uint8_t msgpack_buf[TNX_BUFFER_SIZE];
+unsigned int msgpack_next_off;
 
-#if defined(TARGET_NANOX)
-#define TNX_BUFFER_SIZE 2048
-#else
-#define TNX_BUFFER_SIZE 900
-#endif
-static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
-static unsigned int msgpack_next_off;
+struct pubkey_s public_key;
 
-static struct pubkey_s public_key;
-
-
-void txn_approve(void)
-{
-  int sign_size = 0;
-  unsigned int msg_len;
-
-  msgpack_buf[0] = 'T';
-  msgpack_buf[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
-
-  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
-  PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
-
-  int error = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer, &sign_size);
-  if (error) {
-    THROW(error);
-  }
-
-  G_io_apdu_buffer[sign_size++] = 0x90;
-  G_io_apdu_buffer[sign_size++] = 0x00;
-
-
-  // we've just signed the txn so we clear the static struct
-  explicit_bzero(&current_txn, sizeof(current_txn));
-  msgpack_next_off = 0;
-
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
-
-  // Display back the original UX
-  ui_idle();
-}
-
-void address_approve(void)
-{
-  unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
-  memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
-
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
-
-  explicit_bzero(public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-
-  // Display back the original UX
-  ui_idle();
-}
-
-void
-user_approval_denied(void)
+void user_approval_denied(void)
 {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -101,7 +42,7 @@ static void copy_and_advance(void *dst, uint8_t **p, size_t len)
   *p += len;
 }
 
-void init_globals(void) {
+static void init_globals(void) {
   explicit_bzero(&current_txn, sizeof(current_txn));
   explicit_bzero(&public_key, sizeof(public_key));
   msgpack_next_off = 0;
