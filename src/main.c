@@ -34,7 +34,7 @@ static unsigned int msgpack_next_off;
 static struct pubkey_s public_key;
 
 
-void txn_approve()
+void txn_approve(void)
 {
   int sign_size = 0;
   unsigned int msg_len;
@@ -66,7 +66,7 @@ void txn_approve()
   ui_idle();
 }
 
-void address_approve()
+void address_approve(void)
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
   memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
@@ -83,7 +83,7 @@ void address_approve()
 }
 
 void
-user_approval_denied()
+user_approval_denied(void)
 {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -101,7 +101,7 @@ static void copy_and_advance(void *dst, uint8_t **p, size_t len)
   *p += len;
 }
 
-void init_globals(){
+void init_globals(void) {
   explicit_bzero(&current_txn, sizeof(current_txn));
   explicit_bzero(&public_key, sizeof(public_key));
   msgpack_next_off = 0;

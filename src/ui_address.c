@@ -48,7 +48,7 @@ UX_FLOW(ux_address_approval_flow,
   &ux_display_public_flow_4_step
 );
 
-void ui_address_approval()
+void ui_address_approval(void)
 {
   ux_flow_relayout();
   if (G_ux.stack_count == 0) {

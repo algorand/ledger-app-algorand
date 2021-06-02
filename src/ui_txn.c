@@ -14,7 +14,7 @@
 #define CHECKEDSUM_BUFFER_SIZE 65
 
 
-bool is_opt_in_tx(){
+bool is_opt_in_tx(void) {
 
   if(current_txn.type == ASSET_XFER &&
      current_txn.asset_xfer.amount == 0 &&
@@ -66,7 +66,7 @@ b64hash_data(unsigned char *data, size_t data_len)
   return b64hash;
 }
 
-static int step_txn_type() {
+static int step_txn_type(void) {
   switch (current_txn.type) {
   case PAYMENT:
     ui_text_put("Payment");
@@ -102,12 +102,12 @@ static int step_txn_type() {
   return 1;
 }
 
-static int step_sender() {
+static int step_sender(void) {
   checksum_and_put_text(current_txn.sender);
   return 1;
 }
 
-static int step_rekey() {
+static int step_rekey(void) {
   if (all_zero_key(current_txn.rekey)) {
     return 0;
   }
@@ -115,17 +115,17 @@ static int step_rekey() {
   return 1;
 }
 
-static int step_fee() {
+static int step_fee(void) {
   ui_text_put(amount_to_str(current_txn.fee, ALGORAND_DECIMALS));
   return 1;
 }
 
-// static int step_firstvalid() {
+// static int step_firstvalid(void) {
 //   ui_text_put(u64str(current_txn.firstValid));
 //   return 1;
 // }
 
-// static int step_lastvalid() {
+// static int step_lastvalid(void) {
 //   ui_text_put(u64str(current_txn.lastValid));
 //   return 1;
 // }
@@ -135,7 +135,7 @@ static const uint8_t default_genesisHash[] = {
   0xc0, 0x61, 0xc4, 0xd8, 0xfc, 0x1d, 0xbd, 0xde, 0xd2, 0xd7, 0x60, 0x4b, 0xe4, 0x56, 0x8e, 0x3f, 0x6d, 0x4, 0x19, 0x87, 0xac, 0x37, 0xbd, 0xe4, 0xb6, 0x20, 0xb5, 0xab, 0x39, 0x24, 0x8a, 0xdf,
 };
 
-static int step_genesisID() {
+static int step_genesisID(void) {
   if (strncmp(current_txn.genesisID, default_genesisID, sizeof(current_txn.genesisID)) == 0) {
     return 0;
   }
@@ -148,7 +148,7 @@ static int step_genesisID() {
   return 1;
 }
 
-static int step_genesisHash() {
+static int step_genesisHash(void) {
   if (all_zero_key(current_txn.genesisHash)) {
     return 0;
   }
@@ -166,7 +166,7 @@ static int step_genesisHash() {
   return 1;
 }
 
-static int step_note() {
+static int step_note(void) {
   if (current_txn.note_len == 0) {
     return 0;
   }
@@ -177,17 +177,17 @@ static int step_note() {
   return 1;
 }
 
-static int step_receiver() {
+static int step_receiver(void) {
   checksum_and_put_text(current_txn.payment.receiver);
   return 1;
 }
 
-static int step_amount() {
+static int step_amount(void) {
   ui_text_put(amount_to_str(current_txn.payment.amount, ALGORAND_DECIMALS));
   return 1;
 }
 
-static int step_close() {
+static int step_close(void) {
   if (all_zero_key(current_txn.payment.close)) {
     return 0;
   }
@@ -196,36 +196,36 @@ static int step_close() {
   return 1;
 }
 
-static int step_votepk() {
+static int step_votepk(void) {
   char buf[45];
   base64_encode((const char*) current_txn.keyreg.votepk, sizeof(current_txn.keyreg.votepk), buf, sizeof(buf));
   ui_text_put(buf);
   return 1;
 }
 
-static int step_vrfpk() {
+static int step_vrfpk(void) {
   char buf[45];
   base64_encode((const char*) current_txn.keyreg.vrfpk, sizeof(current_txn.keyreg.vrfpk), buf, sizeof(buf));
   ui_text_put(buf);
   return 1;
 }
 
-static int step_votefirst() {
+static int step_votefirst(void) {
   ui_text_put_u64(current_txn.keyreg.voteFirst);
   return 1;
 }
 
-static int step_votelast() {
+static int step_votelast(void) {
   ui_text_put_u64(current_txn.keyreg.voteLast);
   return 1;
 }
 
-static int step_keydilution() {
+static int step_keydilution(void) {
   ui_text_put_u64(current_txn.keyreg.keyDilution);
   return 1;
 }
 
-static int step_participating() {
+static int step_participating(void) {
   if (current_txn.keyreg.nonpartFlag) {
     ui_text_put("No");
   } else {
@@ -234,7 +234,7 @@ static int step_participating() {
   return 1;
 }
 
-static int step_asset_xfer_id() {
+static int step_asset_xfer_id(void) {
   const algo_asset_info_t *asa = algo_asa_get(current_txn.asset_xfer.id);
   const char *id = u64str(current_txn.asset_xfer.id);
 
@@ -246,7 +246,7 @@ static int step_asset_xfer_id() {
   return 1;
 }
 
-static int step_asset_xfer_amount() {
+static int step_asset_xfer_amount(void) {
   if(is_opt_in_tx()){
     return 0;
   }
@@ -262,7 +262,7 @@ static int step_asset_xfer_amount() {
   return 1;
 }
 
-static int step_asset_xfer_sender() {
+static int step_asset_xfer_sender(void) {
   if (all_zero_key(current_txn.asset_xfer.sender)) {
     return 0;
   }
@@ -272,7 +272,7 @@ static int step_asset_xfer_sender() {
   return 1;
 }
 
-static int step_asset_xfer_receiver() {
+static int step_asset_xfer_receiver(void) {
   if (all_zero_key(current_txn.asset_xfer.receiver) ||
       is_opt_in_tx()) {
     return 0;
@@ -283,7 +283,7 @@ static int step_asset_xfer_receiver() {
   return 1;
 }
 
-static int step_asset_xfer_close() {
+static int step_asset_xfer_close(void) {
   if (all_zero_key(current_txn.asset_xfer.close)) {
     return 0;
   }
@@ -292,12 +292,12 @@ static int step_asset_xfer_close() {
   return 1;
 }
 
-static int step_asset_freeze_id() {
+static int step_asset_freeze_id(void) {
   ui_text_put_u64(current_txn.asset_freeze.id);
   return 1;
 }
 
-static int step_asset_freeze_account() {
+static int step_asset_freeze_account(void) {
   if (all_zero_key(current_txn.asset_freeze.account)) {
     return 0;
   }
@@ -306,7 +306,7 @@ static int step_asset_freeze_account() {
   return 1;
 }
 
-static int step_asset_freeze_flag() {
+static int step_asset_freeze_flag(void) {
   if (current_txn.asset_freeze.flag) {
     ui_text_put("Frozen");
   } else {
@@ -315,7 +315,7 @@ static int step_asset_freeze_flag() {
   return 1;
 }
 
-static int step_asset_config_id() {
+static int step_asset_config_id(void) {
   if (current_txn.asset_config.id == 0) {
     ui_text_put("Create");
   } else {
@@ -324,7 +324,7 @@ static int step_asset_config_id() {
   return 1;
 }
 
-static int step_asset_config_total() {
+static int step_asset_config_total(void) {
   if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.total == 0) {
     return 0;
   }
@@ -333,7 +333,7 @@ static int step_asset_config_total() {
   return 1;
 }
 
-static int step_asset_config_default_frozen() {
+static int step_asset_config_default_frozen(void) {
   if (current_txn.asset_config.id != 0 && current_txn.asset_config.params.default_frozen == 0) {
     return 0;
   }
@@ -346,7 +346,7 @@ static int step_asset_config_default_frozen() {
   return 1;
 }
 
-static int step_asset_config_unitname() {
+static int step_asset_config_unitname(void) {
   if (current_txn.asset_config.params.unitname[0] == '\0') {
     return 0;
   }
@@ -355,7 +355,7 @@ static int step_asset_config_unitname() {
   return 1;
 }
 
-static int step_asset_config_decimals() {
+static int step_asset_config_decimals(void) {
   if (current_txn.asset_config.params.decimals == 0) {
     return 0;
   }
@@ -364,7 +364,7 @@ static int step_asset_config_decimals() {
   return 1;
 }
 
-static int step_asset_config_assetname() {
+static int step_asset_config_assetname(void) {
   if (current_txn.asset_config.params.assetname[0] == '\0') {
     return 0;
   }
@@ -373,7 +373,7 @@ static int step_asset_config_assetname() {
   return 1;
 }
 
-static int step_asset_config_url() {
+static int step_asset_config_url(void) {
   if (current_txn.asset_config.params.url[0] == '\0') {
     return 0;
   }
@@ -382,7 +382,7 @@ static int step_asset_config_url() {
   return 1;
 }
 
-static int step_asset_config_metadata_hash() {
+static int step_asset_config_metadata_hash(void) {
   if (all_zero_key(current_txn.asset_config.params.metadata_hash)) {
     return 0;
   }
@@ -402,28 +402,28 @@ static int step_asset_config_addr_helper(uint8_t *addr) {
   return 1;
 }
 
-static int step_asset_config_manager() {
+static int step_asset_config_manager(void) {
   return step_asset_config_addr_helper(current_txn.asset_config.params.manager);
 }
 
-static int step_asset_config_reserve() {
+static int step_asset_config_reserve(void) {
   return step_asset_config_addr_helper(current_txn.asset_config.params.reserve);
 }
 
-static int step_asset_config_freeze() {
+static int step_asset_config_freeze(void) {
   return step_asset_config_addr_helper(current_txn.asset_config.params.freeze);
 }
 
-static int step_asset_config_clawback() {
+static int step_asset_config_clawback(void) {
   return step_asset_config_addr_helper(current_txn.asset_config.params.clawback);
 }
 
-static int step_application_id() {
+static int step_application_id(void) {
   ui_text_put_u64(current_txn.application.id);
   return 1;
 }
 
-static int step_application_oncompletion() {
+static int step_application_oncompletion(void) {
   switch (current_txn.application.oncompletion) {
   case NOOPOC:
     ui_text_put("NoOp");
@@ -471,11 +471,11 @@ static int display_schema(struct state_schema *schema) {
   return 1;
 }
 
-static int step_application_global_schema() {
+static int step_application_global_schema(void) {
   return display_schema(&current_txn.application.global_schema);
 }
 
-static int step_application_local_schema() {
+static int step_application_local_schema(void) {
   return display_schema(&current_txn.application.local_schema);
 }
 
@@ -489,11 +489,11 @@ static int display_prog(uint8_t *prog_bytes, size_t prog_len) {
   return 1;
 }
 
-static int step_application_approve_prog() {
+static int step_application_approve_prog(void) {
   return display_prog(current_txn.application.aprog, current_txn.application.aprog_len);
 }
 
-static int step_application_clear_prog() {
+static int step_application_clear_prog(void) {
   return display_prog(current_txn.application.cprog, current_txn.application.cprog_len);
 }
 
@@ -506,11 +506,11 @@ static int step_application_account(unsigned int idx) {
   return 1;
 }
 
-static int step_application_account_0() {
+static int step_application_account_0(void) {
   return step_application_account(0);
 }
 
-static int step_application_account_1() {
+static int step_application_account_1(void) {
   return step_application_account(1);
 }
 
@@ -523,7 +523,7 @@ static int step_application_foreign_app(unsigned int idx) {
   return 1;
 }
 
-static int step_application_foreign_app_0() {
+static int step_application_foreign_app_0(void) {
   return step_application_foreign_app(0);
 }
 
@@ -536,7 +536,7 @@ static int step_application_foreign_asset(unsigned int idx) {
   return 1;
 }
 
-static int step_application_foreign_asset_0() {
+static int step_application_foreign_asset_0(void) {
   return step_application_foreign_asset(0);
 }
 
@@ -549,11 +549,11 @@ static int step_application_arg(unsigned int idx) {
   return 1;
 }
 
-static int step_application_arg_0() {
+static int step_application_arg_0(void) {
   return step_application_arg(0);
 }
 
-static int step_application_arg_1() {
+static int step_application_arg_1(void) {
   return step_application_arg(1);
 }
 
