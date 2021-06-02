@@ -86,7 +86,7 @@ int parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t b
 
   if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
   {
-    explicit_bzero(txn_output, sizeof(txn_output));
+    memset(txn_output, 0, sizeof(*txn_output));
     *current_txn_buffer_offset = 0;
     txn_output->accountId = 0;
     if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
