@@ -557,7 +557,7 @@ static int step_application_arg_1(void) {
   return step_application_arg(1);
 }
 
-screen_t const screen_table[] = {
+screen_t const screen_table[SCREEN_NUM] = {
   {"Txn type", &step_txn_type, ALL_TYPES},
   {"Sender", &step_sender, ALL_TYPES},
   {"Rekey to", &step_rekey, ALL_TYPES},

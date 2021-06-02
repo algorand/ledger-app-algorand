@@ -14,9 +14,6 @@
 #define INSIDE_BORDERS 0
 #define OUT_OF_BORDERS 1
 
-extern screen_t const screen_table[];
-extern const size_t screen_num;
-
 static uint8_t current_state;
 static uint8_t current_data_index;
 
@@ -63,9 +60,9 @@ static bool set_state_data(bool forward) {
            }
          }
     } while(current_data_index >= 0 &&
-            current_data_index < screen_num);
+            current_data_index < SCREEN_NUM);
 
-    if(current_data_index < 0 || current_data_index >= screen_num){
+    if(current_data_index < 0 || current_data_index >= SCREEN_NUM){
       return false;
     }
 
