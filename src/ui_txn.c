@@ -1,6 +1,6 @@
 #include <string.h>
 #include "os.h"
-#include "os_io_seproxyhal.h"
+#include "ux.h"
 
 #include "algo_ui.h"
 #include "algo_tx.h"
@@ -9,6 +9,7 @@
 #include "algo_asa.h"
 #include "base64.h"
 #include "glyphs.h"
+#include "ui_txn.h"
 
 #define CHECKEDSUM_BUFFER_SIZE 65
 #define MAX_DIGITS_IN_UINT64 27
@@ -633,15 +634,6 @@ static int step_application_arg_1() {
   return step_application_arg(1);
 }
 
-typedef int (*format_function_t)();
-typedef struct{
-  char* caption;
-  format_function_t value_setter;
-  uint8_t type;
-} screen_t;
-
-#define SCREEN_DYN_CAPTION    NULL
-
 screen_t const screen_table[] = {
   {"Txn type", &step_txn_type, ALL_TYPES},
   {"Sender", &step_sender, ALL_TYPES},
@@ -701,7 +693,7 @@ screen_t const screen_table[] = {
   {"Clear (sha256)", &step_application_clear_prog, APPLICATION},
 };
 
-#define SCREEN_NUM (int8_t)(sizeof(screen_table)/sizeof(screen_t))
+const uint8_t screen_num = sizeof(screen_table) / sizeof(screen_t);
 
 void display_next_state(bool is_upper_border);
 
@@ -780,9 +772,9 @@ bool set_state_data(bool forward){
            }
          }
     } while(current_data_index >= 0 &&
-            current_data_index < SCREEN_NUM);
+            current_data_index < screen_num);
 
-    if(current_data_index < 0 || current_data_index >= SCREEN_NUM){
+    if(current_data_index < 0 || current_data_index >= screen_num){
       return false;
     }
 

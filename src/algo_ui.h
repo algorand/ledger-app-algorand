@@ -1,7 +1,5 @@
 #ifndef _ALGO_UI_H_
 #define _ALGO_UI_H_
-#include "ux.h"
-
 
 extern char caption[20];
 extern char text[128];

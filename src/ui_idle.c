@@ -1,6 +1,7 @@
 #include "os.h"
 #include "os_io_seproxyhal.h"
 #include "algo_ui.h"
+#include "ux.h"
 
 UX_FLOW_DEF_NOCB(
     ux_idle_flow_welcome_step,

@@ -1,6 +1,7 @@
 #include "os.h"
 #include "cx.h"
 #include "os_io_seproxyhal.h"
+#include "ux.h"
 
 #include "algo_keys.h"
 #include "algo_ui.h"
