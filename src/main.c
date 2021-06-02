@@ -401,17 +401,6 @@ io_exchange_al(unsigned char channel, unsigned short tx_len)
   return 0;
 }
 
-void app_exit(void) {
-  BEGIN_TRY_L(exit) {
-    TRY_L(exit) {
-      os_sched_exit(-1);
-    }
-    FINALLY_L(exit) {
-    }
-  }
-  END_TRY_L(exit);
-}
-
 __attribute__((section(".boot")))
 int
 main(void)
@@ -463,6 +452,8 @@ main(void)
     }
     END_TRY;
   }
-  app_exit();
+
+  os_sched_exit(-1);
+
   return 0;
 }
