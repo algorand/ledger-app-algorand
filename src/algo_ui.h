@@ -1,10 +1,10 @@
 #ifndef _ALGO_UI_H_
 #define _ALGO_UI_H_
 
+#include <stdint.h>
+
 extern char caption[20];
 extern char text[128];
-
-char *u64str(uint64_t v);
 
 void ui_idle();
 void ui_address_approval();
