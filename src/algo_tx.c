@@ -432,6 +432,6 @@ tx_encode(txn_t *t, uint8_t *buf, int buflen)
 
   // Shift map contents back by two bytes, leaving first header byte in place
   // p - buf - 3 == bytes written - header length
-  os_memmove(buf + 1, buf + 3, p - buf - 3);
+  memmove(buf + 1, buf + 3, p - buf - 3);
   return p - buf - 2;
 }

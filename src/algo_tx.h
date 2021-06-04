@@ -1,3 +1,5 @@
+#ifndef _ALGO_TX_H_
+#define _ALGO_TX_H_
 #include <stdint.h>
 
 enum TXTYPE {
@@ -162,3 +164,4 @@ extern txn_t current_txn;
 void txn_approve();
 void address_approve();
 void user_approval_denied();
+#endif

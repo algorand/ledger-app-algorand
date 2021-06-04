@@ -6,54 +6,36 @@
 #include "algo_ui.h"
 #include "algo_addr.h"
 #include "algo_tx.h"
+#include "command_handler.h"
+#include "apdu_protocol_defines.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-#define OFFSET_CLA    0
-#define OFFSET_INS    1
-#define OFFSET_P1     2
-#define OFFSET_P2     3
-#define OFFSET_LC     4
-#define OFFSET_CDATA  5
 
-#define CLA           0x80
 
-#define P1_FIRST 0x00
-#define P1_MORE  0x80
-#define P1_WITH_ACCOUNT_ID  0x01
-#define P1_WITH_REQUEST_USER_APPROVAL  0x80
-
-#define P2_LAST  0x00
-#define P2_MORE  0x80
-
-#define INS_SIGN_PAYMENT    0x01    // Deprecated, unused
-#define INS_SIGN_KEYREG     0x02    // Deprecated, unused
-#define INS_GET_PUBLIC_KEY  0x03
-#define INS_SIGN_PAYMENT_V2 0x04
-#define INS_SIGN_KEYREG_V2  0x05
-#define INS_SIGN_PAYMENT_V3 0x06
-#define INS_SIGN_KEYREG_V3  0x07
-#define INS_SIGN_MSGPACK    0x08
 
 /* The transaction that we might ask the user to approve. */
 txn_t current_txn;
-already_computed_key_t current_pubkey;
+
 
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
  */
+
 #if defined(TARGET_NANOX)
-static uint8_t msgpack_buf[2048];
+#define TNX_BUFFER_SIZE 2048
 #else
-static uint8_t msgpack_buf[900];
+#define TNX_BUFFER_SIZE 900
 #endif
+static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 static unsigned int msgpack_next_off;
 
-void
-txn_approve()
-{
-  unsigned int tx = 0;
+static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];
 
+
+void txn_approve()
+{
+  int sign_size = 0;
   unsigned int msg_len;
 
   msgpack_buf[0] = 'T';
@@ -63,26 +45,21 @@ txn_approve()
   PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
   PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
 
-  cx_ecfp_private_key_t privateKey;
-  algorand_key_derive(current_txn.accountId, &privateKey);
+  
+  sign_size = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer);
+  
+  
+  G_io_apdu_buffer[sign_size++] = 0x90;
+  G_io_apdu_buffer[sign_size++] = 0x00;
 
-  io_seproxyhal_io_heartbeat();
 
-  tx = cx_eddsa_sign(&privateKey,
-                     0, CX_SHA512,
-                     &msgpack_buf[0], msg_len,
-                     NULL, 0,
-                     G_io_apdu_buffer,
-                     6+2*(32+1), // Formerly from cx_compliance_141.c
-                     NULL);
-
-  io_seproxyhal_io_heartbeat();
-
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
+  // we've just signed the txn so we clear the static struct
+  explicit_bzero(&current_txn, sizeof(current_txn));
+  msgpack_next_off = 0;
+    
 
   // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
 
   // Display back the original UX
   ui_idle();
@@ -91,10 +68,13 @@ txn_approve()
 void address_approve()
 {
   unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
+  memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
 
   G_io_apdu_buffer[tx++] = 0x90;
   G_io_apdu_buffer[tx++] = 0x00;
 
+  
+  explicit_bzero(public_key, ALGORAND_PUBLIC_KEY_SIZE);
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 
@@ -115,27 +95,26 @@ user_approval_denied()
   ui_idle();
 }
 
-static void
-copy_and_advance(void *dst, uint8_t **p, size_t len)
+static void copy_and_advance(void *dst, uint8_t **p, size_t len)
 {
-  os_memmove(dst, *p, len);
+  memmove(dst, *p, len);
   *p += len;
 }
 
 void init_globals(){
-  memset(&current_txn, 0, sizeof(current_txn));
-  memset(&current_pubkey, 0, sizeof(current_pubkey));
-  fetch_public_key(0, text);
+  explicit_bzero(&current_txn, sizeof(current_txn));
+  explicit_bzero(&public_key, sizeof(public_key));
+  msgpack_next_off = 0;
 }
 
-static void
-algorand_main(void)
+
+static void algorand_main(void)
 {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
 
-  msgpack_next_off = 0;
+
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
   // goal is to retrieve APDU.
@@ -154,7 +133,8 @@ algorand_main(void)
         rx = io_exchange(CHANNEL_APDU | flags, rx);
         flags = 0;
 
-        PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
+        PRINTF("New APDU received size: %d:\n%.*H\n",rx,  rx, G_io_apdu_buffer);
+
 
         // no apdu received, well, reset the session, and reset the
         // bootloader configuration
@@ -171,7 +151,7 @@ algorand_main(void)
         case INS_SIGN_PAYMENT_V2:
         case INS_SIGN_PAYMENT_V3:
         {
-          os_memset(&current_txn, 0, sizeof(current_txn));
+          explicit_bzero(&current_txn, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_PAYMENT_V2) {
             p = &G_io_apdu_buffer[2];
@@ -197,7 +177,7 @@ algorand_main(void)
         case INS_SIGN_KEYREG_V2:
         case INS_SIGN_KEYREG_V3:
         {
-          os_memset(&current_txn, 0, sizeof(current_txn));
+          explicit_bzero(&current_txn, sizeof(current_txn));
           uint8_t *p;
           if (ins == INS_SIGN_KEYREG_V2) {
             p = &G_io_apdu_buffer[2];
@@ -219,90 +199,40 @@ algorand_main(void)
           flags |= IO_ASYNCH_REPLY;
         } break;
 
-        case INS_SIGN_MSGPACK: {
-          uint8_t *cdata = &G_io_apdu_buffer[OFFSET_CDATA];
-          uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
-
-          switch (G_io_apdu_buffer[OFFSET_P1] & 0x80) {
-          case P1_FIRST:
-            os_memset(&current_txn, 0, sizeof(current_txn));
-            current_txn.accountId = 0;
-            if (G_io_apdu_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID) {
-              if (lc < sizeof(uint32_t)) {
-                THROW(0x6700);
-              }
-              current_txn.accountId = U4BE(cdata, 0);
-              cdata += sizeof(uint32_t);
-              lc -= sizeof(uint32_t);
-            }
-            msgpack_next_off = 0;
-            break;
-          case P1_MORE:
-            break;
-          default:
-            THROW(0x6B00);
-          }
-
-          if (msgpack_next_off + lc > sizeof(msgpack_buf)) {
-            THROW(0x6700);
-          }
-
-          os_memmove(&msgpack_buf[msgpack_next_off], cdata, lc);
-          msgpack_next_off += lc;
-
-          switch (G_io_apdu_buffer[OFFSET_P2]) {
-          case P2_LAST:
-            {
-              char *err = tx_decode(msgpack_buf, msgpack_next_off, &current_txn);
-              if (err != NULL) {
-                /* Return error by sending a response length longer than
-                 * the usual ed25519 signature.
-                 */
-                int errlen = strlen(err);
-                os_memset(G_io_apdu_buffer, 0, 65);
-                os_memmove(&G_io_apdu_buffer[65], err, errlen);
-                tx = 65 + errlen;
-                THROW(0x9000);
-              }
-
-              ui_txn();
-              flags |= IO_ASYNCH_REPLY;
-            }
-            break;
-          case P2_MORE:
+        case INS_SIGN_MSGPACK: 
+        {
+          char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
+          if (error != NULL)
+          {
+            int errlen = strlen(error);
+            explicit_bzero(G_io_apdu_buffer, 65);
+            memmove(&G_io_apdu_buffer[65], error, errlen);
+            tx = 65 + errlen;
             THROW(0x9000);
-          default:
-            THROW(0x6B00);
           }
-        } break;
-
+          // we get here when all the data was received, otherwise an exception is thrown
+          ui_txn();
+          flags |= IO_ASYNCH_REPLY;
+          
+        }
+        break;
         case INS_GET_PUBLIC_KEY: {
-          uint32_t accountId = 0;
-          char checksummed[65];
+          uint32_t account_id =0 ;
           uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-
-          if (rx > OFFSET_LC) {
-              uint8_t lc = G_io_apdu_buffer[OFFSET_LC];
-              if (lc == sizeof(uint32_t)) {
-                accountId = U4BE(G_io_apdu_buffer, OFFSET_CDATA);
-              } else if (lc != 0) {
-                return THROW(0x6a85);
-              }
-          }
-
+          parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
           /*
            * Push derived key to `G_io_apdu_buffer`
            * and return pushed buffer length.
            */
-          fetch_public_key(accountId, G_io_apdu_buffer);
-
+          fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
+          
           if(user_approval_required){
-            checksummed_addr(G_io_apdu_buffer, checksummed);
-            ui_text_put(checksummed);
+            send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
             ui_address_approval();
             flags |= IO_ASYNCH_REPLY;
           }
           else{
+            memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
             tx = ALGORAND_PUBLIC_KEY_SIZE;
             THROW(0x9000);
           }
@@ -353,6 +283,7 @@ io_seproxyhal_display(const bagl_element_t *element)
 }
 
 unsigned char io_event(unsigned char channel) {
+  UNUSED(channel);
   // nothing done with the event, throw an error on the transport layer if
   // needed
 
@@ -440,7 +371,7 @@ main(void)
   __asm volatile("cpsie i");
 
   // What kind of horrible program loader fails to zero out the BSS?
-  lineBuffer[0] = '\0';
+  text[0] = '\0';
 
   // ensure exception will work as planned
   os_boot();

@@ -3,36 +3,16 @@
 
 #include "algo_ui.h"
 
-#define MAX_CHARS_PER_LINE 8
+#define MAX_CHARS_PER_LINE 128
 
-char text[128];
-static int lineBufferPos;
+char text[MAX_CHARS_PER_LINE];
 
-// 2 extra bytes for ".." on continuation
-// 1 extra byte for the null termination
-char lineBuffer[MAX_CHARS_PER_LINE+2+1];
-
-void
-ui_text_putn(const char *msg, size_t maxlen)
+void ui_text_put(const char *msg)
 {
-  for (unsigned int i = 0; i < sizeof(text) && i < maxlen; i++) {
-    text[i] = msg[i];
-
-    if (msg[i] == '\0') {
-      break;
-    }
-  }
-
+  strncpy(text, msg, MAX_CHARS_PER_LINE);
   text[sizeof(text)-1] = '\0';
-  lineBufferPos = 0;
 
   PRINTF("ui_text_putn: text %s\n", &text[0]);
-}
-
-void
-ui_text_put(const char *msg)
-{
-  ui_text_putn(msg, SIZE_MAX);
 
   /* Caller should invoke ui_text_more() after ui_text_put(). */
 }
