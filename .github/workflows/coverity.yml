@@ -1,0 +1,40 @@
+name: Coverity
+
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  coverity-scan:
+    name: Coverity Scan
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:2.0.0-1
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build with cov-build
+        run: |
+          make clean
+          cov-build --dir cov-int make default
+      - name: Submit the result to Coverity Scan
+        run: |
+          tar czvf cov-int.tar.gz cov-int
+          curl \
+            --form token=$TOKEN \
+            --form email=$EMAIL \
+            --form file=@cov-int.tar.gz \
+            --form version=master \
+            --form description="Algorand app" \
+            https://scan.coverity.com/builds?project=LedgerHQ%2Fapp-algorand
+        env:
+          EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
