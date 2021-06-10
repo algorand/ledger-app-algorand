@@ -42,7 +42,7 @@ void test_ui_text_put_str(void **state) {
     char buf[129] = { 0 };
     memset(buf, 'a', sizeof(buf)-1);
     ui_text_put_str(buf);
-    assert_string_equal(text + 120, "aaa[...]");
+    assert_string_equal(text + 120, "aa[...]");
 
     ui_text_put_str("ab\x90z");
     assert_string_equal(text, "ab?z");

@@ -39,7 +39,7 @@ void ui_text_put_str(const char *msg)
   }
 
   if (i != len || len >= MAX_CHARS_PER_LINE) {
-    strncpy(text + MAX_CHARS_PER_LINE - 5, "[...]", sizeof(text) - 5);
+    strncpy(text + MAX_CHARS_PER_LINE - 6, "[...]", 6);
   } else {
     text[len] = '\0';
   }
