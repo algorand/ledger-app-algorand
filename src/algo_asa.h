@@ -1,6 +1,7 @@
 #ifndef __ALGO_ASA_H__
 #define __ALGO_ASA_H__
 
+#include <stdint.h>
 
 typedef struct {
     uint64_t        assetId;

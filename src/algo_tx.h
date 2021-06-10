@@ -161,7 +161,5 @@ char* tx_decode(uint8_t *buf, int buflen, txn_t *t);
 extern txn_t current_txn;
 
 // Two callbacks into the main code: approve and deny signing.
-void txn_approve();
-void address_approve();
 void user_approval_denied();
 #endif

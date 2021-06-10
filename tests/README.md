@@ -1,6 +1,8 @@
 # app-algorand-test
 
-## Overview
+## Functional tests
+
+### Overview
 
 Pytest-base test suite for the [app-algorand](https://github.com/LedgerHQ/app-algorand) Nano App.
 
@@ -12,7 +14,7 @@ This test suite is mainly based on:
  - Algorand Python SDK.
 
 
-## Install
+### Install
 
 This test suite requires [https://docs.docker.com/engine/install/ubuntu/](Docker) engine
 and assumes the [https://hub.docker.com/r/ledgerhq/speculos](`speculos`) image being pulled.
@@ -25,12 +27,80 @@ Python environment may be installed within a virtualenv:
   pip install -r requirements.txt
   ```
 
-## Run tests
+### Run tests
 
   ```
   make test
   ```
-  
+
+## Unit tests
+
+### Build
+
+```console
+cmake -Btests/build -Htests/
+make -C tests/build/
+```
+
+### Run
+
+```console
+make -C tests/build/ test
+```
+
+Arguments can be given to `ctest`. For instance, to make the output of the test
+`test_str` verbose:
+
+```console
+make -C tests/build/ test ARGS='-V -R test_str'
+```
+
+## Fuzzing
+
+### Build
+
+```console
+cmake -Btests/build -Htests/
+make -C tests/build/
+```
+
+Code coverage can be enabled thanks to:
+
+```console
+cmake -Btests/build -Htests/ -DCODE_COVERAGE=1
+```
+
+### Run
+
+```console
+export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-9/bin/llvm-symbolizer
+./tests/build/fuzz_tx
+```
+
+A corpus of transactions can also be used:
+
+```
+cp -r tests/fuzzing-corpus /tmp/corpus
+./tests/build/fuzz_tx /tmp/corpus
+```
+
+The corpus was generated using `tests/generate-corpus.patch` against https://github.com/algorand/py-algorand-sdk/blob/6b304e4b080d95286f836d8cd6d8cc3aeeefdfd5/test_unit.py.
+
+If code coverage is enabled, the fuzzer should be run with a limited number of individual tests, for instance:
+
+```console
+export LLVM_PROFILE_FILE=/tmp/fuzzing.profraw
+./tests/build/fuzz_tx -runs=1000000
+```
+
+and results can be viewed with the following commands:
+
+```console
+llvm-profdata-9 merge --sparse /tmp/fuzzing.profraw -o /tmp/fuzzing.profdata
+llvm-cov-9 show tests/build/fuzz_tx -instr-profile=/tmp/fuzzing.profdata -show-line-counts-or-regions -output-dir=/tmp/html-coverage -format=html
+www-browser /tmp/html-coverage/
+```
+
 ## APDU Format for Multi-Account Support
 
 The format of the APDUs in app release that implements multi-account support has been kept backward compatible with

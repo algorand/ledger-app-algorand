@@ -13,34 +13,35 @@
 * if the input doesn't contain an account id, the returend account id is 0
 */
 
-void parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
+int parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_t buffer_len, uint32_t* output_account_id)
 {
   *output_account_id = 0;
 
-
-  if (buffer_len <= OFFSET_LC) 
+  if (buffer_len <= OFFSET_LC)
   {
     PRINTF("using default account id 0 ");
-    return;
+    return 0;
   }
 
   uint8_t lc = buffer[OFFSET_LC];
   if (lc == 0)
   {
     PRINTF("using default account id 0 ");
-    return ;
+    return 0;
   }
 
-  if (lc < sizeof(uint32_t)) 
+  if (lc < sizeof(uint32_t))
   {
-    THROW(0x6a86);
-  } 
-  
+    return 0x6a86;
+  }
+
   if (buffer_len < lc + OFFSET_CDATA)
   {
-    THROW(0x6a87);
-  } 
+    return 0x6a87;
+  }
   *output_account_id = U4BE(buffer, OFFSET_CDATA);
+
+  return 0;
 }
 
 
@@ -49,15 +50,11 @@ void parse_input_for_get_public_key_command(const uint8_t* buffer, const uint32_
 * and send it to the UI.
 * this function fails if the public_key buffer is smaller than 32 bytes.
 */
-void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_size)
+void send_address_to_ui(const struct pubkey_s *public_key)
 {
-  if (public_key_size != ALGORAND_PUBLIC_KEY_SIZE)
-  {
-     THROW(0x6a71);
-  }
   char public_address[65];
   explicit_bzero(public_address, 65);
-  convert_to_public_address(public_key, public_address);
+  convert_to_public_address(public_key->data, public_address);
   ui_text_put(public_address);
 }
 
@@ -71,25 +68,25 @@ void send_address_to_ui(const uint8_t* public_key, const uint32_t public_key_siz
 * if a decode error occucrs the fuction returns non null value.
 */
 
-char* parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t buffer_len, 
-                        uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size, 
-                        uint32_t *current_txn_buffer_offset, txn_t* txn_output)
+int parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t buffer_len,
+                                    uint8_t* current_txn_buffer, const uint32_t current_txn_buffer_size,
+                                    uint32_t *current_txn_buffer_offset, txn_t* txn_output,
+                                    char **error_msg)
 {
   const uint8_t *cdata = data_buffer + OFFSET_CDATA;
   uint8_t lc = data_buffer[OFFSET_LC];
 
-  if (lc == 0 )
-  {
-    THROW(0x6a84);
+  if (lc == 0) {
+    return 0x6a84;
   }
-  if (buffer_len < lc + OFFSET_CDATA)
-  {
-    THROW(0x6a85);
+
+  if (buffer_len < lc + OFFSET_CDATA) {
+    return 0x6a85;
   }
 
   if ((data_buffer[OFFSET_P1] & 0x80) == P1_FIRST)
   {
-    explicit_bzero(txn_output, sizeof(txn_output));
+    memset(txn_output, 0, sizeof(*txn_output));
     *current_txn_buffer_offset = 0;
     txn_output->accountId = 0;
     if (data_buffer[OFFSET_P1] & P1_WITH_ACCOUNT_ID)
@@ -101,32 +98,27 @@ char* parse_input_for_msgpack_command(const uint8_t* data_buffer, const uint32_t
     }
   }
 
-  if (*current_txn_buffer_offset + lc > current_txn_buffer_size) 
-  {
-      THROW(0x6700);
+  if (*current_txn_buffer_offset + lc > current_txn_buffer_size) {
+    return 0x6700;
   }
 
   memmove(current_txn_buffer + *current_txn_buffer_offset, cdata, lc);
   *current_txn_buffer_offset += lc;
 
-  switch (data_buffer[OFFSET_P2]) 
-  {
+  switch (data_buffer[OFFSET_P2]) {
     case P2_LAST:
-    {
-      char *err = tx_decode(current_txn_buffer, *current_txn_buffer_offset, txn_output);
-      if (err != NULL) 
-      {
-        PRINTF("got error from decoder:\n");
-        PRINTF("%s\n",err);
-        return err;
-      }
-      return NULL;
-    }
-    break;
+      break;
     case P2_MORE:
-      THROW(0x9000);
+      return 0x9000;
     default:
-      THROW(0x6B00);
+      return 0x6B00;
   }
 
+  *error_msg = tx_decode(current_txn_buffer, *current_txn_buffer_offset, txn_output);
+  if (*error_msg != NULL) {
+    PRINTF("got error from decoder:\n");
+    PRINTF("%s\n", *error_msg);
+  }
+
+  return 0;
 }

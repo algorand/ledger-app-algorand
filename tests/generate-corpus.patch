@@ -1,0 +1,24 @@
+--- py-algorand-sdk/test_unit.py	2021-06-02 14:35:25.599467958 +0200
++++ py-algorand-sdk/generate_corpus.py	2021-06-02 13:07:44.068960825 +0200
+@@ -11,6 +11,21 @@
+ from algosdk.future import template, transaction
+ from algosdk.testing import dryrun
+ 
++n = 0
++def append_to_corpus(data):
++    global n
++    n += 1
++    with open(f"/tmp/corpus/{n}", "wb") as fp:
++        fp.write(data)
++
++def msgpack_encode_hook(txn):
++    txn_encoded = msgpack_encode(txn)
++    decoded_txn = base64.b64decode(txn_encoded)
++    append_to_corpus(decoded_txn)
++    return txn_encoded
++
++msgpack_encode = encoding.msgpack_encode
++encoding.msgpack_encode = msgpack_encode_hook
+ 
+ class TestPaymentTransaction(unittest.TestCase):
+     def test_min_txn_fee(self):
