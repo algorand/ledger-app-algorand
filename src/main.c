@@ -1,6 +1,7 @@
 #include "os.h"
 #include "cx.h"
 #include "os_io_seproxyhal.h"
+#include "ux.h"
 
 #include "algo_keys.h"
 #include "algo_ui.h"
@@ -8,82 +9,22 @@
 #include "algo_tx.h"
 #include "command_handler.h"
 #include "apdu_protocol_defines.h"
+#include "ui_txn.h"
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
-
-
 
 /* The transaction that we might ask the user to approve. */
 txn_t current_txn;
 
-
 /* A buffer for collecting msgpack-encoded transaction via APDUs,
  * as well as for msgpack-encoding transaction prior to signing.
  */
+uint8_t msgpack_buf[TNX_BUFFER_SIZE];
+unsigned int msgpack_next_off;
 
-#if defined(TARGET_NANOX)
-#define TNX_BUFFER_SIZE 2048
-#else
-#define TNX_BUFFER_SIZE 900
-#endif
-static uint8_t msgpack_buf[TNX_BUFFER_SIZE];
-static unsigned int msgpack_next_off;
+struct pubkey_s public_key;
 
-static uint8_t public_key[ALGORAND_PUBLIC_KEY_SIZE];
-
-
-void txn_approve()
-{
-  int sign_size = 0;
-  unsigned int msg_len;
-
-  msgpack_buf[0] = 'T';
-  msgpack_buf[1] = 'X';
-  msg_len = 2 + tx_encode(&current_txn, msgpack_buf+2, sizeof(msgpack_buf)-2);
-
-  PRINTF("Signing message: %.*h\n", msg_len, msgpack_buf);
-  PRINTF("Signing message: accountId:%d\n", current_txn.accountId);
-
-  
-  sign_size = algorand_sign_message(current_txn.accountId, &msgpack_buf[0], msg_len, G_io_apdu_buffer);
-  
-  
-  G_io_apdu_buffer[sign_size++] = 0x90;
-  G_io_apdu_buffer[sign_size++] = 0x00;
-
-
-  // we've just signed the txn so we clear the static struct
-  explicit_bzero(&current_txn, sizeof(current_txn));
-  msgpack_next_off = 0;
-    
-
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, sign_size);
-
-  // Display back the original UX
-  ui_idle();
-}
-
-void address_approve()
-{
-  unsigned int tx = ALGORAND_PUBLIC_KEY_SIZE;
-  memmove(G_io_apdu_buffer, public_key, ALGORAND_PUBLIC_KEY_SIZE);
-
-  G_io_apdu_buffer[tx++] = 0x90;
-  G_io_apdu_buffer[tx++] = 0x00;
-
-  
-  explicit_bzero(public_key, ALGORAND_PUBLIC_KEY_SIZE);
-  // Send back the response, do not restart the event loop
-  io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-
-  // Display back the original UX
-  ui_idle();
-}
-
-void
-user_approval_denied()
+void user_approval_denied(void)
 {
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
@@ -101,19 +42,127 @@ static void copy_and_advance(void *dst, uint8_t **p, size_t len)
   *p += len;
 }
 
-void init_globals(){
+static void init_globals(void) {
   explicit_bzero(&current_txn, sizeof(current_txn));
   explicit_bzero(&public_key, sizeof(public_key));
   msgpack_next_off = 0;
 }
 
+static void handle_sign_payment(uint8_t ins)
+{
+  uint8_t *p;
+
+  explicit_bzero(&current_txn, sizeof(current_txn));
+
+  if (ins == INS_SIGN_PAYMENT_V2) {
+    p = &G_io_apdu_buffer[2];
+  } else {
+    p = &G_io_apdu_buffer[OFFSET_CDATA];
+  }
+
+  _Static_assert(sizeof(G_io_apdu_buffer) - OFFSET_CDATA >= 192, "assert");
+
+  current_txn.type = PAYMENT;
+  copy_and_advance( current_txn.sender,           &p, 32);
+  copy_and_advance(&current_txn.fee,              &p, 8);
+  copy_and_advance(&current_txn.firstValid,       &p, 8);
+  copy_and_advance(&current_txn.lastValid,        &p, 8);
+  copy_and_advance( current_txn.genesisID,        &p, 32);
+  copy_and_advance( current_txn.genesisHash,      &p, 32);
+  copy_and_advance( current_txn.payment.receiver, &p, 32);
+  copy_and_advance(&current_txn.payment.amount,   &p, 8);
+  copy_and_advance( current_txn.payment.close,    &p, 32);
+
+  ui_txn();
+}
+
+static void handle_sign_keyreg(uint8_t ins)
+{
+  uint8_t *p;
+
+  explicit_bzero(&current_txn, sizeof(current_txn));
+
+  if (ins == INS_SIGN_KEYREG_V2) {
+    p = &G_io_apdu_buffer[2];
+  } else {
+    p = &G_io_apdu_buffer[OFFSET_CDATA];
+  }
+
+  _Static_assert(sizeof(G_io_apdu_buffer) - OFFSET_CDATA >= 184, "assert");
+
+  current_txn.type = KEYREG;
+  copy_and_advance( current_txn.sender,        &p, 32);
+  copy_and_advance(&current_txn.fee,           &p, 8);
+  copy_and_advance(&current_txn.firstValid,    &p, 8);
+  copy_and_advance(&current_txn.lastValid,     &p, 8);
+  copy_and_advance( current_txn.genesisID,     &p, 32);
+  copy_and_advance( current_txn.genesisHash,   &p, 32);
+  copy_and_advance( current_txn.keyreg.votepk, &p, 32);
+  copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
+
+  ui_txn();
+}
+
+static int handle_sign_msgpack(volatile unsigned int rx, volatile unsigned int *tx)
+{
+  char *error_msg;
+  int error;
+
+  error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn, &error_msg);
+  if (error) {
+    return error;
+  }
+
+  if (error_msg != NULL)
+  {
+    int errlen = strlen(error_msg);
+    explicit_bzero(G_io_apdu_buffer, 65);
+    memmove(&G_io_apdu_buffer[65], error_msg, errlen);
+    *tx = 65 + errlen;
+  } else {
+    // we get here when all the data was received, otherwise an exception is thrown
+    ui_txn();
+  }
+
+  return 0;
+}
+
+static int handle_get_public_key(volatile unsigned int rx, volatile unsigned int *tx)
+{
+  uint32_t account_id = 0;
+  bool user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
+
+  int error = parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id);
+  if (error) {
+    return error;
+  }
+  /*
+   * Push derived key to `G_io_apdu_buffer`
+   * and return pushed buffer length.
+   */
+  error = fetch_public_key(account_id, &public_key);
+  if (error) {
+    return error;
+  }
+
+  if(user_approval_required){
+    send_address_to_ui(&public_key);
+    ui_address_approval();
+  }
+  else{
+    memmove(G_io_apdu_buffer, public_key.data, ALGORAND_PUBLIC_KEY_SIZE);
+    *tx = ALGORAND_PUBLIC_KEY_SIZE;
+  }
+
+  return error;
+}
 
 static void algorand_main(void)
 {
   volatile unsigned int rx = 0;
   volatile unsigned int tx = 0;
   volatile unsigned int flags = 0;
-
+  int error;
 
 
   // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
@@ -150,94 +199,39 @@ static void algorand_main(void)
         switch (ins) {
         case INS_SIGN_PAYMENT_V2:
         case INS_SIGN_PAYMENT_V3:
-        {
-          explicit_bzero(&current_txn, sizeof(current_txn));
-          uint8_t *p;
-          if (ins == INS_SIGN_PAYMENT_V2) {
-            p = &G_io_apdu_buffer[2];
-          } else {
-            p = &G_io_apdu_buffer[OFFSET_CDATA];
-          }
-
-          current_txn.type = PAYMENT;
-          copy_and_advance( current_txn.sender,           &p, 32);
-          copy_and_advance(&current_txn.fee,              &p, 8);
-          copy_and_advance(&current_txn.firstValid,       &p, 8);
-          copy_and_advance(&current_txn.lastValid,        &p, 8);
-          copy_and_advance( current_txn.genesisID,        &p, 32);
-          copy_and_advance( current_txn.genesisHash,      &p, 32);
-          copy_and_advance( current_txn.payment.receiver, &p, 32);
-          copy_and_advance(&current_txn.payment.amount,   &p, 8);
-          copy_and_advance( current_txn.payment.close,    &p, 32);
-
-          ui_txn();
+          handle_sign_payment(ins);
           flags |= IO_ASYNCH_REPLY;
-        } break;
+          break;
 
         case INS_SIGN_KEYREG_V2:
         case INS_SIGN_KEYREG_V3:
-        {
-          explicit_bzero(&current_txn, sizeof(current_txn));
-          uint8_t *p;
-          if (ins == INS_SIGN_KEYREG_V2) {
-            p = &G_io_apdu_buffer[2];
-          } else {
-            p = &G_io_apdu_buffer[OFFSET_CDATA];
-          }
-
-          current_txn.type = KEYREG;
-          copy_and_advance( current_txn.sender,        &p, 32);
-          copy_and_advance(&current_txn.fee,           &p, 8);
-          copy_and_advance(&current_txn.firstValid,    &p, 8);
-          copy_and_advance(&current_txn.lastValid,     &p, 8);
-          copy_and_advance( current_txn.genesisID,     &p, 32);
-          copy_and_advance( current_txn.genesisHash,   &p, 32);
-          copy_and_advance( current_txn.keyreg.votepk, &p, 32);
-          copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
-
-          ui_txn();
+          handle_sign_keyreg(ins);
           flags |= IO_ASYNCH_REPLY;
-        } break;
+          break;
 
-        case INS_SIGN_MSGPACK: 
-        {
-          char* error = parse_input_for_msgpack_command(G_io_apdu_buffer, rx, msgpack_buf, TNX_BUFFER_SIZE, &msgpack_next_off, &current_txn);
-          if (error != NULL)
-          {
-            int errlen = strlen(error);
-            explicit_bzero(G_io_apdu_buffer, 65);
-            memmove(&G_io_apdu_buffer[65], error, errlen);
-            tx = 65 + errlen;
+        case INS_SIGN_MSGPACK:
+          error = handle_sign_msgpack(rx, &tx);
+          if (error) {
+            THROW(error);
+          }
+          if (tx != 0) {
             THROW(0x9000);
-          }
-          // we get here when all the data was received, otherwise an exception is thrown
-          ui_txn();
-          flags |= IO_ASYNCH_REPLY;
-          
-        }
-        break;
-        case INS_GET_PUBLIC_KEY: {
-          uint32_t account_id =0 ;
-          uint8_t user_approval_required = G_io_apdu_buffer[OFFSET_P1] == P1_WITH_REQUEST_USER_APPROVAL;
-          parse_input_for_get_public_key_command(G_io_apdu_buffer, rx, &account_id );
-          /*
-           * Push derived key to `G_io_apdu_buffer`
-           * and return pushed buffer length.
-           */
-          fetch_public_key(account_id, public_key, ALGORAND_PUBLIC_KEY_SIZE);
-          
-          if(user_approval_required){
-            send_address_to_ui(public_key, ALGORAND_PUBLIC_KEY_SIZE);
-            ui_address_approval();
+          } else {
             flags |= IO_ASYNCH_REPLY;
           }
-          else{
-            memmove(G_io_apdu_buffer, public_key,ALGORAND_PUBLIC_KEY_SIZE);
-            tx = ALGORAND_PUBLIC_KEY_SIZE;
-            THROW(0x9000);
+          break;
+
+        case INS_GET_PUBLIC_KEY:
+          error = handle_get_public_key(rx, &tx);
+          if (error) {
+            THROW(error);
           }
-          
-        } break;
+          if (tx != 0) {
+            THROW(0x9000);
+          } else {
+            flags |= IO_ASYNCH_REPLY;
+          }
+          break;
 
         case 0xFF: // return to dashboard
           CLOSE_TRY;
@@ -352,17 +346,6 @@ io_exchange_al(unsigned char channel, unsigned short tx_len)
   return 0;
 }
 
-void app_exit(void) {
-  BEGIN_TRY_L(exit) {
-    TRY_L(exit) {
-      os_sched_exit(-1);
-    }
-    FINALLY_L(exit) {
-    }
-  }
-  END_TRY_L(exit);
-}
-
 __attribute__((section(".boot")))
 int
 main(void)
@@ -414,6 +397,8 @@ main(void)
     }
     END_TRY;
   }
-  app_exit();
+
+  os_sched_exit(-1);
+
   return 0;
 }

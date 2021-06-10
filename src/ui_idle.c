@@ -1,6 +1,7 @@
 #include "os.h"
 #include "os_io_seproxyhal.h"
 #include "algo_ui.h"
+#include "ux.h"
 
 UX_FLOW_DEF_NOCB(
     ux_idle_flow_welcome_step,
@@ -34,7 +35,7 @@ UX_FLOW(ux_idle_flow,
 
 
 void
-ui_idle()
+ui_idle(void)
 {
   // reserve a display stack slot if none yet
   if(G_ux.stack_count == 0) {
