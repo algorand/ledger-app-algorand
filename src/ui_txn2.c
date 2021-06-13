@@ -10,6 +10,7 @@
 #include "base64.h"
 #include "glyphs.h"
 #include "ui_txn.h"
+#include "str.h"
 
 #define INSIDE_BORDERS 0
 #define OUT_OF_BORDERS 1
