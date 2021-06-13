@@ -396,6 +396,8 @@ static bool tx_decode_helper(uint8_t *buf, uint8_t *buf_end, txn_t *t)
       CHECK_ERROR(decode_string(&buf, buf_end, t->genesisID, sizeof(t->genesisID)));
     } else if (!strcmp(key, "gh")) {
       CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->genesisHash, sizeof(t->genesisHash)));
+    } else if (!strcmp(key, "grp")) {
+      CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->groupID, sizeof(t->groupID)));
     } else if (!strcmp(key, "note")) {
       CHECK_ERROR(decode_bin_var(&buf, buf_end, t->note, &t->note_len, sizeof(t->note)));
     } else if (!strcmp(key, "amt")) {

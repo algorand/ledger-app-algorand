@@ -104,7 +104,7 @@ def get_expected_messages_for_create_pgm(current_txn):
 
 
 txn_labels = {
-    'review', 'txn type','sender','fee (alg)', 'genesis id', 'genesis hash', 'app id', 'on completion', 
+    'review', 'txn type','sender','fee (alg)', 'genesis id', 'genesis hash', 'group id', 'app id', 'on completion', 
     'foreign app 0', 'foreign asset 0','app account 0', 'app account 1', 'app arg 0 (sha256)', 'app arg 1 (sha256)',
     'global schema', 'local schema',  'apprv (sha256)', 'clear (sha256)','sign'
 } 
@@ -242,5 +242,52 @@ def test_sign_msgpack_with_default_account(dongle, app_create_txn):
         txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
 
     assert len(txnSig) == 64
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+
+def test_sign_msgpack_group_id_validate_display(dongle, app_call_txn, app_create_txn):
+    """
+    """
+
+    apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
+    pubKey = dongle.exchange(apdu)
+
+    gid = algosdk.transaction.calculate_group_id([app_call_txn, app_create_txn])
+    app_call_txn.group = gid
+    app_create_txn.group = gid
+
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(app_call_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+        logging.info(messages)
+
+    exp_messages = get_expected_messages_for_call_pgm(app_call_txn)
+    exp_messages.insert(6,['group id', base64.b64encode(app_call_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(app_create_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+        logging.info(messages)
+
+    exp_messages = get_expected_messages_for_create_pgm(app_create_txn)
+    exp_messages.insert(6,['group id', base64.b64encode(app_create_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
     verify_key = nacl.signing.VerifyKey(pubKey)
     verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)

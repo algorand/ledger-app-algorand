@@ -191,6 +191,7 @@ void ui_txn(void) {
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
   PRINTF("  Genesis ID: %.*s\n", 32, current_txn.genesisID);
   PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
+  PRINTF("  Gruop ID: %.*h\n", 32, current_txn.groupID);
   if (current_txn.type == PAYMENT) {
     PRINTF("  Receiver: %.*h\n", 32, current_txn.payment.receiver);
     PRINTF("  Amount: %s\n", amount_to_str(current_txn.payment.amount, ALGORAND_DECIMALS));
