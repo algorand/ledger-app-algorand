@@ -125,6 +125,7 @@ typedef struct{
   uint64_t lastValid;
   char genesisID[32];
   uint8_t genesisHash[32];
+  uint8_t groupID[32];
 
 #if defined(TARGET_NANOX)
   uint8_t note[512];

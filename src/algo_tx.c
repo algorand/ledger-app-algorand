@@ -403,6 +403,7 @@ tx_encode(txn_t *t, uint8_t *buf, int buflen)
   fields +=                 map_kv_uint64(&p, e, "fv",      t->firstValid);
   fields +=                 map_kv_str   (&p, e, "gen",     t->genesisID, sizeof(t->genesisID));
   fields +=                 map_kv_bin   (&p, e, "gh",      t->genesisHash, sizeof(t->genesisHash));
+  fields +=                 map_kv_bin   (&p, e, "grp",     t->groupID, sizeof(t->groupID));
   fields +=                 map_kv_uint64(&p, e, "lv",      t->lastValid);
   fields += T(KEYREG,       map_kv_bool  (&p, e, "nonpart", t->keyreg.nonpartFlag));
   fields +=                 map_kv_bin   (&p, e, "note",    t->note, t->note_len);
