@@ -166,6 +166,19 @@ static int step_genesisHash(void) {
   return 1;
 }
 
+static int step_groupID(void) {
+  if (all_zero_key(current_txn.groupID)) {
+    return 0;
+  }
+
+
+  char buf[45];
+  base64_encode((const char*) current_txn.groupID, sizeof(current_txn.groupID), buf, sizeof(buf));
+  ui_text_put(buf);
+  return 1;
+}
+
+
 static int step_note(void) {
   if (current_txn.note_len == 0) {
     return 0;
@@ -566,6 +579,8 @@ screen_t const screen_table[SCREEN_NUM] = {
   // {"Last valid", step_lastvalid, ALL_TYPES},
   {"Genesis ID", &step_genesisID, ALL_TYPES},
   {"Genesis hash", &step_genesisHash, ALL_TYPES},
+  {"Group ID", &step_groupID, ALL_TYPES}, 
+
   {"Note", &step_note, ALL_TYPES},
 
   {"Receiver", &step_receiver, PAYMENT},

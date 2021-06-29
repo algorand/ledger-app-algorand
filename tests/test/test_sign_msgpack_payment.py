@@ -47,7 +47,7 @@ def get_expected_messages(txn):
 
 txn_labels = {
     'review', 'txn type', 'sender', 'fee',
-    'genesis id', 'genesis hash', 'note', 'receiver', 'amount', 'rekey to', 'close to', 'sign','cancel'
+    'genesis id', 'genesis hash', 'group id','note', 'receiver', 'amount', 'rekey to', 'close to', 'sign','cancel'
 } 
 
 conf_label = "sign"
@@ -256,3 +256,65 @@ def test_sign_msgpack_validate_display_on_mainnet(dongle, payment_txn):
     logging.info(messages)
     logging.info(exp_messages)
     assert exp_messages == messages
+
+
+
+def test_sign_msgpack_with_group_transaction(dongle, payment_txn):
+    """
+    """
+    
+    # build the second transcation and swap the recvier and the sender
+    second_txn =    algosdk.transaction.PaymentTxn(
+        sender=payment_txn.receiver,
+        receiver=payment_txn.sender,
+        fee=payment_txn.fee,
+        flat_fee=True,
+        amt=payment_txn.amt,
+        first=payment_txn.first_valid_round,
+        last=payment_txn.last_valid_round,
+        note=payment_txn.note,
+        gen=payment_txn.genesis_id,
+        close_remainder_to=payment_txn.close_remainder_to,
+        gh=payment_txn.genesis_hash,
+    )
+
+    apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
+    pubKey = dongle.exchange(apdu)
+
+
+    gid = algosdk.transaction.calculate_group_id([payment_txn, second_txn])
+    payment_txn.group = gid
+    second_txn.group = gid
+
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(payment_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)        
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    exp_messages = get_expected_messages(payment_txn)
+    exp_messages.insert(6,['group id', base64.b64encode(payment_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+    decoded_txn = base64.b64decode(algosdk.encoding.msgpack_encode(second_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)        
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    exp_messages = get_expected_messages(second_txn)
+    exp_messages.insert(6,['group id', base64.b64encode(second_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+    assert exp_messages == messages
+
+
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+    

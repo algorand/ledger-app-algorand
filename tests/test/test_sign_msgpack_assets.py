@@ -121,7 +121,7 @@ def expected_messages_for_asset_freeze(current_txn):
 
 
 txn_labels = {'review', 'txn type', 'sender',
-             'fee (alg)', 'genesis hash', 'asset id', 'amount', 'asset src', 'asset dst',  
+             'fee (alg)', 'genesis hash','group id', 'asset id', 'amount', 'asset src', 'asset dst',  
              'asset close', 'total units', 'unit name', 'decimals', 'asset account', 'freeze flag', 
              'sign', 'asset name', 'default frozen', 'url','metadata hash', 'manager', 'reserve',
                'freezer', 'clawback', 'sign' 
@@ -320,5 +320,65 @@ def test_sign_msgpack_with_default_account(dongle, config_asset_txn):
         txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
 
     assert len(txnSig) == 64
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+def test_sign_msgpack_asset_xfer_group_validate_display(dongle, xfer_asset_txn, config_asset_txn, freeze_asset_txn ):
+    """
+    """
+    apdu = struct.pack('>BBBBB', 0x80, 0x3, 0x0, 0x0, 0x0)
+    pubKey = dongle.exchange(apdu)
+
+
+    gid = algosdk.transaction.calculate_group_id([xfer_asset_txn, config_asset_txn, freeze_asset_txn])
+    xfer_asset_txn.group = gid
+    config_asset_txn.group = gid
+    freeze_asset_txn.group = gid
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(xfer_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    exp_messages = expected_messages_for_asset_xfer(xfer_asset_txn)
+    exp_messages.insert(5,['group id', base64.b64encode(xfer_asset_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(config_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    exp_messages = expected_messages_for_asset_config(config_asset_txn)
+    exp_messages.insert(5,['group id', base64.b64encode(config_asset_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
+    verify_key = nacl.signing.VerifyKey(pubKey)
+    verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
+
+
+    decoded_txn= base64.b64decode(algosdk.encoding.msgpack_encode(freeze_asset_txn))
+    with dongle.screen_event_handler(ui_interaction.confirm_on_lablel, txn_labels, conf_label):
+        logging.info(decoded_txn)
+        txnSig = txn_utils.sign_algo_txn(dongle, decoded_txn)
+        messages = dongle.get_messages()
+    logging.info(messages)
+    exp_messages = expected_messages_for_asset_freeze(freeze_asset_txn)
+    exp_messages.insert(5,['group id', base64.b64encode(freeze_asset_txn.group).decode('ascii').lower()])
+    logging.info(exp_messages)
+
+    assert exp_messages == messages
+
     verify_key = nacl.signing.VerifyKey(pubKey)
     verify_key.verify(smessage=b'TX' + decoded_txn, signature=txnSig)
