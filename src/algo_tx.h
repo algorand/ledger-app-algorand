@@ -127,7 +127,7 @@ typedef struct{
   uint8_t genesisHash[32];
   uint8_t groupID[32];
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
   uint8_t note[512];
 #else
   uint8_t note[32];

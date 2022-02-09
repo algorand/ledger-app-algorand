@@ -12,7 +12,7 @@ typedef struct {
   uint8_t type;
 } screen_t;
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define TNX_BUFFER_SIZE 2048
 #else
 #define TNX_BUFFER_SIZE 900
