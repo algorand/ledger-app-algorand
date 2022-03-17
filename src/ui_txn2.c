@@ -206,6 +206,7 @@ void ui_txn(void) {
   if (current_txn.type == KEYREG) {
     PRINTF("  Vote PK: %.*h\n", 32, current_txn.keyreg.votepk);
     PRINTF("  VRF PK: %.*h\n", 32, current_txn.keyreg.vrfpk);
+    PRINTF("  Stateproof PK: %.*h\n", 64, current_txn.keyreg.sprfkey);
   }
 
   current_data_index = -1;

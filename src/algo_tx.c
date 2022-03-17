@@ -411,6 +411,7 @@ tx_encode(txn_t *t, uint8_t *buf, int buflen)
   fields +=                 map_kv_bin   (&p, e, "rekey",   t->rekey, sizeof(t->rekey));
   fields += T(KEYREG,       map_kv_bin   (&p, e, "selkey",  t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
   fields +=                 map_kv_bin   (&p, e, "snd",     t->sender, sizeof(t->sender));
+  fields += T(KEYREG,       map_kv_bin   (&p, e, "sprfkey", t->keyreg.sprfkey, sizeof(t->keyreg.sprfkey)));
   fields +=                 map_kv_str   (&p, e, "type",    typestr, SIZE_MAX);
   fields += T(KEYREG,       map_kv_uint64(&p, e, "votefst", t->keyreg.voteFirst));
   fields += T(KEYREG,       map_kv_uint64(&p, e, "votekd",  t->keyreg.keyDilution));
