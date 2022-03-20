@@ -20,5 +20,5 @@ typedef struct {
 extern uint8_t msgpack_buf[TNX_BUFFER_SIZE];
 extern unsigned int msgpack_next_off;
 
-#define SCREEN_NUM 49
+#define SCREEN_NUM 50
 extern screen_t const screen_table[SCREEN_NUM];
