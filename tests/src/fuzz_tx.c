@@ -16,7 +16,7 @@ extern char caption[20];
 
 static void display_tx(void)
 {
-  for (size_t i = 0; i < SCREEN_NUM; i++) {
+  for (size_t i = 0; i < screen_num; i++) {
     if (screen_table[i].type != ALL_TYPES && screen_table[i].type != current_txn.type) {
       continue;
     }

@@ -61,9 +61,9 @@ static bool set_state_data(bool forward) {
            }
          }
     } while(current_data_index >= 0 &&
-            current_data_index < SCREEN_NUM);
+            current_data_index < screen_num);
 
-    if(current_data_index < 0 || current_data_index >= SCREEN_NUM){
+    if(current_data_index < 0 || current_data_index >= screen_num){
       return false;
     }
 
