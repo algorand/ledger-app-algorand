@@ -16,7 +16,7 @@
 #define OUT_OF_BORDERS 1
 
 static uint8_t current_state;
-static uint8_t current_data_index;
+static int8_t current_data_index;
 
 static void txn_approve(void)
 {
@@ -51,31 +51,36 @@ static void txn_approve(void)
 }
 
 static bool set_state_data(bool forward) {
-    // Apply last formatter to fill the screen's buffer
-    do{
-      current_data_index = forward ? current_data_index+1 : current_data_index-1;
-      if(screen_table[current_data_index].type == ALL_TYPES ||
-         screen_table[current_data_index].type == current_txn.type){
-           if(((format_function_t)PIC(screen_table[current_data_index].value_setter))() != 0){
-             break;
-           }
-         }
-    } while(current_data_index >= 0 &&
+  // verify that we don't move backwards if the posinion is outside the array (before the start)
+  if (current_data_index == -1 && forward == false){
+    return false;
+  }
+  // verify that we don't move forward if the posinion is outside the array (after the end)
+  if (current_data_index == screen_num && forward == true){
+    return false;
+  }
+
+  do
+  {
+    current_data_index =  forward ? current_data_index+1 : current_data_index -1;
+    if(screen_table[current_data_index].type == ALL_TYPES || screen_table[current_data_index].type == current_txn.type){
+      format_function_t val_setter_func_ptr = (format_function_t)PIC(screen_table[current_data_index].value_setter);
+      if (val_setter_func_ptr() == 0){
+        continue;
+      }
+      if (screen_table[current_data_index].caption != SCREEN_DYN_CAPTION) {
+              strncpy(caption,
+                      (char*)PIC(screen_table[current_data_index].caption),
+                      sizeof(caption));
+      }
+      PRINTF("caption: %s\n", caption);
+      PRINTF("details: %s\n\n", text);
+      return true;  
+      
+    }
+  } while (current_data_index >= 0 &&
             current_data_index < screen_num);
-
-    if(current_data_index < 0 || current_data_index >= screen_num){
-      return false;
-    }
-
-    if (screen_table[current_data_index].caption != SCREEN_DYN_CAPTION) {
-      strncpy(caption,
-              (char*)PIC(screen_table[current_data_index].caption),
-              sizeof(caption));
-    }
-
-    PRINTF("caption: %s\n", caption);
-    PRINTF("details: %s\n\n", text);
-    return true;
+  return false;
 }
 
 static void display_next_state(bool is_upper_border) {
@@ -191,7 +196,7 @@ void ui_txn(void) {
   PRINTF("  Last valid: %s\n", u64str(current_txn.lastValid));
   PRINTF("  Genesis ID: %.*s\n", 32, current_txn.genesisID);
   PRINTF("  Genesis hash: %.*h\n", 32, current_txn.genesisHash);
-  PRINTF("  Gruop ID: %.*h\n", 32, current_txn.groupID);
+  PRINTF("  Group ID: %.*h\n", 32, current_txn.groupID);
   if (current_txn.type == PAYMENT) {
     PRINTF("  Receiver: %.*h\n", 32, current_txn.payment.receiver);
     PRINTF("  Amount: %s\n", amount_to_str(current_txn.payment.amount, ALGORAND_DECIMALS));
