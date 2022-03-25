@@ -223,6 +223,14 @@ static int step_vrfpk(void) {
   return 1;
 }
 
+
+static int step_sprfkey(void) {
+  char buf[90];
+  base64_encode((const char*) current_txn.keyreg.sprfkey, sizeof(current_txn.keyreg.sprfkey), buf, sizeof(buf));
+  ui_text_put(buf);
+  return 1;
+}
+
 static int step_votefirst(void) {
   ui_text_put_u64(current_txn.keyreg.voteFirst);
   return 1;
@@ -570,7 +578,7 @@ static int step_application_arg_1(void) {
   return step_application_arg(1);
 }
 
-screen_t const screen_table[SCREEN_NUM] = {
+screen_t const screen_table[] = {
   {"Txn type", &step_txn_type, ALL_TYPES},
   {"Sender", &step_sender, ALL_TYPES},
   {"Rekey to", &step_rekey, ALL_TYPES},
@@ -589,6 +597,7 @@ screen_t const screen_table[SCREEN_NUM] = {
 
   {"Vote PK", &step_votepk, KEYREG},
   {"VRF PK", &step_vrfpk, KEYREG},
+  {"Stateproof PK", &step_sprfkey, KEYREG},
   {"Vote first", &step_votefirst, KEYREG},
   {"Vote last", &step_votelast, KEYREG},
   {"Key dilution", &step_keydilution, KEYREG},
