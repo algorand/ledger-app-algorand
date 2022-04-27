@@ -16,31 +16,26 @@ from . import speculos
 
 @pytest.fixture
 def keyreg_txn():
-    b64votekey = "eXq34wzh2UIxCZaI1leALKyAvSz/+XOe0wqdHagM+bw="
-    votekey_addr = algosdk.encoding.encode_address(base64.b64decode(b64votekey))
-    b64selkey = "X84ReKTmp+yfgmMCbbokVqeFFFrKQeFZKEXG89SXwm4="
-    selkey_addr = algosdk.encoding.encode_address(base64.b64decode(b64selkey))
-    txn = algosdk.transaction.KeyregTxn(
+    sp_var = algosdk.future.transaction.SuggestedParams(2000, 6002000, 6002000, "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=", "testnet-v1.0", True)
+
+    b64votekey = "1V2BE2lbFvS937H7pJebN0zxkqe1Nrv+aVHDTPbYRlw="
+    b64selkey = "87iBW46PP4BpTDz6+IEGvxY6JqEaOtV0g+VWcJqoqtc="
+    stateproofkey = "f0CYOA4yXovNBFMFX+1I/tYVBaAl7VN6e0Ki5yZA3H6jGqsU/LYHNaBkMQ/rN4M4F3UmNcpaTmbVbq+GgDsrhQ=="
+
+    txn = algosdk.future.transaction.KeyregTxn(
         sender="YTOO52XR6UWNM6OUUDOGWVTNJYBWR5NJ3VCJTZUSR42JERFJFAG3NFD47U",
-        votekey=votekey_addr,
-        selkey=selkey_addr,
+        sp=sp_var,
+        votekey=b64votekey,
+        selkey=b64selkey,
         votefst= 6200000,
         votelst=9500000,
         votekd= 1730,
-        fee= 2000,
-        flat_fee=True,
-        first=6002000,
-        last=6003000,
-        gen="testnet-v1.0",
-        gh="SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI="
-
+        sprfkey=stateproofkey,
     )
     return txn
 
 
 def get_expected_messages(current_txn):
-    votepk = str(base64.b64encode(algosdk.encoding.decode_address(current_txn.votepk)),'ascii').lower()
-    vrfpk = str(base64.b64encode(algosdk.encoding.decode_address(current_txn.selkey)),'ascii').lower()
     # if current_txn.? == True:
     #     participating_flag = 'yes'
     # else:
@@ -51,8 +46,9 @@ def get_expected_messages(current_txn):
                  ['fee (alg)', str(current_txn.fee*0.000001)], 
                  ['genesis id', current_txn.genesis_id.lower()], 
                  ['genesis hash', current_txn.genesis_hash.lower()],
-                 ['vote pk', votepk],
-                 ['vrf pk', vrfpk], 
+                 ['vote pk', current_txn.votepk.lower()],
+                 ['vrf pk', current_txn.selkey.lower()],
+                 ['stateproof pk', current_txn.sprfkey.lower()], 
                  ['vote first', str(current_txn.votefst)], 
                  ['vote last', str(current_txn.votelst)], 
                  ['key dilution', str(current_txn.votekd)], 
@@ -64,7 +60,7 @@ def get_expected_messages(current_txn):
 
 
 txn_labels = {
-    'review', 'txn type', 'sender', 'fee (alg)', 'genesis id', 'genesis hash', 'vote pk','vrf pk', 
+    'review', 'txn type', 'sender', 'fee (alg)', 'genesis id', 'genesis hash', 'vote pk','vrf pk', 'stateproof pk',
     'vote first',  'vote last', 'key dilution', 'participating', 'sign'
 } 
 

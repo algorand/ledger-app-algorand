@@ -3,6 +3,7 @@ import threading
 import socket
 import atexit
 import logging
+from time import sleep
 
 import docker
 
@@ -68,14 +69,15 @@ class SpeculosContainer:
         appdir = os.path.abspath(os.path.dirname(self.app))
         args = [
             '--display headless',
+            '--model nanos',
+            '--log-level button:DEBUG',
+            '--sdk 2.1',
             '--apdu-port 9999',
             '--automation-port 10000',
             '--button-port 10001',
-            '--log-level button:DEBUG',
-            '--sdk 2.0',
             '/app/%s' % os.path.basename(self.app)
         ]
-        c = self.docker.create(image='ledgerhq/speculos',
+        c = self.docker.create(image='speculos',
                                command=' '.join(args),
                                volumes={appdir: {'bind': '/app', 'mode': 'ro'}},
                                ports={
@@ -94,12 +96,18 @@ class SpeculosContainer:
 
         def do_log():
             for log in container.logs(stream=True, follow=True):
-                nonlocal started
-                if not started:
-                    with cv:
-                        started = True
-                        cv.notify()
-                logger.info(log.decode('utf-8').strip('\n'))
+                log_line = log.decode('utf-8').strip('\n')
+                # the test process might try to connect to speculos
+                # when it is not fully loaded. This may cause the process to halt.
+                # in order to prevent it, we try to search for a log message that confirm that
+                # it is loaded.
+                if "speculos launcher" in log_line:
+                    nonlocal started
+                    if not started:
+                        with cv:
+                            started = True
+                            cv.notify()
+                logger.info(log_line)
 
         t = threading.Thread(target=do_log, daemon=True)
         t.start()

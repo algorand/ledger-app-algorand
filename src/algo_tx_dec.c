@@ -408,6 +408,8 @@ static bool tx_decode_helper(uint8_t *buf, uint8_t *buf_end, txn_t *t)
       CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->payment.close, sizeof(t->payment.close)));
     } else if (!strcmp(key, "selkey")) {
       CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->keyreg.vrfpk, sizeof(t->keyreg.vrfpk)));
+    } else if (!strcmp(key, "sprfkey")) {
+      CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->keyreg.sprfkey, sizeof(t->keyreg.sprfkey)));
     } else if (!strcmp(key, "votekey")) {
       CHECK_ERROR(decode_bin_fixed(&buf, buf_end, t->keyreg.votepk, sizeof(t->keyreg.votepk)));
     } else if (!strcmp(key, "votefst")) {

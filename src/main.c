@@ -99,6 +99,7 @@ static void handle_sign_keyreg(uint8_t ins)
   copy_and_advance( current_txn.genesisHash,   &p, 32);
   copy_and_advance( current_txn.keyreg.votepk, &p, 32);
   copy_and_advance( current_txn.keyreg.vrfpk,  &p, 32);
+  copy_and_advance( current_txn.keyreg.sprfkey,  &p, 64);
 
   ui_txn();
 }
