@@ -3,28 +3,39 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ master ]
-
+    branches: [ master, develop ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  build:
+  nanos-build:
     runs-on: ubuntu-latest
-
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:2.0.0-1
-
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
     steps:
       - uses: actions/checkout@v2
-
       - name: Build app
         run: |
           make clean
           make DEBUG=1
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-debug
+          path: bin
 
+  nanox-build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build app
+        run: |
+          make clean
+          make DEBUG=1 BOLOS_SDK=$NANOX_SDK
       - name: Upload app binary
         uses: actions/upload-artifact@v2
         with:
@@ -36,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:2.0.0-1
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder
 
     steps:
       - uses: actions/checkout@v2
