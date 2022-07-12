@@ -1,0 +1,69 @@
+{
+  "name": "@zondax/ledger-algorand",
+  "author": "Zondax GmbH",
+  "license": "Apache-2.0",
+  "version": "0.0.2",
+  "description": "Node API for the Algorand App (Ledger Nano S/X/S+)",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "types": "./dist/index.d.ts",
+  "homepage": "https://github.com/zondax/ledger-algorand",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zondax/ledger-algorand.git"
+  },
+  "keywords": [
+    "Zondax",
+    "Ledger",
+    "Javascript",
+    "Algorand"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "bugs": {
+    "url": "https://github.com/zondax/ledger-algorand/issues"
+  },
+  "dependencies": {
+    "@ledgerhq/hw-transport": "^6.27.1"
+  },
+  "devDependencies": {
+    "@types/ledgerhq__hw-transport": "^4.21.4",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "bip32": "^3.0.1",
+    "bip39": "^3.0.4",
+    "core-js": "^3.19.1",
+    "crypto-js": "4.1.1",
+    "eslint": "^8.3.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jest": "^25.2.4",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.3.1",
+    "prettier": "^2.4.1",
+    "secp256k1": "^4.0.0",
+    "typescript": "^4.5.2"
+  },
+  "moduleDirectories": [
+    "node_modules",
+    "dist"
+  ],
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ],
+  "files": [
+    "dist/*",
+    "LICENSE",
+    "yarn.lock"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
