@@ -109,7 +109,7 @@ jobs:
           make
           mv ./app/pkg/installer_s.sh ./app/pkg/installer_nanos.sh
       - name: Set tag
-        id: nanos_light
+        id: nanos
         run: echo ::set-output name=tag_name::$(./app/pkg/installer_nanos.sh version)
       - name: Create or Update Release (1)
         id: create_release_0
@@ -118,7 +118,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
           files: ./app/pkg/installer_nanos.sh
-          tag_name: ${{ steps.nanos_light.outputs.tag_name }}
+          tag_name: ${{ steps.nanos.outputs.tag_name }}
           draft: false
           prerelease: false
 
@@ -145,7 +145,7 @@ jobs:
         shell: bash -l {0}
         run: |
           source $HOME/.cargo/env
-          make SUBSTRATE_PARSER_FULL=1
+          make
           mv ./app/pkg/installer_s2.sh ./app/pkg/installer_nanos_plus.sh
       - name: Set tag
         id: nanosp
