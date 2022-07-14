@@ -51,7 +51,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 4, -5])
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 5, -6])
     } finally {
       await sim.close()
     }
@@ -83,7 +83,8 @@ describe('Standard', function () {
       await sim.start({ ...defaultOptions, model: m.name })
       const app = new AlgorandApp(sim.getTransport())
 
-      const resp = await app.getAddressAndPubKey(accountId)
+      const tmpAccountId = 123
+      const resp = await app.getAddressAndPubKey(tmpAccountId)
 
       console.log(resp)
 

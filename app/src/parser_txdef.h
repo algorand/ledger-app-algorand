@@ -129,13 +129,12 @@ typedef struct {
   uint64_t num_byteslice;
 } state_schema;
 
-#define MAX_ACCT 2
-typedef uint8_t accounts_t[MAX_ACCT][32];
+#define MAX_ACCT 4
 
 #define MAX_ARG 2
 #define MAX_ARGLEN 32
-#define MAX_FOREIGN_APPS 1
-#define MAX_FOREIGN_ASSETS 1
+#define MAX_FOREIGN_APPS 2
+#define MAX_FOREIGN_ASSETS 2
 #define MAX_APPROV_LEN 128
 #define MAX_CLEAR_LEN 32
 
@@ -232,7 +231,7 @@ typedef struct{
 #if defined(TARGET_NANOS)
   uint8_t note[32];
 #else
-  uint8_t note[512];
+  uint8_t note[1024];
 #endif
 
 } parser_tx_t;

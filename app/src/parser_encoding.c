@@ -42,8 +42,7 @@ uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicK
     memmove(&checksummed[0], publicKey, 32);
     memmove(&checksummed[32], &messageDigest[28], 4);
 
-    base32_encode(checksummed, sizeof(checksummed), (char*)buffer, 65);
-    return 65;
+    return base32_encode(checksummed, sizeof(checksummed), (char*)buffer, bufferLen);
 }
 
 parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash, size_t b64hashLen)
