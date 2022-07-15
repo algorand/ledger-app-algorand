@@ -21,55 +21,45 @@
 #include "os.h"
 #include "tx.h"
 #include "view.h"
-#include "zxformat.h"
 #include "view_internal.h"
+#include "zxformat.h"
 
 void blind_toggle() {
 #ifdef APP_BLIND_MODE_ENABLED
-    app_mode_set_blind(!app_mode_blind());
-    view_idle_show(0, NULL);
+  app_mode_set_blind(!app_mode_blind());
+  view_idle_show(0, NULL);
 #endif
 }
 
-static const char *blindMessage1 = "You are about to";
-static const char *blindMessageEnable = "enable blind signing mode.";
-static const char *blindMessageDisable = "disable blind signing mode.";
-static const char *blindMessage2 =
-    "If you are not sure why you are here, reject or unplug your device "
-    "immediately.";
-static const char *blindMessage3 =
-    "Activating this mode will allow you to sign transactions without "
-    "reviewing each transaction field.";
+static const char *blindMessage =
+    "You are about to enable blind signing mode. If you are not sure why you "
+    "are here, reject or unplug your device immediately. Activating this mode "
+    "will allow you to sign transactions without reviewing each transaction "
+    "field.";
 
 zxerr_t blind_getNumItems(uint8_t *num_items) {
-    zemu_log_stack("blind_getNumItems");
-    *num_items = 1;
-    return zxerr_ok;
+  zemu_log_stack("blind_getNumItems");
+  *num_items = 1;
+  return zxerr_ok;
 }
 
 zxerr_t blind_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen,
                       char *outVal, uint16_t outValLen, uint8_t pageIdx,
                       uint8_t *pageCount) {
-    if (displayIdx != 0) {
-        return zxerr_no_data;
-    }
+  if (displayIdx != 0) {
+    return zxerr_no_data;
+  }
 
-    snprintf(outKey, outKeyLen, "Warning!");
+  snprintf(outKey, outKeyLen, "Warning!");
 
-    char *blindStr = app_mode_blind() ? (char *)PIC(blindMessageDisable)
-                                      : (char *)PIC(blindMessageEnable);
-
-    char tmpBuf[250];
-    snprintf(tmpBuf, sizeof(tmpBuf), "%s %s %s %s", (char *)PIC(blindMessage1),
-             blindStr, (char *)PIC(blindMessage2), (char *)PIC(blindMessage3));
-    pageString(outVal, outValLen, tmpBuf, pageIdx, pageCount);
-    return zxerr_ok;
+  pageString(outVal, outValLen, (char*)PIC(blindMessage), pageIdx, pageCount);
+  return zxerr_ok;
 }
 
 zxerr_t blind_enabled() {
 #ifdef APP_BLIND_MODE_ENABLED
-    view_review_init(blind_getItem, blind_getNumItems, blind_toggle);
-    view_review_show(REVIEW_UI);
+  view_review_init(blind_getItem, blind_getNumItems, blind_toggle);
+  view_review_show(REVIEW_UI);
 #endif
-    return zxerr_ok;
+  return zxerr_ok;
 }
