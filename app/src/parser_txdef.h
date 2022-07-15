@@ -100,6 +100,9 @@ typedef enum TxType {
 #define KEY_APARAMS_FREEZE        "f"
 #define KEY_APARAMS_CLAWBACK      "c"
 
+#define KEY_SCHEMA_NUI            "nui"
+#define KEY_SCHEMA_NBS            "nbs"
+
 
 typedef enum oncompletion {
   NOOPOC       = 0,

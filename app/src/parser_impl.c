@@ -394,9 +394,9 @@ parser_error_t _readStateSchema(parser_context_t *c, state_schema *schema)
     uint8_t key[32];
     for (size_t i = 0; i < mapSize; i++) {
         CHECK_ERROR(_readString(c, key, sizeof(key)))
-        if (strcmp((char*)key, "nui") == 0) {
+        if (strncmp((char*)key, KEY_SCHEMA_NUI, sizeof(KEY_SCHEMA_NUI)) == 0) {
             CHECK_ERROR(_readInteger(c, &schema->num_uint))
-        } else if (strcmp((char*)key, "nbs") == 0) {
+        } else if (strncmp((char*)key, KEY_SCHEMA_NBS, sizeof(KEY_SCHEMA_NBS)) == 0) {
             CHECK_ERROR(_readInteger(c, &schema->num_byteslice))
         } else {
             return parser_msgpack_unexpected_key;
@@ -432,24 +432,24 @@ static parser_error_t _readTxType(parser_context_t *c, parser_tx_t *v)
 
     for (size_t offset = 0; offset < c->bufferLen; offset++) {
         if (_readString(c, buff, buffLen) == parser_ok) {
-            if (strcmp((char*)buff, KEY_COMMON_TYPE) == 0) {
+            if (strncmp((char*)buff, KEY_COMMON_TYPE, sizeof(KEY_COMMON_TYPE)) == 0) {
                 if (_readString(c, typeStr, typeStrLen) == parser_ok) {
-                    if (strcmp((char *) typeStr, KEY_TX_PAY) == 0) {
+                    if (strncmp((char *) typeStr, KEY_TX_PAY, sizeof(KEY_TX_PAY)) == 0) {
                         v->type = TX_PAYMENT;
                         break;
-                    } else if (strcmp((char *) typeStr, KEY_TX_KEYREG) == 0) {
+                    } else if (strncmp((char *) typeStr, KEY_TX_KEYREG, sizeof(KEY_TX_KEYREG)) == 0) {
                         v->type = TX_KEYREG;
                         break;
-                    } else if (strcmp((char *) typeStr, KEY_TX_ASSET_XFER) == 0) {
+                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_XFER, sizeof(KEY_TX_ASSET_XFER)) == 0) {
                         v->type = TX_ASSET_XFER;
                         break;
-                    } else if (strcmp((char *) typeStr, KEY_TX_ASSET_FREEZE) == 0) {
+                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_FREEZE, sizeof(KEY_TX_ASSET_FREEZE)) == 0) {
                         v->type = TX_ASSET_FREEZE;
                         break;
-                    } else if (strcmp((char *) typeStr, KEY_TX_ASSET_CONFIG) == 0) {
+                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_CONFIG, sizeof(KEY_TX_ASSET_CONFIG)) == 0) {
                         v->type = TX_ASSET_CONFIG;
                         break;
-                    } else if (strcmp((char *) typeStr, KEY_TX_APPLICATION) == 0) {
+                    } else if (strncmp((char *) typeStr, KEY_TX_APPLICATION, sizeof(KEY_TX_APPLICATION)) == 0) {
                         v->type = TX_APPLICATION;
                         break;
                     }
@@ -510,7 +510,6 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
 
     if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) {
         CHECK_ERROR(_readBinFixed(c, v->rekey, sizeof(v->rekey)))
-        // common_num_items++;
     }
 
     // First and Last valid won't be display --> don't count them
@@ -529,15 +528,13 @@ parser_error_t _findKey(parser_context_t *c, const char *key)
     uint8_t buffLen = sizeof(buff);
     uint16_t currentOffset = c->offset;
     c->offset = 0;
-
     for (size_t offset = 0; offset < c->bufferLen; offset++) {
         if (_readString(c, buff, buffLen) == parser_ok) {
-            if (strcmp((char*)buff, key) == 0) {
+            if (strlen((char*)buff) == strlen(key) && strncmp((char*)buff, key, strlen(key)) == 0) {
                 return parser_ok;
-            } else {
-               c->offset = offset + 1;
             }
         }
+        c->offset = offset + 1;
     }
     // Return buffer to previous offset if key is not found
     c->offset = currentOffset;
@@ -593,7 +590,6 @@ static parser_error_t _readTxKeyreg(parser_context_t *c, parser_tx_t *v)
 
     if (_findKey(c, KEY_VOTE_NON_PART_FLAG) == parser_ok) {
         CHECK_ERROR(_readBool(c, &v->keyreg.nonpartFlag))
-        // tx_num_items++;
     }
     addItem(6);
 
@@ -621,12 +617,10 @@ static parser_error_t _readTxAssetXfer(parser_context_t *c, parser_tx_t *v)
 
     if (_findKey(c, KEY_XFER_SENDER) == parser_ok) {
         CHECK_ERROR(_readBinFixed(c, v->asset_xfer.sender, sizeof(v->asset_xfer.sender)))
-        // tx_num_items++;
     }
 
     if (_findKey(c, KEY_XFER_CLOSE) == parser_ok) {
         CHECK_ERROR(_readBinFixed(c, v->asset_xfer.close, sizeof(v->asset_xfer.close)))
-        // tx_num_items++;
     }
 
     return parser_ok;
@@ -669,7 +663,6 @@ static parser_error_t _readTxAssetConfig(parser_context_t *c, parser_tx_t *v)
 
 static parser_error_t _readTxApplication(parser_context_t *c, txn_application *application)
 {
-    tx_num_items = 12;
     if (_findKey(c, KEY_APP_ID) == parser_ok) {
         CHECK_ERROR(_readInteger(c, &application->id))
     }
@@ -714,7 +707,7 @@ static parser_error_t _readTxApplication(parser_context_t *c, txn_application *a
     CHECK_ERROR(_readBin(c, application->cprog, (uint16_t*)&application->cprog_len, sizeof(application->cprog)))
     addItem(11);
 
-
+    tx_num_items = 12;
     return parser_ok;
 }
 
@@ -740,7 +733,7 @@ parser_error_t _readArray_args(parser_context_t *c, uint8_t args[][MAX_ARGLEN], 
 parser_error_t _read(parser_context_t *c, parser_tx_t *v)
 {
     size_t keyLen = 0;
-    initializeItemArray();
+    CHECK_ERROR(initializeItemArray())
 
     CHECK_ERROR(_readMapSize(c, &keyLen))
     if(keyLen > UINT8_MAX) {
