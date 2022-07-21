@@ -30,6 +30,7 @@
 
 #include "crypto.h"
 
+
 parser_error_t parser_parse(parser_context_t *ctx,
                             const uint8_t *data,
                             size_t dataLen,
@@ -39,22 +40,18 @@ parser_error_t parser_parse(parser_context_t *ctx,
     return _read(ctx, tx_obj);
 }
 
-parser_error_t parser_validate(const parser_context_t *ctx) {
-    // CHECK_PARSER_ERR(tx_validate(&parser_tx_obj.json))
-
-#if 0
+parser_error_t parser_validate(parser_context_t *ctx) {
     // Iterate through all items to check that all can be shown and are valid
     uint8_t numItems = 0;
-    CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+    CHECK_ERROR(parser_getNumItems(ctx, &numItems))
 
     char tmpKey[40];
     char tmpVal[40];
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
-        CHECK_PARSER_ERR(parser_getItem(ctx, idx, tmpKey, sizeof(tmpKey), tmpVal, sizeof(tmpVal), 0, &pageCount))
+        CHECK_ERROR(parser_getItem(ctx, idx, tmpKey, sizeof(tmpKey), tmpVal, sizeof(tmpVal), 0, &pageCount))
     }
-#endif
     return parser_ok;
 }
 
@@ -76,9 +73,6 @@ parser_error_t parser_getCommonNumItems(const parser_context_t *ctx, uint8_t *co
 
 parser_error_t parser_getTxNumItems(const parser_context_t *ctx, uint8_t *tx_num_items) {
     *tx_num_items = _getTxNumItems();
-    if(*tx_num_items == 0) {
-        return parser_unexpected_number_items;
-    }
     return parser_ok;
 }
 
@@ -138,7 +132,7 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
     *pageCount = 1;
     char buff[65] = {0};
     switch (displayIdx) {
-        case 0:
+        case IDX_COMMON_SENDER:
             snprintf(outKey, outKeyLen, "Sender");
             if (!encodePubKey((uint8_t*) buff, sizeof(buff), parser_tx_obj->sender)) {
                 return parser_unexpected_buffer_end;
@@ -146,36 +140,7 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 1:
-            snprintf(outKey, outKeyLen, "Fee");
-            return _toStringBalance((uint64_t*) &parser_tx_obj->fee, COIN_AMOUNT_DECIMAL_PLACES, "", COIN_TICKER,
-                                    outVal, outValLen, pageIdx, pageCount);
-
-        case 2:
-            snprintf(outKey, outKeyLen, "Genesis hash");
-            // Should we hide this field when genID is default/empty and genHash == genHash default? Check ui_txn.c
-            // char buff[45];
-            base64_encode((const char*) parser_tx_obj->genesisHash, sizeof(parser_tx_obj->genesisHash), buff, sizeof(buff));
-            pageString(outVal, outValLen, buff, pageIdx, pageCount);
-            return parser_ok;
-
-        case 3:
-            snprintf(outKey, outKeyLen, "Genesis ID");
-            pageString(outVal, outValLen, parser_tx_obj->genesisID, pageIdx, pageCount);
-            return parser_ok;
-
-        case 4:
-            snprintf(outKey, outKeyLen, "Note");
-            snprintf(outVal, outValLen, "%d bytes", parser_tx_obj->note_len);
-            return parser_ok;
-
-        case 10:
-            snprintf(outKey, outKeyLen, "Group ID");
-            base64_encode((const char*) parser_tx_obj->groupID, sizeof(parser_tx_obj->groupID), buff, sizeof(buff));
-            pageString(outVal, outValLen, buff, pageIdx, pageCount);
-            return parser_ok;
-
-        case 11:
+        case IDX_COMMON_REKEY_TO:
             snprintf(outKey, outKeyLen, "Rekey to");
             if (!encodePubKey((uint8_t*) buff, sizeof(buff), parser_tx_obj->rekey)) {
                 return parser_unexpected_buffer_end;
@@ -183,20 +148,48 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 100:
+        case IDX_COMMON_FEE:
+            snprintf(outKey, outKeyLen, "Fee");
+            return _toStringBalance((uint64_t*) &parser_tx_obj->fee, COIN_AMOUNT_DECIMAL_PLACES, "", COIN_TICKER,
+                                    outVal, outValLen, pageIdx, pageCount);
+
+        case IDX_COMMON_GEN_ID:
+            snprintf(outKey, outKeyLen, "Genesis ID");
+            pageString(outVal, outValLen, parser_tx_obj->genesisID, pageIdx, pageCount);
+            return parser_ok;
+
+        case IDX_COMMON_GEN_HASH:
+            snprintf(outKey, outKeyLen, "Genesis hash");
+            base64_encode((const char*) parser_tx_obj->genesisHash, sizeof(parser_tx_obj->genesisHash), buff, sizeof(buff));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
+            return parser_ok;
+
+        case IDX_COMMON_GROUP_ID:
+            snprintf(outKey, outKeyLen, "Group ID");
+            base64_encode((const char*) parser_tx_obj->groupID, sizeof(parser_tx_obj->groupID), buff, sizeof(buff));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
+            return parser_ok;
+
+        case IDX_COMMON_NOTE:
+            snprintf(outKey, outKeyLen, "Note");
+            snprintf(outVal, outValLen, "%d bytes", parser_tx_obj->note_len);
+            return parser_ok;
+
+#if 0
+        case IDX_COMMON_FIRST_VALID:
             snprintf(outKey, outKeyLen, "First valid");
             if (int64_to_str(outVal, outValLen, parser_tx_obj->firstValid) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 101:
+        case IDX_COMMON_LAST_VALID:
             snprintf(outKey, outKeyLen, "Last valid");
             if (int64_to_str(outVal, outValLen, parser_tx_obj->lastValid) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
-
+#endif
         default:
             break;
     }
@@ -213,7 +206,7 @@ static parser_error_t parser_printTxPayment(const txn_payment *payment,
     *pageCount = 1;
     char buff[65] = {0};
     switch (displayIdx) {
-        case 0:
+        case IDX_PAYMENT_RECEIVER:
             snprintf(outKey, outKeyLen, "Receiver");
             if (!encodePubKey((uint8_t*) buff, sizeof(buff), payment->receiver)) {
                 return parser_unexpected_buffer_end;
@@ -221,13 +214,13 @@ static parser_error_t parser_printTxPayment(const txn_payment *payment,
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 1:
+        case IDX_PAYMENT_AMOUNT:
             snprintf(outKey, outKeyLen, "Amount");
             return _toStringBalance((uint64_t*) &payment->amount, COIN_AMOUNT_DECIMAL_PLACES, "", COIN_TICKER,
                                     outVal, outValLen, pageIdx, pageCount);
             break;
 
-        case 2:
+        case IDX_PAYMENT_CLOSE_TO:
             snprintf(outKey, outKeyLen, "Close to");
             if (!encodePubKey((uint8_t*) buff, sizeof(buff), payment->close)) {
                 return parser_unexpected_buffer_end;
@@ -252,47 +245,47 @@ static parser_error_t parser_printTxKeyreg(const txn_keyreg *keyreg,
     *pageCount = 1;
     char buff[45];
     switch (displayIdx) {
-        case 0:
+        case IDX_KEYREG_VOTE_PK:
             snprintf(outKey, outKeyLen, "Vote PK");
             base64_encode((const char*) keyreg->votepk, sizeof(keyreg->votepk), buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 1:
+        case IDX_KEYREG_VRF_PK:
             snprintf(outKey, outKeyLen, "VRF PK");
             base64_encode((const char*) keyreg->vrfpk, sizeof(keyreg->vrfpk), buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 2:
+        case IDX_KEYREG_SPRF_PK:
             snprintf(outKey, outKeyLen, "SPRF PK");
             char tmpBuff[90];
             base64_encode((const char*) keyreg->sprfkey, sizeof(keyreg->sprfkey), tmpBuff, sizeof(tmpBuff));
             pageString(outVal, outValLen, tmpBuff, pageIdx, pageCount);
             return parser_ok;
 
-        case 3:
+        case IDX_KEYREG_VOTE_FIRST:
             snprintf(outKey, outKeyLen, "Vote first");
             if (int64_to_str(outVal, outValLen, keyreg->voteFirst) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 4:
+        case IDX_KEYREG_VOTE_LAST:
             snprintf(outKey, outKeyLen, "Vote last");
             if (int64_to_str(outVal, outValLen, keyreg->voteLast) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 5:
+        case IDX_KEYREG_KEY_DILUTION:
             snprintf(outKey, outKeyLen, "Key dilution");
             if (int64_to_str(outVal, outValLen, keyreg->keyDilution) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 6:
+        case IDX_KEYREG_PARTICIPATION:
             snprintf(outKey, outKeyLen, "Participating");
             if (keyreg->nonpartFlag) {
                 snprintf(outVal, outValLen, "No");
@@ -321,7 +314,7 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
     } tmpBuff;
 
     switch (displayIdx) {
-        case 0: {
+        case IDX_XFER_ASSET_ID: {
             snprintf(outKey, outKeyLen, "Asset ID");
             const algo_asset_info_t *asa = algo_asa_get(asset_xfer->id);
             if (uint64_to_str(tmpBuff.bufferUI, sizeof(tmpBuff.bufferUI), asset_xfer->id) != NULL) {
@@ -335,35 +328,20 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
             return parser_ok;
         }
 
-        case 1: {
-            //Hide if is_opt_in_tx
-            // if(is_opt_in_tx()){
-            //     return 0;
-            // }
+        case IDX_XFER_AMOUNT: {
             const algo_asset_info_t *asa = algo_asa_get(asset_xfer->id);
-            //Want to add token symbol here?
             if (asa == NULL) {
-                //No decimals here????
-                snprintf(outKey, outKeyLen, "Amount (base unit)");
-                return _toStringBalance((uint64_t*) &asset_xfer->amount, 0, "", "",
+                snprintf(outKey, outKeyLen, "Amount");
+                return _toStringBalance((uint64_t*) &asset_xfer->amount, 0, "", "Base unit ",
                                         outVal, outValLen, pageIdx, pageCount);
             } else {
-                snprintf(outKey, outKeyLen, "Amount (%s)", asa->unit);
-                return _toStringBalance((uint64_t*) &asset_xfer->amount, asa->decimals, "", "",
+                snprintf(outKey, outKeyLen, "Amount");
+                return _toStringBalance((uint64_t*) &asset_xfer->amount, asa->decimals, "", (char*)asa->unit,
                                         outVal, outValLen, pageIdx, pageCount);
             }
         }
 
-        case 2:
-            //If is_opt_in_tx --> don't display
-            snprintf(outKey, outKeyLen, "Asset dst");
-            if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->receiver)) {
-                return parser_unexpected_buffer_end;
-            }
-            pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
-            return parser_ok;
-
-        case 20:
+        case IDX_XFER_SOURCE:
             snprintf(outKey, outKeyLen, "Asset src");
             if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->sender)) {
                 return parser_unexpected_buffer_end;
@@ -371,7 +349,15 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
             pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 40:
+        case IDX_XFER_DESTINATION:
+            snprintf(outKey, outKeyLen, "Asset dst");
+            if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->receiver)) {
+                return parser_unexpected_buffer_end;
+            }
+            pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
+            return parser_ok;
+
+        case IDX_XFER_CLOSE:
             snprintf(outKey, outKeyLen, "Asset close");
             if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->close)) {
                 return parser_unexpected_buffer_end;
@@ -395,7 +381,14 @@ static parser_error_t parser_printTxAssetFreeze(const txn_asset_freeze *asset_fr
     *pageCount = 1;
     char buff[65] = {0};
     switch (displayIdx) {
-        case 1:
+        case IDX_FREEZE_ASSET_ID:
+            snprintf(outKey, outKeyLen, "Asset ID");
+            if (uint64_to_str(outVal, outValLen, asset_freeze->id) != NULL) {
+                return parser_unexpected_error;
+            }
+            return parser_ok;
+
+        case IDX_FREEZE_ACCOUNT:
             snprintf(outKey, outKeyLen, "Asset account");
             if (!encodePubKey((uint8_t*) buff, sizeof(buff), asset_freeze->account)) {
                 return parser_unexpected_buffer_end;
@@ -403,14 +396,7 @@ static parser_error_t parser_printTxAssetFreeze(const txn_asset_freeze *asset_fr
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 0:
-            snprintf(outKey, outKeyLen, "Asset ID");
-            if (uint64_to_str(outVal, outValLen, asset_freeze->id) != NULL) {
-                return parser_unexpected_error;
-            }
-            return parser_ok;
-
-        case 2:
+        case IDX_FREEZE_FLAG:
             snprintf(outKey, outKeyLen, "Freeze flag");
             if (asset_freeze->flag) {
                 snprintf(outVal, outValLen, "Frozen");
@@ -436,7 +422,7 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
     *pageCount = 1;
     char buff[45] = {0};
     switch (displayIdx) {
-        case 0:
+        case IDX_CONFIG_ASSET_ID:
             snprintf(outKey, outKeyLen, "Asset ID");
             if (asset_config->id == 0) {
                 snprintf(outKey, outKeyLen, "Create");
@@ -447,17 +433,15 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
             }
             return parser_ok;
 
-        case 10:
+        case IDX_CONFIG_TOTAL_UNITS:
             snprintf(outKey, outKeyLen, "Total units");
-            //Don't display if id != 0 && params.total == 0
             if (uint64_to_str(outVal, outValLen, asset_config->params.total) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 20:
+        case IDX_CONFIG_FROZEN:
             snprintf(outKey, outKeyLen, "Default frozen");
-            //Don't display if id != 0 && params.default_frozen == 0
             if (asset_config->params.default_frozen) {
                 snprintf(outVal, outValLen, "Frozen");
             } else {
@@ -465,47 +449,50 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
             }
             return parser_ok;
 
-        case 30:
+        case IDX_CONFIG_UNIT_NAME:
             snprintf(outKey, outKeyLen, "Unit name");
-            snprintf(outVal, outValLen, "%s", asset_config->params.unitname);
+            MEMCPY(buff,asset_config->params.unitname, sizeof(asset_config->params.unitname));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 40:
+        case IDX_CONFIG_DECIMALS:
             snprintf(outKey, outKeyLen, "Decimals");
             if (uint64_to_str(outVal, outValLen, asset_config->params.decimals) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 50:
+        case IDX_CONFIG_ASSET_NAME:
             snprintf(outKey, outKeyLen, "Asset name");
-            snprintf(outVal, outValLen, "%s", asset_config->params.assetname);
+            MEMCPY(buff,asset_config->params.assetname, sizeof(asset_config->params.assetname));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 60:
+        case IDX_CONFIG_URL:
             snprintf(outKey, outKeyLen, "URL");
-            snprintf(outVal, outValLen, "%s", asset_config->params.url);
+            MEMCPY(buff,asset_config->params.url, sizeof(asset_config->params.url));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 70:
+        case IDX_CONFIG_METADATA_HASH:
             snprintf(outKey, outKeyLen, "Metadata hash");
             base64_encode((const char*) asset_config->params.metadata_hash, sizeof(asset_config->params.metadata_hash), buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 1:
+        case IDX_CONFIG_MANAGER:
             snprintf(outKey, outKeyLen, "Manager");
             return _toStringAddress((uint8_t*) asset_config->params.manager, outVal, outValLen, pageIdx, pageCount);
 
-        case 2:
+        case IDX_CONFIG_RESERVE:
             snprintf(outKey, outKeyLen, "Reserve");
             return _toStringAddress((uint8_t*) asset_config->params.reserve, outVal, outValLen, pageIdx, pageCount);
 
-        case 3:
+        case IDX_CONFIG_FREEZER:
             snprintf(outKey, outKeyLen, "Freezer");
             return _toStringAddress((uint8_t*) asset_config->params.freeze, outVal, outValLen, pageIdx, pageCount);
 
-        case 4:
+        case IDX_CONFIG_CLAWBACK:
             snprintf(outKey, outKeyLen, "Clawback");
             return _toStringAddress((uint8_t*) asset_config->params.clawback, outVal, outValLen, pageIdx, pageCount);
 
@@ -516,23 +503,26 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
     return parser_display_idx_out_of_range;
 }
 
-static parser_error_t parser_printTxApplication(const txn_application *application,
-                                                   uint8_t displayIdx,
-                                                   char *outKey, uint16_t outKeyLen,
-                                                   char *outVal, uint16_t outValLen,
-                                                   uint8_t pageIdx, uint8_t *pageCount)
+static parser_error_t parser_printTxApplication(parser_context_t *ctx,
+                                                uint8_t displayIdx,
+                                                txn_application_index_e itemType,
+                                                char *outKey, uint16_t outKeyLen,
+                                                char *outVal, uint16_t outValLen,
+                                                uint8_t pageIdx, uint8_t *pageCount)
 {
     *pageCount = 1;
     char buff[65] = {0};
-    switch (displayIdx) {
-        case 0:
+    txn_application *application = &ctx->parser_tx_obj->application;
+
+    switch (itemType) {
+        case IDX_APP_ID:
             snprintf(outKey, outKeyLen, "App ID");
             if (uint64_to_str(outVal, outValLen, application->id) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
 
-        case 1:
+        case IDX_ON_COMPLETION:
             snprintf(outKey, outKeyLen, "On completion");
             switch (application->oncompletion)
             {
@@ -560,56 +550,61 @@ static parser_error_t parser_printTxApplication(const txn_application *applicati
             }
             return parser_ok;
 
-        case 2:
-            snprintf(outKey, outKeyLen, "Foreign app 0");
-            //check that foreign_apps size >= 1
-            if (uint64_to_str(outVal, outValLen, application->foreign_apps[0]) != NULL) {
+        case IDX_FOREIGN_APP: {
+            const uint8_t tmpIdx = displayIdx - IDX_FOREIGN_APP;
+            snprintf(outKey, outKeyLen, "Foreign app %d", tmpIdx);
+            if (uint64_to_str(outVal, outValLen, application->foreign_apps[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
+        }
 
-        case 3:
-            snprintf(outKey, outKeyLen, "Foreign asset 0");
-            //check that foreign_assets size >= 1
-            if (uint64_to_str(outVal, outValLen, application->foreign_assets[0]) != NULL) {
+        case IDX_FOREIGN_ASSET: {
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps) - IDX_FOREIGN_APP;
+            snprintf(outKey, outKeyLen, "Foreign asset %d", tmpIdx);
+            if (uint64_to_str(outVal, outValLen, application->foreign_assets[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
             }
             return parser_ok;
+        }
 
-        case 4:
-        case 5:
-            snprintf(outKey, outKeyLen, "App account %d", (displayIdx - 4));
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), application->accounts[displayIdx - 4])) {
+        case IDX_ACCOUNTS: {
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets) - IDX_FOREIGN_APP;
+            uint8_t account[ACCT_SIZE] = {0};
+            snprintf(outKey, outKeyLen, "Account %d", tmpIdx);
+            CHECK_ERROR(_getAccount(ctx, account, tmpIdx, application->num_accounts))
+            if (!encodePubKey((uint8_t*) buff, sizeof(buff), account)) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
+        }
 
-        case 6:
-        case 7:
-            snprintf(outKey, outKeyLen, "App arg %d", (displayIdx - 6));
-            //check that num_app_args >= 1 or 2
-            b64hash_data((unsigned char*) application->app_args[displayIdx - 6], application->app_args_len[displayIdx - 6], buff, sizeof(buff));
+        case IDX_APP_ARGS: {
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts) - IDX_FOREIGN_APP;
+            snprintf(outKey, outKeyLen, "App arg %d", tmpIdx);
+            uint8_t* app_args_ptr = NULL;
+            CHECK_ERROR(_getAppArg(ctx, &app_args_ptr, &application->app_args_len[tmpIdx], tmpIdx, MAX_ARGLEN, MAX_ARG))
+            b64hash_data((unsigned char*)app_args_ptr, application->app_args_len[tmpIdx], buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
-
-
             return parser_ok;
+        }
 
-        case 8:
+        case IDX_GLOBAL_SCHEMA:
             snprintf(outKey, outKeyLen, "Global schema");
             return _toStringSchema(&application->global_schema, outVal, outValLen, pageIdx, pageCount);
 
-        case 9:
+        case IDX_LOCAL_SCHEMA:
             snprintf(outKey, outKeyLen, "Local schema");
             return _toStringSchema(&application->local_schema, outVal, outValLen, pageIdx, pageCount);
 
-        case 10:
+        case IDX_APPROVE:
             snprintf(outKey, outKeyLen, "Apprv");
             b64hash_data((unsigned char*) application->aprog, application->aprog_len, buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case 11:
+        case IDX_CLEAR:
             snprintf(outKey, outKeyLen, "Clear");
             b64hash_data((unsigned char*) application->cprog, application->cprog_len, buff, sizeof(buff));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -623,7 +618,7 @@ static parser_error_t parser_printTxApplication(const txn_application *applicati
 }
 
 
-parser_error_t parser_getItem(const parser_context_t *ctx,
+parser_error_t parser_getItem(parser_context_t *ctx,
                               uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
@@ -686,9 +681,8 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                  outVal, outValLen, pageIdx, pageCount);
                 break;
             case TX_APPLICATION:
-                return parser_printTxApplication(&ctx->parser_tx_obj->application,
-                                                txDisplayIdx, outKey, outKeyLen,
-                                                outVal, outValLen, pageIdx, pageCount);
+                return parser_printTxApplication(ctx,displayIdx, txDisplayIdx, outKey, outKeyLen,
+                                                 outVal, outValLen, pageIdx, pageCount);
                 break;
             default:
                 return parser_unexpected_error;

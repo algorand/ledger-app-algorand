@@ -83,6 +83,7 @@ const char *tx_parse()
                                tx_get_buffer()+2,   // 'TX' is prepended to input buffer
                                tx_get_buffer_length(),
                                &parser_tx_obj);
+    CHECK_APP_CANARY()
 
     if (err != parser_ok)
     {

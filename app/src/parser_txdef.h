@@ -1,5 +1,5 @@
 /*******************************************************************************
-*  (c) 2019 Zondax GmbH
+*  (c) 2018 - 2022 Zondax AG
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum TxType {
+typedef enum tx_type_e {
   TX_UNKNOWN,
   TX_PAYMENT,
   TX_KEYREG,
@@ -30,8 +30,7 @@ typedef enum TxType {
   TX_ASSET_FREEZE,
   TX_ASSET_CONFIG,
   TX_APPLICATION,
-  TX_ALL_TYPES,
-} TxType;
+} tx_type_e;
 
 #define KEY_COMMON_TYPE           "type"
 
@@ -133,11 +132,14 @@ typedef struct {
 } state_schema;
 
 #define MAX_ACCT 4
+#define ACCT_SIZE 32
 
-#define MAX_ARG 2
-#define MAX_ARGLEN 32
-#define MAX_FOREIGN_APPS 2
-#define MAX_FOREIGN_ASSETS 2
+#define ACCT_FOREIGN_LIMIT 8
+
+#define MAX_ARG 16
+#define MAX_ARGLEN 2048
+#define MAX_FOREIGN_APPS 8
+#define MAX_FOREIGN_ASSETS 8
 #define MAX_APPROV_LEN 128
 #define MAX_CLEAR_LEN 32
 
@@ -178,48 +180,40 @@ typedef struct {
 } txn_asset_config;
 
 typedef struct {
+  uint8_t num_accounts;
+  uint8_t num_foreign_apps;
+  uint8_t num_foreign_assets;
+  uint8_t num_app_args;
+  uint16_t aprog_len;
+  uint16_t cprog_len;
   uint64_t id;
   uint64_t oncompletion;
-
-  uint8_t accounts[MAX_ACCT][32];
-  size_t num_accounts;
-
-  uint64_t foreign_apps[MAX_FOREIGN_APPS];
-  size_t num_foreign_apps;
-
-  uint64_t foreign_assets[MAX_FOREIGN_ASSETS];
-  size_t num_foreign_assets;
-
-  uint8_t app_args[MAX_ARG][MAX_ARGLEN];
-  size_t app_args_len[MAX_ARG];
-  size_t num_app_args;
-
-  uint8_t aprog[MAX_APPROV_LEN];
-  size_t aprog_len;
-
-  uint8_t cprog[MAX_CLEAR_LEN];
-  size_t cprog_len;
-
   state_schema local_schema;
   state_schema global_schema;
+
+  uint8_t aprog[MAX_APPROV_LEN];
+  uint8_t cprog[MAX_CLEAR_LEN];
+  uint16_t app_args_len[MAX_ARG];
+
+  uint64_t foreign_apps[MAX_FOREIGN_APPS];
+  uint64_t foreign_assets[MAX_FOREIGN_ASSETS];
+
 } txn_application;
 
 typedef struct{
-      // Fields for specific tx types
-    union {
+
+  union {
     txn_payment payment;
     txn_keyreg keyreg;
     txn_asset_xfer asset_xfer;
     txn_asset_freeze asset_freeze;
     txn_asset_config asset_config;
     txn_application application;
-    };
+  };
 
-  TxType type;
-  // Account Id asscociated with this transaction.
+  tx_type_e type;
   uint32_t accountId;
 
-  // Common header fields
   uint8_t sender[32];
   uint8_t rekey[32];
   uint64_t fee;
@@ -229,17 +223,82 @@ typedef struct{
   uint8_t genesisHash[32];
   uint8_t groupID[32];
 
-  size_t note_len;
-
-#if defined(TARGET_NANOS)
-  uint8_t note[32];
-#else
-  uint8_t note[1024];
-#endif
-
+  uint16_t note_len;
 } parser_tx_t;
 
 typedef parser_tx_t txn_t;
+
+typedef enum {
+  IDX_COMMON_SENDER = 0,
+  IDX_COMMON_FEE,
+  IDX_COMMON_GEN_HASH,
+  IDX_COMMON_GEN_ID,
+  IDX_COMMON_NOTE,
+  IDX_COMMON_GROUP_ID,
+  IDX_COMMON_REKEY_TO,
+  IDX_COMMON_FIRST_VALID,
+  IDX_COMMON_LAST_VALID,
+} txn_common_index_e;
+
+typedef enum {
+  IDX_PAYMENT_RECEIVER = 0,
+  IDX_PAYMENT_AMOUNT,
+  IDX_PAYMENT_CLOSE_TO,
+} txn_payment_index_e;
+
+typedef enum {
+  IDX_KEYREG_VOTE_PK = 0,
+  IDX_KEYREG_VRF_PK,
+  IDX_KEYREG_SPRF_PK,
+  IDX_KEYREG_VOTE_FIRST,
+  IDX_KEYREG_VOTE_LAST,
+  IDX_KEYREG_KEY_DILUTION,
+  IDX_KEYREG_PARTICIPATION,
+} txn_keyreg_index_e;
+
+typedef enum {
+  IDX_XFER_ASSET_ID = 0,
+  IDX_XFER_AMOUNT,
+  IDX_XFER_DESTINATION,
+  IDX_XFER_SOURCE,
+  IDX_XFER_CLOSE,
+} txn_asset_transfer_index_e;
+
+typedef enum {
+  IDX_FREEZE_ASSET_ID = 0,
+  IDX_FREEZE_ACCOUNT,
+  IDX_FREEZE_FLAG,
+} txn_asset_freeze_index_e;
+
+typedef enum {
+  IDX_CONFIG_ASSET_ID = 0,
+  IDX_CONFIG_TOTAL_UNITS,
+  IDX_CONFIG_FROZEN,
+  IDX_CONFIG_UNIT_NAME,
+  IDX_CONFIG_DECIMALS,
+  IDX_CONFIG_ASSET_NAME,
+  IDX_CONFIG_URL,
+  IDX_CONFIG_METADATA_HASH,
+  IDX_CONFIG_MANAGER,
+  IDX_CONFIG_RESERVE,
+  IDX_CONFIG_FREEZER,
+  IDX_CONFIG_CLAWBACK,
+} txn_asset_config_index_e;
+
+typedef enum {
+  IDX_APP_ID = 0,
+  IDX_ON_COMPLETION,
+  IDX_FOREIGN_APP,
+  IDX_FOREIGN_ASSET,
+  IDX_ACCOUNTS,
+  IDX_APP_ARGS,
+  IDX_GLOBAL_SCHEMA,
+  IDX_LOCAL_SCHEMA,
+  IDX_APPROVE,
+  IDX_CLEAR,
+} txn_application_index_e;
+
+#define MAX_NOTE_LEN 1024
 
 #ifdef __cplusplus
 }
