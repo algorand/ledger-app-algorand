@@ -169,7 +169,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
@@ -202,7 +202,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
@@ -235,7 +235,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
@@ -268,7 +268,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
@@ -301,7 +301,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
@@ -334,7 +334,7 @@ describe('Standard', function () {
 
       // Now verify the signature
       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-      const valid = ed25519.verify(signatureResponse.signature.slice(0, -1), prehash, pubKey)
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
       await sim.close()
