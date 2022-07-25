@@ -1,6 +1,6 @@
 {
   "name": "@zondax/ledger-algorand",
-  "author": "Zondax GmbH",
+  "author": "Zondax AG",
   "license": "Apache-2.0",
   "version": "0.0.2",
   "description": "Node API for the Algorand App (Ledger Nano S/X/S+)",

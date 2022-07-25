@@ -1,5 +1,5 @@
 /*******************************************************************************
-*   (c) 2019 Zondax GmbH
+*   (c) 2018 - 2022 Zondax AG
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -133,7 +133,15 @@ INSTANTIATE_TEST_SUITE_P
     ::testing::ValuesIn(GetJsonTestCases("testcases.json")),
     JsonTestsA::PrintToStringParamName()
 );
-
-
-// TEST_P(JsonTestsA, CheckUIOutput_CurrentTX_Normal) { check_testcase(GetParam(), false); }
 TEST_P(JsonTestsA, CheckUIOutput_CurrentTX_Expert) { check_testcase(GetParam(), true); }
+
+
+INSTANTIATE_TEST_SUITE_P
+
+(
+    JsonTestsBigTransactions,
+    JsonTestsA,
+    ::testing::ValuesIn(GetJsonTestCases("testcases_big_transactions.json")),
+    JsonTestsA::PrintToStringParamName()
+);
+TEST_P(JsonTestsA, CheckUIOutput_BigTransactions) { check_testcase(GetParam(), true); }
