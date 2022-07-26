@@ -44,6 +44,9 @@ extern "C" {
 #define STR16       0xda
 #define STR32       0xdb
 
+#define ARR16       0xdc
+#define ARR32       0xdd
+
 #define MAP16       0xde
 #define MAP32       0xdf
 

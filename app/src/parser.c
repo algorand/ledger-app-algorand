@@ -130,7 +130,7 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
                                                uint8_t pageIdx, uint8_t *pageCount)
 {
     *pageCount = 1;
-    char buff[65] = {0};
+    char buff[80] = {0};
     switch (displayIdx) {
         case IDX_COMMON_SENDER:
             snprintf(outKey, outKeyLen, "Sender");
@@ -140,13 +140,17 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case IDX_COMMON_REKEY_TO:
+        case IDX_COMMON_REKEY_TO: {
             snprintf(outKey, outKeyLen, "Rekey to");
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), parser_tx_obj->rekey)) {
-                return parser_unexpected_buffer_end;
+            const char warning[9] = "WARNING: ";
+            const uint8_t warning_size = strnlen(warning, 9);
+            MEMCPY(buff, warning, warning_size);
+            if (!encodePubKey((uint8_t*) (buff + warning_size), sizeof(buff) - warning_size, parser_tx_obj->rekey)) {
+                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
+        }
 
         case IDX_COMMON_FEE:
             snprintf(outKey, outKeyLen, "Fee");
@@ -257,12 +261,13 @@ static parser_error_t parser_printTxKeyreg(const txn_keyreg *keyreg,
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
-        case IDX_KEYREG_SPRF_PK:
+        case IDX_KEYREG_SPRF_PK: {
             snprintf(outKey, outKeyLen, "SPRF PK");
             char tmpBuff[90];
             base64_encode((const char*) keyreg->sprfkey, sizeof(keyreg->sprfkey), tmpBuff, sizeof(tmpBuff));
             pageString(outVal, outValLen, tmpBuff, pageIdx, pageCount);
             return parser_ok;
+        }
 
         case IDX_KEYREG_VOTE_FIRST:
             snprintf(outKey, outKeyLen, "Vote first");
