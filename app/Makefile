@@ -83,7 +83,7 @@ APP_LOAD_PARAMS =  --delete $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 APP_LOAD_PARAMS += --appFlags 0x000
-APP_STACK_SIZE:=2590
+APP_STACK_SIZE:=2440
 ICONNAME:=$(CURDIR)/nanos_icon.gif
 OUTPUT_ELF ?= $(CURDIR)/output/app_s.elf
 OUTPUT_INSTALLER := $(CURDIR)/pkg/installer_s.sh
@@ -130,6 +130,9 @@ DEFINES       += USB_SEGMENT_SIZE=64
 DEFINES       += HAVE_BOLOS_APP_STACK_CANARY
 
 DEFINES       += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
+
+# Support for U2F transport
+DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"algo\" USB_SEGMENT_SIZE=64 BLE_SEGMENT_SIZE=32
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
@@ -202,9 +205,7 @@ APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/app/common
 APP_SOURCE_PATH += $(MY_DIR)/../deps/sha512
 
-# SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f lib_ux
-SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
-SDK_SOURCE_PATH  += lib_ux
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f lib_ux
 
 .PHONY: rust
 rust:

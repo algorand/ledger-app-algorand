@@ -22,7 +22,7 @@ static uint8_t common_num_items;
 static uint8_t tx_num_items;
 
 #define MAX_PARAM_SIZE 12
-#define MAX_ITEM_ARRAY 30
+#define MAX_ITEM_ARRAY 50
 static uint8_t itemArray[MAX_ITEM_ARRAY] = {0};
 static uint8_t itemIndex = 0;
 
@@ -135,6 +135,20 @@ parser_error_t _readArraySize(parser_context_t *c, uint8_t *arrayItems)
     if (byte >= FIXARR_0 && byte <= FIXARR_15) {
         *arrayItems = byte - FIXARR_0;
         return parser_ok;
+    }
+    switch (byte) {
+        case ARR16: {
+            uint16_t tmpItems = 0;
+            CHECK_ERROR(_readUInt16(c, &tmpItems))
+            if(tmpItems > UINT8_MAX) {
+                return parser_unexpected_number_items;
+            }
+            *arrayItems = (uint8_t) tmpItems;
+            return parser_ok;
+        }
+        case ARR32:
+            // Not supported
+            break;
     }
 
     return parser_msgpack_unexpected_type;
@@ -525,7 +539,6 @@ parser_error_t _verifyAppArgs(parser_context_t *c, uint16_t args_len[], uint8_t 
     }
 
     for (uint8_t i = 0; i < *args_array_len; i++) {
-        // CHECK_ERROR(_readBin(c, args[i], (uint16_t*)&args_len[i], MAX_ARGLEN))
         CHECK_ERROR(_verifyBin(c, &args_len[i], MAX_ARGLEN))
     }
 
