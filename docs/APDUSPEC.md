@@ -115,6 +115,7 @@ unsigned integer word.
 The resulting sequence of chunks is as follows:
 
 First APDU message
+
 | CLA   | INS        | P1                   | P2   | LC   | Payload   |
 |-------|------------|----------------------|------|------|-----------|
 | 0x80  | 0x08       | 0x01                 | 0x80 | N1   | account + MsgPack chunk #1   |
@@ -122,6 +123,7 @@ First APDU message
 ...
 
 APDU message i
+
 | CLA   | INS        | P1                   | P2   | LC   | Payload   |
 |-------|------------|----------------------|------|------|-----------|
 | 0x80  | 0x08       | 0x80                 | 0x80 | Ni   | MsgPack chunk #i   |
@@ -129,6 +131,7 @@ APDU message i
 ...
 
 Last APDU message
+
 | CLA   | INS        | P1                   | P2   | LC   | Payload   |
 |-------|------------|----------------------|------|------|-----------|
 | 0x80  | 0x08       | 0x80                 | 0x00 | NI   | MsgPack chunk #I   |
