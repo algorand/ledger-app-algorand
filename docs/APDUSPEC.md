@@ -64,63 +64,45 @@ The general structure of commands and responses is as follows:
 
 ---
 
-### `INS_GET_PUBLIC_KEY`:
+### INS_GET_PUBLIC_KEY
 
-Original format of this instruction is fixed with no payload.
-<pre>
-    ------------------------------------
-    | CLA  | INS  |  P1  |  P2  |  LC  |
-    ------------------------------------
-    | 0x80 | 0x03 | 0x00 | 0x00 | 0x00 |
-    ------------------------------------
-</pre>
+#### Command
 
-New format enhances this APDU with a 4-byte payload that encodes an account number (big endian 32-bit unsigned integer).
-This payload is optional so that former format may still be used. So user may send:
-<pre>
-    ------------------------------------
-    | CLA  | INS  |  P1  |  P2  |  LC  |
-    ------------------------------------
-    | 0x80 | 0x03 | 0x00 | 0x00 | 0x00 |
-    ------------------------------------
-</pre>
-or
-<pre>
-    ----------------------------------------------------------------
-    | CLA  | INS  |  P1  |  P2  |  LC  |    PAYLOAD (4 bytes)      |
-    ----------------------------------------------------------------
-    | 0x80 | 0x03 | 0x00 | 0x00 | 0x04 |        {account}          |
-    ----------------------------------------------------------------
-</pre>
+| Field   | Type     | Content                   | Expected   |
+| ------- | -------- | ------------------------- | ---------- |
+| CLA     | byte (1) | Application Identifier    | 0x80       |
+| INS     | byte (1) | Instruction ID            | 0x03       |
+| P1      | byte (1) | Request User confirmation | No = 0     |
+| P2      | byte (1) | Parameter 2               | ignored    |
+| LC      | byte (1) | Bytes in payload          | (depends)  |
+| Payload | byte (4) | Account ID                | (depends)  |
 
 The account number is used to derive keys from BIP32 path `44'/283'/<account>'/0/0`
 (note that the account number is hardened as shown by the `'` sign). Account number defaults
 to `0x0` in the case of APDU with empty payload.
 
+#### Response
+
+| Field          | Type      | Content              | Note                     |
+| -------------- | --------- | -------------------- | ------------------------ |
+| PublicKey      | byte (65) | Public Key           |                          |
+| Address        | byte (58) | Address              |                          |
+| SW1-SW2        | byte (2)  | Return code          | see list of return codes |
+
 ---
+### INS_SIGN_MSGPACK
 
-### `INS_SIGN_MSGPACK`
+#### Command
 
-Original format is as shown below where transaction contents may be split in multiple APDUs:
-<pre>
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (N1 bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x00 | 0x80 |  N1  | {MessagePack Chunk#1}
-    ------------------------------------------------------------------------ - - -
-    ...
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (Ni bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x80 | 0x80 |  Ni   | {MessagePack Chunk#i}
-    ------------------------------------------------------------------------ - - -
-    ...
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (NI bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x80 | 0x00 |  NI  | {MessagePack Chunk#I}
-    ------------------------------------------------------------------------ - - -
-</pre>
+| Field   | Type        | Content                   | Expected   |
+| ------- | --------    | ------------------------- | ---------- |
+| CLA     | byte (1)    | Application Identifier    | 0x80       |
+| INS     | byte (1)    | Instruction ID            | 0x08       |
+| P1      | byte (1)    | Request User confirmation | (depends)  |
+| P2      | byte (1)    | Parameter 2               | (depends)  |
+| LC      | byte (1)    | Bytes in payload          | (depends)  |
+| Payload | byte (var)  | AccID + MsgPack Chunks    | (depends)  |
+
 If one single APDU may contain a whole transaction, `P1` and `P2` are both `0x00`.
 
 New format enhances messaging with an optional account number that must be inserted
@@ -131,28 +113,52 @@ And as for `INS_GET_PUBLIC_KEY` instruction, it is a big-endian encoded 32-bit
 unsigned integer word.
 
 The resulting sequence of chunks is as follows:
-<pre>
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (N1 bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x01 | 0x80 |  N1  | {account (4 bytes)} + {MessagePack Chunk#1 (N1 - 4 bytes)}
-    ------------------------------------------------------------------------ - - -
-    ...
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (Ni bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x80 | 0x80 |  Ni   | {MessagePack Chunk#i}
-    ------------------------------------------------------------------------ - - -
-    ...
-    ------------------------------------------------------------------------ - - -
-    | CLA  | INS  |  P1  |  P2  |  LC  |  PAYLOAD (NI bytes)
-    ------------------------------------------------------------------------ - - -
-    | 0x80 | 0x03 | 0x80 | 0x00 |  NI  | {MessagePack Chunk#I}
-    ------------------------------------------------------------------------ - - -
-</pre>
+
+First APDU message
+| CLA   | INS        | P1                   | P2   | LC   | Payload   |
+|-------|------------|----------------------|------|------|-----------|
+| 0x80  | 0x08       | 0x01                 | 0x80 | N1   | account + MsgPack chunk #1   |
+
+...
+
+APDU message i
+| CLA   | INS        | P1                   | P2   | LC   | Payload   |
+|-------|------------|----------------------|------|------|-----------|
+| 0x80  | 0x08       | 0x80                 | 0x80 | Ni   | MsgPack chunk #i   |
+
+...
+
+Last APDU message
+| CLA   | INS        | P1                   | P2   | LC   | Payload   |
+|-------|------------|----------------------|------|------|-----------|
+| 0x80  | 0x08       | 0x80                 | 0x00 | NI   | MsgPack chunk #I   |
+
+#### Response
+
+| Field          | Type      | Content              | Note                     |
+| -------------- | --------- | -------------------- | ------------------------ |
+| Signature      | byte (64)| Signed message       |                          |
+| SW1-SW2        | byte (2)  | Return code          | see list of return codes |
+
+
+
 If one signle APDU is needed for the whole transaction along with the account number,
 `P1` and `P2` are `0x01` and `0x00` respectively.
+
+| CLA   | INS        | P1                   | P2   | LC   | Payload   |
+|-------|------------|----------------------|------|------|-----------|
+| 0x80  | 0x08       | 0x01                 | 0x00 | N1   | account + MsgPack txn   |
 
 If the account number is not inserted within the message, the former message format is used
 (`P1` in the first chunk is `0x00`) and the account number defaults to `0x00` for the transaction
 signature.
+
+
+| CLA   | INS        | P1                   | P2   | LC   | Payload   |
+|-------|------------|----------------------|------|------|-----------|
+| 0x80  | 0x08       | 0x00                 | 0x00 | N1   | MsgPack txn   |
+
+
+
+
+---
