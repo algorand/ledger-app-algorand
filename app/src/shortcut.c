@@ -24,26 +24,26 @@
 #include "view_internal.h"
 #include "zxformat.h"
 
-void blind_toggle() {
-#ifdef APP_BLIND_MODE_ENABLED
-  app_mode_set_blind(!app_mode_blind());
+void shortcut_toggle() {
+#ifdef SHORTCUT_MODE_ENABLED
+  app_mode_set_shortcut(!app_mode_shortcut());
   view_idle_show(0, NULL);
 #endif
 }
 
-static const char *blindMessage =
-    "You are about to enable blind signing mode. If you are not sure why you "
+static const char *shortcutMessage =
+    "You are about to enable shortcut mode. If you are not sure why you "
     "are here, reject or unplug your device immediately. Activating this mode "
     "will allow you to sign transactions without reviewing each transaction "
     "field.";
 
-zxerr_t blind_getNumItems(uint8_t *num_items) {
-  zemu_log_stack("blind_getNumItems");
+zxerr_t shortcut_getNumItems(uint8_t *num_items) {
+  zemu_log_stack("shortcut_getNumItems\n");
   *num_items = 1;
   return zxerr_ok;
 }
 
-zxerr_t blind_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen,
+zxerr_t shortcut_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen,
                       char *outVal, uint16_t outValLen, uint8_t pageIdx,
                       uint8_t *pageCount) {
   if (displayIdx != 0) {
@@ -52,13 +52,13 @@ zxerr_t blind_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen,
 
   snprintf(outKey, outKeyLen, "Warning!");
 
-  pageString(outVal, outValLen, (char*)PIC(blindMessage), pageIdx, pageCount);
+  pageString(outVal, outValLen, (const char*)PIC(shortcutMessage), pageIdx, pageCount);
   return zxerr_ok;
 }
 
-zxerr_t blind_enabled() {
-#ifdef APP_BLIND_MODE_ENABLED
-  view_review_init(blind_getItem, blind_getNumItems, blind_toggle);
+zxerr_t shortcut_enabled() {
+#ifdef SHORTCUT_MODE_ENABLED
+  view_review_init(shortcut_getItem, shortcut_getNumItems, shortcut_toggle);
   view_review_show(REVIEW_UI);
 #endif
   return zxerr_ok;

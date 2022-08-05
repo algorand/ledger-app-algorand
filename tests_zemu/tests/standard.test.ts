@@ -101,6 +101,29 @@ describe('Standard', function () {
     }
   })
 
+  // Legacy
+  test.each(models)('get pubkey', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new AlgorandApp(sim.getTransport())
+
+      const tmpAccountId = 123
+      const resp = await app.getPubkey(tmpAccountId)
+
+      console.log(resp)
+
+      expect(resp.return_code).toEqual(0x9000)
+      expect(resp.error_message).toEqual('No errors')
+
+      const expected_pk = '0dfdbcdb8eebed628cfb4ef70207b86fd0deddca78e90e8c59d6f441e383b377'
+      expect(resp.publicKey).toEqual(expected_pk)
+
+    } finally {
+      await sim.close()
+    }
+  })
+
   test.each(models)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {

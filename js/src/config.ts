@@ -17,6 +17,7 @@ export const CLA = 0x80;
 export const INS = {
   GET_VERSION: 0x00,
   GET_PUBLIC_KEY: 0x03,
+  GET_ADDRESS: 0x04,
   SIGN_MSGPACK: 0x08,
 };
 export const PKLEN = 32;
