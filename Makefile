@@ -1,119 +1,53 @@
+#*******************************************************************************
+#*   (c) 2018 -2022 Zondax AG
+#*
+#*  Licensed under the Apache License, Version 2.0 (the "License");
+#*  you may not use this file except in compliance with the License.
+#*  You may obtain a copy of the License at
+#*
+#*      http://www.apache.org/licenses/LICENSE-2.0
+#*
+#*  Unless required by applicable law or agreed to in writing, software
+#*  distributed under the License is distributed on an "AS IS" BASIS,
+#*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#*  See the License for the specific language governing permissions and
+#*  limitations under the License.
+#********************************************************************************
+
+# We use BOLOS_SDK to determine the development environment that is being used
+# BOLOS_SDK IS  DEFINED	 	We use the plain Makefile for Ledger
+# BOLOS_SDK NOT DEFINED		We use a containerized build approach
+
+TESTS_JS_PACKAGE = "@zondax/ledger-algorand"
+TESTS_JS_DIR = $(CURDIR)/js
+
 ifeq ($(BOLOS_SDK),)
-$(error BOLOS_SDK is not set)
-endif
-include $(BOLOS_SDK)/Makefile.defines
-include $(BOLOS_SDK)/Makefile.glyphs
+# In this case, there is not predefined SDK and we run dockerized
+# When not using the SDK, we override and build the XL complete app
 
-# Main app configuration
+SUBSTRATE_PARSER_FULL ?= 1
+include $(CURDIR)/deps/ledger-zxlib/dockerized_build.mk
 
-APPNAME = "Algorand"
-APPVERSION = 1.2.16
-APP_LOAD_PARAMS = --appFlags 0x250 $(COMMON_LOAD_PARAMS)
-APP_LOAD_PARAMS += --path "44'/283'"
-
-# Choose appropriate icon
-
-ifeq ($(TARGET_NAME),TARGET_NANOS)
-ICONNAME=icons/app_logo_s.gif
 else
-ICONNAME=icons/app_logo_x.gif
+default:
+	$(MAKE) -C app
+%:
+	$(info "Calling app Makefile for target $@")
+	COIN=$(COIN) $(MAKE) -C app $@
 endif
 
-# Build configuration
+# tests_tools_build:
+# 	cd tests_tools/neon && yarn install
 
-APP_SOURCE_PATH += src
-SDK_SOURCE_PATH += lib_stusb lib_stusb_impl lib_u2f lib_ux
+# tests_tools_test: tests_tools_build
+# 	cd tests_tools/neon && yarn test
 
-DEFINES += APPVERSION=\"$(APPVERSION)\"
+# zemu_install: tests_tools_build
 
-DEFINES += OS_IO_SEPROXYHAL
-DEFINES += HAVE_BAGL HAVE_SPRINTF
-DEFINES += HAVE_BOLOS_APP_STACK_CANARY
-DEFINES += HAVE_UX_FLOW
-
-ifeq ($(TARGET_NAME),TARGET_NANOX)
-DEFINES += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
-DEFINES += HAVE_BLE_APDU
-
-SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
-endif
-
-ifeq ($(TARGET_NAME),TARGET_NANOS)
-DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
-else
-DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
-DEFINES += HAVE_GLO096
-DEFINES += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
-DEFINES += HAVE_BAGL_ELLIPSIS
-DEFINES += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
-DEFINES += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
-DEFINES += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
-endif
-
-# Enabling debug PRINTF
-DEBUG = 0
-ifneq ($(DEBUG),0)
-
-        ifeq ($(TARGET_NAME),TARGET_NANOS)
-                DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-        else
-                DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
-        endif
-else
-        DEFINES   += PRINTF\(...\)=
-endif
-
-DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=4 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
-
-#WEBUSB_URL = ledger-app.algorand.com
-#DEFINES += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
-DEFINES   += HAVE_WEBUSB WEBUSB_URL_SIZE_B=0 WEBUSB_URL=""
-
-# Support for U2F transport
-DEFINES += HAVE_U2F HAVE_IO_U2F U2F_PROXY_MAGIC=\"algo\" USB_SEGMENT_SIZE=64 BLE_SEGMENT_SIZE=32
-
-# Compiler, assembler, and linker
-
-ifneq ($(BOLOS_ENV),)
-$(info BOLOS_ENV=$(BOLOS_ENV))
-CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
-else
-$(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
-endif
-
-ifeq ($(CLANGPATH),)
-$(info CLANGPATH is not set: clang will be used from PATH)
-endif
-
-ifeq ($(GCCPATH),)
-$(info GCCPATH is not set: arm-none-eabi-* will be used from PATH)
-endif
-
-CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os
-
-AS := $(GCCPATH)arm-none-eabi-gcc
-AFLAGS +=
-
-LD := $(GCCPATH)arm-none-eabi-gcc
-LDFLAGS += -O3 -Os
-LDLIBS += -lm -lgcc -lc
-
-# Main rules
-
-all: default
-
-load: all
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
-
-delete:
-	python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
-
-# Import generic rules from the SDK
-
-include $(BOLOS_SDK)/Makefile.rules
-
-
-listvariants:
-	@echo VARIANTS COIN algorand
+test_all:
+	make zemu_install
+	# test sr25519
+	make clean_build && SUBSTRATE_PARSER_FULL=1 SUPPORT_SR25519=1 make buildS
+	cd tests_zemu && yarn testSR25519
+	make clean_build && SUBSTRATE_PARSER_FULL=1 make
+	make zemu_test
