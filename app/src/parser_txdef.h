@@ -116,9 +116,9 @@ typedef struct {
   uint64_t total;
   uint64_t decimals;
   uint8_t default_frozen;
-  char unitname[8];
-  char assetname[32];
-  char url[32];
+  char unitname[9];
+  char assetname[33];
+  char url[33];
   uint8_t metadata_hash[32];
   uint8_t manager[32];
   uint8_t reserve[32];
