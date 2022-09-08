@@ -86,7 +86,7 @@ TEST(SCALE, EncodingUint8) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
@@ -127,7 +127,7 @@ TEST(SCALE, EncodingUint16) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
@@ -167,7 +167,7 @@ TEST(SCALE, EncodingUint32) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
@@ -207,7 +207,7 @@ TEST(SCALE, EncodingUint64) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
@@ -247,7 +247,7 @@ TEST(SCALE, EncodingString) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
@@ -286,7 +286,7 @@ TEST(SCALE, EncodingBoolean) {
 
     parser_init(&ctx, buffer, bufferLen);
 
-    uint8_t mapItems {0};
+    uint16_t mapItems {0};
     err = _readMapSize(&ctx, &mapItems);
     EXPECT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     EXPECT_EQ(mapItems, 2);
