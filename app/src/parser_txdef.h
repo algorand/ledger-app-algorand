@@ -118,7 +118,7 @@ typedef struct {
   uint8_t default_frozen;
   char unitname[9];
   char assetname[33];
-  char url[33];
+  char url[97];
   uint8_t metadata_hash[32];
   uint8_t manager[32];
   uint8_t reserve[32];
