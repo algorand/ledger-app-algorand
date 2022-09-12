@@ -103,18 +103,18 @@ static uint8_t getMsgPackType(uint8_t byte)
     return byte;
 }
 
-parser_error_t _readMapSize(parser_context_t *c, uint8_t *mapItems)
+parser_error_t _readMapSize(parser_context_t *c, uint16_t *mapItems)
 {
     uint8_t byte = 0;
     CHECK_ERROR(_readUInt8(c, &byte))
 
     switch (getMsgPackType(byte)) {
         case FIXMAP_0:
-            *mapItems = byte - FIXMAP_0;
+            *mapItems = (uint16_t) byte - FIXMAP_0;
         break;
 
         case MAP16:
-            CHECK_ERROR(_readUInt16(c, (uint16_t*)mapItems))
+            CHECK_ERROR(_readUInt16(c, mapItems))
         break;
 
         case MAP32:
@@ -198,7 +198,7 @@ parser_error_t _readString(parser_context_t *c, uint8_t *buff, uint16_t buffLen)
         break;
     }
 
-    if (strLen > buffLen) {
+    if (strLen >= buffLen) {
         return parser_msgpack_str_too_big;
     }
     CHECK_ERROR(_readBytes(c, buff, strLen))
@@ -404,7 +404,7 @@ static parser_error_t _readAssetParams(parser_context_t *c, txn_asset_config *as
     uint8_t available_params[MAX_PARAM_SIZE];
     memset(available_params, 0xFF, MAX_PARAM_SIZE);
 
-    uint8_t paramsSize = 0;
+    uint16_t paramsSize = 0;
     CHECK_ERROR(_readMapSize(c, &paramsSize))
 
     if(paramsSize > MAX_PARAM_SIZE) {
@@ -412,7 +412,7 @@ static parser_error_t _readAssetParams(parser_context_t *c, txn_asset_config *as
     }
 
     uint8_t key[10] = {0};
-    for(uint8_t i = 0; i < paramsSize; i++) {
+    for(uint16_t i = 0; i < paramsSize; i++) {
         CHECK_ERROR(_readString(c, key, sizeof(key)))
 
         if (strncmp((char*)key, KEY_APARAMS_TOTAL, strlen(KEY_APARAMS_TOTAL)) == 0) {
@@ -615,10 +615,10 @@ parser_error_t _verifyAccounts(parser_context_t *c, uint8_t* num_accounts, uint8
 
 parser_error_t _readStateSchema(parser_context_t *c, state_schema *schema)
 {
-    uint8_t mapSize = 0;
+    uint16_t mapSize = 0;
     CHECK_ERROR(_readMapSize(c, &mapSize))
     uint8_t key[32];
-    for (size_t i = 0; i < mapSize; i++) {
+    for (uint16_t i = 0; i < mapSize; i++) {
         CHECK_ERROR(_readString(c, key, sizeof(key)))
         if (strncmp((char*)key, KEY_SCHEMA_NUI, sizeof(KEY_SCHEMA_NUI)) == 0) {
             CHECK_ERROR(_readInteger(c, &schema->num_uint))
@@ -985,7 +985,7 @@ parser_error_t _readArray_args(parser_context_t *c, uint8_t args[][MAX_ARGLEN], 
 
 parser_error_t _read(parser_context_t *c, parser_tx_t *v)
 {
-    uint8_t keyLen = 0;
+    uint16_t keyLen = 0;
     CHECK_ERROR(initializeItemArray())
 
     CHECK_ERROR(_readMapSize(c, &keyLen))

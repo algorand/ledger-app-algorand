@@ -61,7 +61,7 @@ uint8_t _getTxNumItems();
 
 parser_error_t _read(parser_context_t *c, parser_tx_t *v);
 
-parser_error_t _readMapSize(parser_context_t *c, uint8_t *mapItems);
+parser_error_t _readMapSize(parser_context_t *c, uint16_t *mapItems);
 parser_error_t _readArraySize(parser_context_t *c, uint8_t *mapItems);
 parser_error_t _readString(parser_context_t *c, uint8_t *buff, uint16_t buffLen);
 parser_error_t _readInteger(parser_context_t *c, uint64_t* value);
