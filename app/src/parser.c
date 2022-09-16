@@ -425,7 +425,7 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
                                                    uint8_t pageIdx, uint8_t *pageCount)
 {
     *pageCount = 1;
-    char buff[45] = {0};
+    char buff[100] = {0};
     switch (displayIdx) {
         case IDX_CONFIG_ASSET_ID:
             snprintf(outKey, outKeyLen, "Asset ID");

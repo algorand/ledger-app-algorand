@@ -64,7 +64,7 @@
 
        // Wait until we are not in the main menu
        await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application_big`, 50000)
+       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application_big`)
 
        const signatureResponse = await signatureRequest
        console.log(signatureResponse)

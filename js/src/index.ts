@@ -202,7 +202,7 @@ export default class AlgorandApp {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getAddressAndPubKey(accountId = 0, requireConfirmation = false): Promise<ResponseAddress> {
+  async getPubkey(accountId = 0, requireConfirmation = false): Promise<ResponseAddress> {
     const data = Buffer.alloc(4);
     data.writeUInt32BE(accountId)
 
@@ -210,6 +210,18 @@ export default class AlgorandApp {
 
     return this.transport
       .send(CLA, INS.GET_PUBLIC_KEY, p1_value, P2_VALUES.DEFAULT, data, [0x9000])
+      .then(processGetAddrResponse, processErrorResponse);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getAddressAndPubKey(accountId = 0, requireConfirmation = false): Promise<ResponseAddress> {
+    const data = Buffer.alloc(4);
+    data.writeUInt32BE(accountId)
+
+    const p1_value = requireConfirmation ? P1_VALUES.SHOW_ADDRESS_IN_DEVICE : P1_VALUES.ONLY_RETRIEVE
+
+    return this.transport
+      .send(CLA, INS.GET_ADDRESS, p1_value, P2_VALUES.DEFAULT, data, [0x9000])
       .then(processGetAddrResponse, processErrorResponse);
   }
 

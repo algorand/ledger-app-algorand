@@ -146,6 +146,7 @@ __Z_INLINE void handle_sign_msgpack(volatile uint32_t *flags, volatile uint32_t 
 __Z_INLINE void handle_get_public_key(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx)
 {
     const uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
+    const bool u2f_compatibility = G_io_apdu_buffer[OFFSET_INS] == INS_GET_PUBLIC_KEY;
     extractHDPath();
 
     zxerr_t err = app_fill_address();
@@ -158,6 +159,11 @@ __Z_INLINE void handle_get_public_key(volatile uint32_t *flags, volatile uint32_
         view_review_show(REVIEW_ADDRESS);
         *flags |= IO_ASYNCH_REPLY;
         return;
+    }
+
+    //U2F compatibility: return only pubkey
+    if (u2f_compatibility) {
+        action_addrResponseLen = PK_LEN_25519;
     }
 
     *tx = action_addrResponseLen;
@@ -210,16 +216,13 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             const uint8_t ins = G_io_apdu_buffer[OFFSET_INS];
             switch (ins) {
                 case INS_SIGN_MSGPACK:
-                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
-                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
-                    }
+                    CHECK_PIN_VALIDATED()
                     handle_sign_msgpack(flags, tx, rx);
                     break;
 
+                case INS_GET_ADDRESS:
                 case INS_GET_PUBLIC_KEY: {
-                    if( os_global_pin_is_validated() != BOLOS_UX_OK ) {
-                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
-                    }
+                    CHECK_PIN_VALIDATED()
                     handle_get_public_key(flags, tx, rx);
                     break;
                 }

@@ -43,15 +43,9 @@
 #define P2_LAST  0x00
 #define P2_MORE  0x80
 
-#define INS_GET_VERSION                 0x00
-#define INS_SIGN_SECP256K1              0x02
-#define INS_GET_ADDR_SECP256K1          0x04
-
+#define INS_GET_VERSION     0x00
 #define INS_GET_PUBLIC_KEY  0x03
-#define INS_SIGN_PAYMENT_V2 0x04
-#define INS_SIGN_KEYREG_V2  0x05
-#define INS_SIGN_PAYMENT_V3 0x06
-#define INS_SIGN_KEYREG_V3  0x07
+#define INS_GET_ADDRESS     0x04
 #define INS_SIGN_MSGPACK    0x08
 
 void app_init();

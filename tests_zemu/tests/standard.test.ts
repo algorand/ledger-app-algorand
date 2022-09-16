@@ -101,6 +101,29 @@ describe('Standard', function () {
     }
   })
 
+  // Legacy
+  test.each(models)('get pubkey', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new AlgorandApp(sim.getTransport())
+
+      const tmpAccountId = 123
+      const resp = await app.getPubkey(tmpAccountId)
+
+      console.log(resp)
+
+      expect(resp.return_code).toEqual(0x9000)
+      expect(resp.error_message).toEqual('No errors')
+
+      const expected_pk = '0dfdbcdb8eebed628cfb4ef70207b86fd0deddca78e90e8c59d6f441e383b377'
+      expect(resp.publicKey).toEqual(expected_pk)
+
+    } finally {
+      await sim.close()
+    }
+  })
+
   test.each(models)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
@@ -159,7 +182,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_freeze`,50000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_freeze`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
@@ -192,7 +215,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_transfer`,50000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_transfer`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
@@ -225,7 +248,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_config`,50000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_asset_config`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
@@ -258,7 +281,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_keyreg`, 30000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_keyreg`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
@@ -291,7 +314,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_payment`,50000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_payment`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
@@ -324,7 +347,7 @@ describe('Standard', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application`, 50000)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application`)
 
       const signatureResponse = await signatureRequest
       console.log(signatureResponse)
