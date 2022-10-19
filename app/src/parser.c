@@ -162,6 +162,12 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
             pageString(outVal, outValLen, parser_tx_obj->genesisID, pageIdx, pageCount);
             return parser_ok;
 
+        case IDX_COMMON_LEASE:
+            snprintf(outKey, outKeyLen, "Lease");
+            base64_encode((const char*) parser_tx_obj->lease, sizeof(parser_tx_obj->lease), buff, sizeof(buff));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
+            return parser_ok;
+
         case IDX_COMMON_GEN_HASH:
             snprintf(outKey, outKeyLen, "Genesis hash");
             base64_encode((const char*) parser_tx_obj->genesisHash, sizeof(parser_tx_obj->genesisHash), buff, sizeof(buff));

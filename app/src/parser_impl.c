@@ -699,7 +699,12 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
     CHECK_ERROR(_readBinFixed(c, v->sender, sizeof(v->sender)))
     DISPLAY_ITEM(IDX_COMMON_SENDER, 1, common_num_items)
 
-    if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) {
+    if (_findKey(c, KEY_COMMON_LEASE) == parser_ok) {
+        CHECK_ERROR(_readBinFixed(c, v->lease, sizeof(v->lease)))
+        DISPLAY_ITEM(IDX_COMMON_LEASE, 1, common_num_items)
+    }
+
+    if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) { 
         CHECK_ERROR(_readBinFixed(c, v->rekey, sizeof(v->rekey)))
         DISPLAY_ITEM(IDX_COMMON_REKEY_TO, 1, common_num_items)
     }

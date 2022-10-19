@@ -42,6 +42,7 @@ typedef enum tx_type_e {
 #define KEY_TX_APPLICATION        "appl"
 
 #define KEY_COMMON_SENDER         "snd"
+#define KEY_COMMON_LEASE          "lx"
 #define KEY_COMMON_REKEY          "rekey"
 #define KEY_COMMON_FEE            "fee"
 #define KEY_COMMON_FIRST_VALID    "fv"
@@ -222,6 +223,7 @@ typedef struct{
   char genesisID[32];
   uint8_t genesisHash[32];
   uint8_t groupID[32];
+  uint8_t lease[32];
 
   uint16_t note_len;
 } parser_tx_t;
@@ -232,6 +234,7 @@ typedef enum {
   IDX_COMMON_SENDER = 0,
   IDX_COMMON_FEE,
   IDX_COMMON_GEN_HASH,
+  IDX_COMMON_LEASE,
   IDX_COMMON_GEN_ID,
   IDX_COMMON_NOTE,
   IDX_COMMON_GROUP_ID,
