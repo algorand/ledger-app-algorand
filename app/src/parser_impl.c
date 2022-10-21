@@ -161,6 +161,14 @@ static parser_error_t _verifyBytes(parser_context_t *c, uint16_t buffLen)
     return parser_ok;
 }
 
+static parser_error_t _getPointerBytes(parser_context_t *c, uint8_t **buff, uint16_t buffLen)
+{
+    CTX_CHECK_AVAIL(c, buffLen)
+    *buff = c->buffer + c->offset;
+    CTX_CHECK_AND_ADVANCE(c, buffLen)
+    return parser_ok;
+}
+
 parser_error_t _readBytes(parser_context_t *c, uint8_t *buff, uint16_t buffLen)
 {
     CTX_CHECK_AVAIL(c, buffLen)
@@ -375,6 +383,44 @@ static parser_error_t _readBin(parser_context_t *c, uint8_t *buff, uint16_t *buf
     CHECK_ERROR(_readBytes(c, buff, *bufferLen))
     return parser_ok;
 }
+
+
+static parser_error_t _getPointerBin(parser_context_t *c, uint8_t **buff, uint16_t *bufferLen)
+{
+    zemu_log_stack("Function _getPointerBin started");
+    uint8_t binType = 0;
+    uint16_t binLen = 0;
+    CHECK_ERROR(_readUInt8(c, &binType))
+    switch (binType)
+    {
+        case BIN8: {
+            uint8_t tmp = 0;
+            CHECK_ERROR(_readUInt8(c, &tmp))
+            binLen = (uint16_t)tmp;
+            break;
+        }
+        case BIN16: {
+            CHECK_ERROR(_readUInt16(c, &binLen))
+            break;
+        }
+        case BIN32: {
+            return parser_msgpack_bin_type_not_supported;
+            break;
+        }
+        default: {
+            return parser_msgpack_bin_type_expected;
+            break;
+        }
+    }
+
+    *bufferLen = binLen;
+
+    CHECK_ERROR(_getPointerBytes(c, buff, *bufferLen));
+
+
+    return parser_ok;
+}
+
 
 parser_error_t _readBool(parser_context_t *c, uint8_t *value)
 {
@@ -957,12 +1003,12 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
     }
 
     if (_findKey(c, KEY_APP_APROG_LEN) == parser_ok) {
-        CHECK_ERROR(_readBin(c, application->aprog, &application->aprog_len, sizeof(application->aprog)))
+        CHECK_ERROR(_getPointerBin(c, &application->aprog, &application->aprog_len))
         DISPLAY_ITEM(IDX_APPROVE, 1, tx_num_items)
     }
 
    if (_findKey(c, KEY_APP_CPROG_LEN) == parser_ok) {
-       CHECK_ERROR(_readBin(c, application->cprog, &application->cprog_len, sizeof(application->cprog)))
+       CHECK_ERROR(_getPointerBin(c, &application->cprog, &application->cprog_len))
        DISPLAY_ITEM(IDX_CLEAR, 1, tx_num_items)
    }
 
