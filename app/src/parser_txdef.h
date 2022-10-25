@@ -79,6 +79,7 @@ typedef enum tx_type_e {
 
 #define KEY_APP_ID                "apid"
 #define KEY_APP_ARGS              "apaa"
+#define KEY_APP_EXTRA_PAGES       "apep"
 #define KEY_APP_APROG_LEN         "apap"
 #define KEY_APP_CPROG_LEN         "apsu"
 #define KEY_APP_ONCOMPLETION      "apan"
@@ -185,6 +186,7 @@ typedef struct {
   uint8_t num_foreign_apps;
   uint8_t num_foreign_assets;
   uint8_t num_app_args;
+  uint8_t extra_pages;
   uint16_t aprog_len;
   uint16_t cprog_len;
   uint64_t id;
@@ -297,11 +299,13 @@ typedef enum {
   IDX_APP_ARGS,
   IDX_GLOBAL_SCHEMA,
   IDX_LOCAL_SCHEMA,
+  IDX_EXTRA_PAGES,
   IDX_APPROVE,
   IDX_CLEAR,
 } txn_application_index_e;
 
 #define MAX_NOTE_LEN 1024
+#define PAGE_LEN 2048
 
 #ifdef __cplusplus
 }

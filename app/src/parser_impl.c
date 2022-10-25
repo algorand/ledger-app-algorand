@@ -1002,6 +1002,14 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
         DISPLAY_ITEM(IDX_LOCAL_SCHEMA, 1, tx_num_items)
     }
 
+    if (_findKey(c, KEY_APP_EXTRA_PAGES) == parser_ok) {
+        CHECK_ERROR(_readUInt8(c, &application->extra_pages))
+        if (application->extra_pages > 3){
+            return parser_too_many_extra_pages;
+        }
+        DISPLAY_ITEM(IDX_EXTRA_PAGES, 1, tx_num_items)
+    }
+
     if (_findKey(c, KEY_APP_APROG_LEN) == parser_ok) {
         CHECK_ERROR(_getPointerBin(c, &application->aprog, &application->aprog_len))
         DISPLAY_ITEM(IDX_APPROVE, 1, tx_num_items)
@@ -1011,6 +1019,10 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
        CHECK_ERROR(_getPointerBin(c, &application->cprog, &application->cprog_len))
        DISPLAY_ITEM(IDX_CLEAR, 1, tx_num_items)
    }
+
+    if (application->cprog_len + application->aprog_len > PAGE_LEN *(1+application->extra_pages)){
+        return parser_program_fields_too_long;
+    }
 
     return parser_ok;
 }

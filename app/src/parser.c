@@ -609,6 +609,13 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
             snprintf(outKey, outKeyLen, "Local schema");
             return _toStringSchema(&application->local_schema, outVal, outValLen, pageIdx, pageCount);
 
+        case IDX_EXTRA_PAGES:
+            snprintf(outKey, outKeyLen, "Extra pages");
+            if (uint8_to_str(outVal, outValLen, application->extra_pages) != NULL) {
+                return parser_unexpected_error;
+            }
+            return parser_ok;
+        
         case IDX_APPROVE:
             snprintf(outKey, outKeyLen, "Apprv");
             b64hash_data((unsigned char*) application->aprog, application->aprog_len, buff, sizeof(buff));
