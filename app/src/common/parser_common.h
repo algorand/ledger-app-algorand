@@ -53,6 +53,7 @@ typedef enum {
     parser_query_no_results,
     parser_program_fields_too_long,
     parser_too_many_extra_pages,
+    parser_buffer_too_small,
 
     paser_unknown_transaction,
 

@@ -93,6 +93,35 @@ static parser_error_t checkSanity(uint8_t numItems, uint8_t displayIdx)
     return parser_ok;
 }
 
+static parser_error_t uint8_to_str(char *data, int dataLen, uint8_t number) {
+    if (dataLen < 2) return parser_buffer_too_small;
+    MEMZERO(data, dataLen);
+    char *p = data;
+    if (number < 0) {
+        *(p++) = '-';
+        data++;
+    }
+    else if (number == 0) {
+        *(p++) = '0';
+    }
+    uint8_t tmp;
+    while (number != 0) {
+        if (p - data >= (dataLen - 1)) {
+            return parser_buffer_too_small;
+        }
+        tmp = number % 10;
+        tmp = tmp < 0 ? -tmp : tmp;
+        *(p++) = (char) ('0' + tmp);
+        number /= 10u;
+    }
+    while (p > data) {
+        p--;
+        char z = *data; *data = *p; *p = z;
+        data++;
+    }
+    return parser_ok;
+}
+
 static parser_error_t parser_printTxType(const parser_context_t *ctx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t *pageCount)
 {
     *pageCount = 1;
@@ -611,7 +640,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
 
         case IDX_EXTRA_PAGES:
             snprintf(outKey, outKeyLen, "Extra pages");
-            if (uint8_to_str(outVal, outValLen, application->extra_pages) != NULL) {
+            if (uint8_to_str(outVal, outValLen, application->extra_pages) != parser_ok) {
                 return parser_unexpected_error;
             }
             return parser_ok;

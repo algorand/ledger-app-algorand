@@ -949,6 +949,7 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
     application->num_foreign_assets = 0;
     application->num_accounts = 0;
     application->num_app_args = 0;
+    application->extra_pages = 0;
 
     if (_findKey(c, KEY_APP_ID) == parser_ok) {
         CHECK_ERROR(_readInteger(c, &application->id))
