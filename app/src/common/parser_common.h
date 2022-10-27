@@ -55,7 +55,7 @@ typedef enum {
     parser_too_many_extra_pages,
     parser_buffer_too_small,
 
-    paser_unknown_transaction,
+    parser_unknown_transaction,
 
     parser_key_not_found,
 
