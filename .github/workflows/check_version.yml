@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: checkTag
-        uses: mukunku/tag-exists-action@v1.0.0
+        uses: mukunku/tag-exists-action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
