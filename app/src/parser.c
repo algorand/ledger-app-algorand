@@ -575,7 +575,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_FOREIGN_APP: {
-            const uint8_t tmpIdx = (displayIdx - (application->num_boxes-1)) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - (application->num_boxes)) - IDX_BOXES;
             snprintf(outKey, outKeyLen, "Foreign app %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_apps[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -584,7 +584,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_FOREIGN_ASSET: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps- (application->num_boxes-1)) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps- application->num_boxes) - IDX_BOXES;
             snprintf(outKey, outKeyLen, "Foreign asset %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_assets[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -593,7 +593,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_ACCOUNTS: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - (application->num_boxes-1)) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_boxes) - IDX_BOXES;
             uint8_t account[ACCT_SIZE] = {0};
             snprintf(outKey, outKeyLen, "Account %d", tmpIdx);
             CHECK_ERROR(_getAccount(ctx, account, tmpIdx, application->num_accounts))
@@ -605,7 +605,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_APP_ARGS: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts - (application->num_boxes-1)) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts - application->num_boxes) - IDX_BOXES;
             snprintf(outKey, outKeyLen, "App arg %d", tmpIdx);
             uint8_t* app_args_ptr = NULL;
             CHECK_ERROR(_getAppArg(ctx, &app_args_ptr, &application->app_args_len[tmpIdx], tmpIdx, MAX_ARGLEN, MAX_ARG))

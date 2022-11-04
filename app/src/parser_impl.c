@@ -697,10 +697,10 @@ parser_error_t _readBoxes(parser_context_t *c, box boxes[], uint8_t *num_element
     }
     uint16_t previous_offset = c->offset;
     for (size_t j = 0; j < *num_elements; j++) {
-        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_INDEX,previous_offset))
+        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_INDEX, previous_offset))
         previous_offset = c->offset;
         CHECK_ERROR(_readUInt8(c, &boxes[j].i))
-        CHECK_ERROR(_findKeyFromOffset(c,KEY_APP_BOX_NAME,previous_offset))
+        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_NAME, previous_offset))
         CHECK_ERROR(_getPointerBin(c, &boxes[j].n, &boxes[j].n_len))
         previous_offset = c->offset;
     }
@@ -812,21 +812,7 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
 
 parser_error_t _findKey(parser_context_t *c, const char *key)
 {
-    uint8_t buff[100] = {0};
-    uint8_t buffLen = sizeof(buff);
-    uint16_t currentOffset = c->offset;
-    c->offset = 0;
-    for (size_t offset = 0; offset < c->bufferLen; offset++) {
-        if (_readString(c, buff, buffLen) == parser_ok) {
-            if (strlen((char*)buff) == strlen(key) && strncmp((char*)buff, key, strlen(key)) == 0) {
-                return parser_ok;
-            }
-        }
-        c->offset = offset + 1;
-    }
-    // Return buffer to previous offset if key is not found
-    c->offset = currentOffset;
-    return parser_no_data;
+    return _findKeyFromOffset(c, key, 0);
 }
 
 parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const uint16_t searchOffset)
