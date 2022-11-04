@@ -176,7 +176,7 @@ typedef struct {
 typedef struct {
     uint8_t i;
     uint8_t* n; // max size 64
-    uint8_t n_len;
+    uint16_t n_len;
 }box;
 
 typedef struct {
