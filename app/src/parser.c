@@ -590,8 +590,21 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
             }
             return parser_ok;
 
+        case IDX_BOXES: {
+            const uint8_t tmpIdx = displayIdx -  IDX_BOXES;
+            if (tmpIdx == 0){
+                snprintf(outKey, outKeyLen, "Box");
+            }
+            else{
+                snprintf(outKey, outKeyLen, "Box %d", tmpIdx);
+            }
+            b64hash_data((unsigned char*) application->boxes[tmpIdx].n, application->boxes[tmpIdx].n_len, buff, sizeof(buff));
+            pageString(outVal, outValLen, buff, pageIdx, pageCount);
+            return parser_ok;
+        }
+
         case IDX_FOREIGN_APP: {
-            const uint8_t tmpIdx = displayIdx - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - (application->num_boxes-1)) - IDX_FOREIGN_APP;
             snprintf(outKey, outKeyLen, "Foreign app %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_apps[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -600,7 +613,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_FOREIGN_ASSET: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps- (application->num_boxes-1)) - IDX_FOREIGN_APP;
             snprintf(outKey, outKeyLen, "Foreign asset %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_assets[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -609,7 +622,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_ACCOUNTS: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - (application->num_boxes-1)) - IDX_FOREIGN_APP;
             uint8_t account[ACCT_SIZE] = {0};
             snprintf(outKey, outKeyLen, "Account %d", tmpIdx);
             CHECK_ERROR(_getAccount(ctx, account, tmpIdx, application->num_accounts))
@@ -621,7 +634,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_APP_ARGS: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts) - IDX_FOREIGN_APP;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts - (application->num_boxes-1)) - IDX_FOREIGN_APP;
             snprintf(outKey, outKeyLen, "App arg %d", tmpIdx);
             uint8_t* app_args_ptr = NULL;
             CHECK_ERROR(_getAppArg(ctx, &app_args_ptr, &application->app_args_len[tmpIdx], tmpIdx, MAX_ARGLEN, MAX_ARG))

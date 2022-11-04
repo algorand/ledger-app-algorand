@@ -63,7 +63,7 @@ typedef enum {
     parser_msgpack_unexpected_type,
     parser_msgpack_unexpected_key,
 
-    parser_msgpack_map_type_expected,       //33
+    parser_msgpack_map_type_expected,
     parser_msgpack_map_type_not_supported,
 
     parser_msgpack_str_type_expected,
