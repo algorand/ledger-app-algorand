@@ -88,6 +88,9 @@ typedef enum tx_type_e {
 #define KEY_APP_GLOBAL_SCHEMA     "apgs"
 #define KEY_APP_FOREIGN_APPS      "apfa"
 #define KEY_APP_FOREIGN_ASSETS    "apas"
+#define KEY_APP_BOXES             "apbx"
+#define KEY_APP_BOX_INDEX         "i"
+#define KEY_APP_BOX_NAME          "n"
 
 #define KEY_APARAMS_TOTAL         "t"
 #define KEY_APARAMS_DECIMALS      "dc"
@@ -171,6 +174,12 @@ typedef struct {
 } txn_asset_xfer;
 
 typedef struct {
+    uint8_t i;
+    const uint8_t* n; // max size 64
+    uint16_t n_len;
+}box;
+
+typedef struct {
   uint64_t id;
   uint8_t account[32];
   uint8_t flag;
@@ -185,6 +194,7 @@ typedef struct {
   uint8_t num_accounts;
   uint8_t num_foreign_apps;
   uint8_t num_foreign_assets;
+  uint8_t num_boxes;
   uint8_t num_app_args;
   uint8_t extra_pages;
   uint16_t aprog_len;
@@ -200,6 +210,7 @@ typedef struct {
 
   uint64_t foreign_apps[MAX_FOREIGN_APPS];
   uint64_t foreign_assets[MAX_FOREIGN_ASSETS];
+  box boxes[MAX_FOREIGN_APPS];
 
 } txn_application;
 
@@ -293,6 +304,7 @@ typedef enum {
 typedef enum {
   IDX_APP_ID = 0,
   IDX_ON_COMPLETION,
+  IDX_BOXES,
   IDX_FOREIGN_APP,
   IDX_FOREIGN_ASSET,
   IDX_ACCOUNTS,
