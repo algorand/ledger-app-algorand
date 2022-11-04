@@ -204,8 +204,8 @@ typedef struct {
   state_schema local_schema;
   state_schema global_schema;
 
-  uint8_t* aprog;
-  uint8_t* cprog;
+  const uint8_t* aprog;
+  const uint8_t* cprog;
   uint16_t app_args_len[MAX_ARG];
 
   uint64_t foreign_apps[MAX_FOREIGN_APPS];

@@ -161,7 +161,7 @@ static parser_error_t _verifyBytes(parser_context_t *c, uint16_t buffLen)
     return parser_ok;
 }
 
-static parser_error_t _getPointerBytes(parser_context_t *c, uint8_t **buff, uint16_t buffLen)
+static parser_error_t _getPointerBytes(parser_context_t *c, const uint8_t **buff, uint16_t buffLen)
 {
     CTX_CHECK_AVAIL(c, buffLen)
     *buff = c->buffer + c->offset;
@@ -385,7 +385,7 @@ static parser_error_t _readBin(parser_context_t *c, uint8_t *buff, uint16_t *buf
 }
 
 
-static parser_error_t _getPointerBin(parser_context_t *c, uint8_t **buff, uint16_t *bufferLen)
+static parser_error_t _getPointerBin(parser_context_t *c, const uint8_t **buff, uint16_t *bufferLen)
 {
     uint8_t binType = 0;
     uint16_t binLen = 0;
@@ -767,7 +767,7 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
         DISPLAY_ITEM(IDX_COMMON_LEASE, 1, common_num_items)
     }
 
-    if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) { 
+    if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) {
         CHECK_ERROR(_readBinFixed(c, v->rekey, sizeof(v->rekey)))
         DISPLAY_ITEM(IDX_COMMON_REKEY_TO, 1, common_num_items)
     }
