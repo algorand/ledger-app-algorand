@@ -161,6 +161,14 @@ static parser_error_t _verifyBytes(parser_context_t *c, uint16_t buffLen)
     return parser_ok;
 }
 
+static parser_error_t _getPointerBytes(parser_context_t *c, const uint8_t **buff, uint16_t buffLen)
+{
+    CTX_CHECK_AVAIL(c, buffLen)
+    *buff = c->buffer + c->offset;
+    CTX_CHECK_AND_ADVANCE(c, buffLen)
+    return parser_ok;
+}
+
 parser_error_t _readBytes(parser_context_t *c, uint8_t *buff, uint16_t buffLen)
 {
     CTX_CHECK_AVAIL(c, buffLen)
@@ -375,6 +383,43 @@ static parser_error_t _readBin(parser_context_t *c, uint8_t *buff, uint16_t *buf
     CHECK_ERROR(_readBytes(c, buff, *bufferLen))
     return parser_ok;
 }
+
+
+static parser_error_t _getPointerBin(parser_context_t *c, const uint8_t **buff, uint16_t *bufferLen)
+{
+    uint8_t binType = 0;
+    uint16_t binLen = 0;
+    CHECK_ERROR(_readUInt8(c, &binType))
+    switch (binType)
+    {
+        case BIN8: {
+            uint8_t tmp = 0;
+            CHECK_ERROR(_readUInt8(c, &tmp))
+            binLen = (uint16_t)tmp;
+            break;
+        }
+        case BIN16: {
+            CHECK_ERROR(_readUInt16(c, &binLen))
+            break;
+        }
+        case BIN32: {
+            return parser_msgpack_bin_type_not_supported;
+            break;
+        }
+        default: {
+            return parser_msgpack_bin_type_expected;
+            break;
+        }
+    }
+
+    *bufferLen = binLen;
+
+    CHECK_ERROR(_getPointerBytes(c, buff, *bufferLen));
+
+
+    return parser_ok;
+}
+
 
 parser_error_t _readBool(parser_context_t *c, uint8_t *value)
 {
@@ -644,6 +689,24 @@ parser_error_t _readArrayU64(parser_context_t *c, uint64_t elements[], uint8_t *
     return parser_ok;
 }
 
+parser_error_t _readBoxes(parser_context_t *c, box boxes[], uint8_t *num_elements)
+{
+    CHECK_ERROR(_readArraySize(c, num_elements))
+    if (*num_elements > MAX_FOREIGN_APPS) {
+        return parser_msgpack_array_too_big;
+    }
+    uint16_t previous_offset = c->offset;
+    for (size_t j = 0; j < *num_elements; j++) {
+        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_INDEX, previous_offset))
+        previous_offset = c->offset;
+        CHECK_ERROR(_readUInt8(c, &boxes[j].i))
+        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_NAME, previous_offset))
+        CHECK_ERROR(_getPointerBin(c, &boxes[j].n, &boxes[j].n_len))
+        previous_offset = c->offset;
+    }
+    return parser_ok;
+}
+
 static parser_error_t _readTxType(parser_context_t *c, parser_tx_t *v)
 {
     uint8_t buff[100] = {0};
@@ -699,6 +762,11 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
     CHECK_ERROR(_readBinFixed(c, v->sender, sizeof(v->sender)))
     DISPLAY_ITEM(IDX_COMMON_SENDER, 1, common_num_items)
 
+    if (_findKey(c, KEY_COMMON_LEASE) == parser_ok) {
+        CHECK_ERROR(_readBinFixed(c, v->lease, sizeof(v->lease)))
+        DISPLAY_ITEM(IDX_COMMON_LEASE, 1, common_num_items)
+    }
+
     if (_findKey(c, KEY_COMMON_REKEY) == parser_ok) {
         CHECK_ERROR(_readBinFixed(c, v->rekey, sizeof(v->rekey)))
         DISPLAY_ITEM(IDX_COMMON_REKEY_TO, 1, common_num_items)
@@ -744,11 +812,16 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
 
 parser_error_t _findKey(parser_context_t *c, const char *key)
 {
+    return _findKeyFromOffset(c, key, 0);
+}
+
+parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const uint16_t searchOffset)
+{
     uint8_t buff[100] = {0};
     uint8_t buffLen = sizeof(buff);
     uint16_t currentOffset = c->offset;
     c->offset = 0;
-    for (size_t offset = 0; offset < c->bufferLen; offset++) {
+    for (size_t offset = searchOffset; offset < c->bufferLen; offset++) {
         if (_readString(c, buff, buffLen) == parser_ok) {
             if (strlen((char*)buff) == strlen(key) && strncmp((char*)buff, key, strlen(key)) == 0) {
                 return parser_ok;
@@ -894,10 +967,12 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
 {
     tx_num_items = 0;
     txn_application *application = &v->application;
+    application->num_boxes = 0;
     application->num_foreign_apps = 0;
     application->num_foreign_assets = 0;
     application->num_accounts = 0;
     application->num_app_args = 0;
+    application->extra_pages = 0;
 
     if (_findKey(c, KEY_APP_ID) == parser_ok) {
         CHECK_ERROR(_readInteger(c, &application->id))
@@ -908,6 +983,11 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
         CHECK_ERROR(_readInteger(c, &application->oncompletion))
     }
     DISPLAY_ITEM(IDX_ON_COMPLETION, 1, tx_num_items)
+
+    if (_findKey(c, KEY_APP_BOXES) == parser_ok) {
+        CHECK_ERROR(_readBoxes(c, application->boxes, &application->num_boxes))
+        DISPLAY_ITEM(IDX_BOXES, application->num_boxes, tx_num_items)
+    }
 
     if (_findKey(c, KEY_APP_FOREIGN_APPS) == parser_ok) {
         CHECK_ERROR(_readArrayU64(c, application->foreign_apps, &application->num_foreign_apps, MAX_FOREIGN_APPS))
@@ -951,15 +1031,27 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
         DISPLAY_ITEM(IDX_LOCAL_SCHEMA, 1, tx_num_items)
     }
 
+    if (_findKey(c, KEY_APP_EXTRA_PAGES) == parser_ok) {
+        CHECK_ERROR(_readUInt8(c, &application->extra_pages))
+        if (application->extra_pages > 3){
+            return parser_too_many_extra_pages;
+        }
+        DISPLAY_ITEM(IDX_EXTRA_PAGES, 1, tx_num_items)
+    }
+
     if (_findKey(c, KEY_APP_APROG_LEN) == parser_ok) {
-        CHECK_ERROR(_readBin(c, application->aprog, &application->aprog_len, sizeof(application->aprog)))
+        CHECK_ERROR(_getPointerBin(c, &application->aprog, &application->aprog_len))
         DISPLAY_ITEM(IDX_APPROVE, 1, tx_num_items)
     }
 
    if (_findKey(c, KEY_APP_CPROG_LEN) == parser_ok) {
-       CHECK_ERROR(_readBin(c, application->cprog, &application->cprog_len, sizeof(application->cprog)))
+       CHECK_ERROR(_getPointerBin(c, &application->cprog, &application->cprog_len))
        DISPLAY_ITEM(IDX_CLEAR, 1, tx_num_items)
    }
+
+    if (application->cprog_len + application->aprog_len > PAGE_LEN *(1+application->extra_pages)){
+        return parser_program_fields_too_long;
+    }
 
     return parser_ok;
 }
@@ -1020,7 +1112,7 @@ parser_error_t _read(parser_context_t *c, parser_tx_t *v)
         CHECK_ERROR(_readTxApplication(c, v))
         break;
     default:
-        return paser_unknown_transaction;
+        return parser_unknown_transaction;
         break;
     }
 
@@ -1074,7 +1166,58 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "display index out of range";
         case parser_display_page_out_of_range:
             return "display page out of range";
-
+        case parser_unexpected_error:
+            return "Unexpected error in parser";
+        case parser_unexpected_type:
+            return "Unexpected type";
+        case parser_unexpected_method:
+            return "Unexpected method";
+        case parser_unexpected_value:
+            return "Unexpected value";
+        case parser_unexpected_number_items:
+            return "Unexpected number of items";
+        case parser_invalid_address:
+            return "Invalid address";
+        case parser_program_fields_too_long:
+            return "Clear/Apprv programs too long";
+        case parser_too_many_extra_pages:
+            return "Too many extra pages";
+        case parser_buffer_too_small:
+            return "Buffer too small";
+        case parser_unknown_transaction:
+            return "Unknown transaction";
+        case parser_key_not_found:
+            return "Key not found";
+        case parser_msgpack_unexpected_type:
+            return "Msgpack unexpected type";
+        case parser_msgpack_unexpected_key:
+            return "Msgpack unexpected key";
+        case parser_msgpack_map_type_expected:
+            return "Msgpack map tye expected";
+        case parser_msgpack_map_type_not_supported:
+            return "Msgpack map type not suported";
+        case parser_msgpack_str_type_expected:
+            return "Msgpack str type expected";
+        case parser_msgpack_str_type_not_supported:
+            return "Msgpack str type not supported";
+        case parser_msgpack_str_too_big:
+            return "Msgpack string too big";
+        case parser_msgpack_bin_type_expected:
+            return "msgpack_bin_type_expected";
+        case parser_msgpack_bin_type_not_supported:
+            return "msgpack_bin_type_not_supported";
+        case parser_msgpack_bin_unexpected_size:
+            return "msgpack_bin_unexpected_size";
+        case parser_msgpack_int_type_expected:
+            return "msgpack_int_type_expected";
+        case parser_msgpack_bool_type_expected:
+            return "msgpack_bool_type_expected";
+        case parser_msgpack_array_unexpected_size:
+            return "msgpack_array_unexpected_size";
+        case parser_msgpack_array_too_big:
+            return "msgpack_array_too_big";
+        case parser_msgpack_array_type_expected:
+            return "Msgpack array type expected";
         default:
             return "Unrecognized error code";
     }
