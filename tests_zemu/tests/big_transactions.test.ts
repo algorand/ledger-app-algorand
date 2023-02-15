@@ -14,70 +14,66 @@
  *  limitations under the License.
  ******************************************************************************* */
 
- import Zemu, { DEFAULT_START_OPTIONS } from '@zondax/zemu'
- // @ts-ignore
- import AlgorandApp from '@zondax/ledger-algorand'
- import { APP_SEED, models, txApplicationLong } from './common'
+import Zemu, { DEFAULT_START_OPTIONS } from '@zondax/zemu'
+// @ts-ignore
+import AlgorandApp from '@zondax/ledger-algorand'
+import { APP_SEED, models, txApplicationLong } from './common'
 
- // @ts-ignore
- import ed25519 from 'ed25519-supercop'
+// @ts-ignore
+import ed25519 from 'ed25519-supercop'
 
- const defaultOptions = {
-   ...DEFAULT_START_OPTIONS,
-   logging: true,
-   custom: `-s "${APP_SEED}"`,
-   X11: false,
- }
+const defaultOptions = {
+  ...DEFAULT_START_OPTIONS,
+  logging: true,
+  custom: `-s "${APP_SEED}"`,
+  X11: false,
+}
 
- const accountId = 123
+const accountId = 123
 
- jest.setTimeout(60000)
+jest.setTimeout(180000)
 
- beforeAll(async () => {
-   await Zemu.checkAndPullImage()
- })
+describe('BigTransactions', function () {
+  test.concurrent.each(models)('can start and stop container', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+    } finally {
+      await sim.close()
+    }
+  })
 
- describe('BigTransactions', function () {
-   test.each(models)('can start and stop container', async function (m) {
-     const sim = new Zemu(m.path)
-     try {
-       await sim.start({ ...defaultOptions, model: m.name })
-     } finally {
-       await sim.close()
-     }
-   })
+  test.concurrent.each(models)('sign application big', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new AlgorandApp(sim.getTransport())
 
-   test.each(models)('sign application big', async function (m) {
-     const sim = new Zemu(m.path)
-     try {
-       await sim.start({ ...defaultOptions, model: m.name })
-       const app = new AlgorandApp(sim.getTransport())
+      const txBlob = Buffer.from(txApplicationLong, 'hex')
 
-       const txBlob = Buffer.from(txApplicationLong, 'hex')
+      console.log(sim.getMainMenuSnapshot())
+      const responseAddr = await app.getAddressAndPubKey(accountId)
+      const pubKey = responseAddr.publicKey
 
-       console.log(sim.getMainMenuSnapshot())
-       const responseAddr = await app.getAddressAndPubKey(accountId)
-       const pubKey = responseAddr.publicKey
+      // do not wait here.. we need to navigate
+      const signatureRequest = app.sign(accountId, txBlob)
 
-       // do not wait here.. we need to navigate
-       const signatureRequest = app.sign(accountId, txBlob)
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application_big`)
 
-       // Wait until we are not in the main menu
-       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-       await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_application_big`)
+      const signatureResponse = await signatureRequest
+      console.log(signatureResponse)
 
-       const signatureResponse = await signatureRequest
-       console.log(signatureResponse)
+      expect(signatureResponse.return_code).toEqual(0x9000)
+      expect(signatureResponse.error_message).toEqual('No errors')
 
-       expect(signatureResponse.return_code).toEqual(0x9000)
-       expect(signatureResponse.error_message).toEqual('No errors')
-
-       // Now verify the signature
-       const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
-       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
-       expect(valid).toEqual(true)
-     } finally {
-       await sim.close()
-     }
-   })
- })
+      // Now verify the signature
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
+      const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
+      expect(valid).toEqual(true)
+    } finally {
+      await sim.close()
+    }
+  })
+})
