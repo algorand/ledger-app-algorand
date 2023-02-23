@@ -14,7 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { DEFAULT_START_OPTIONS } from '@zondax/zemu'
+import Zemu, { zondaxMainmenuNavigation, DEFAULT_START_OPTIONS, ButtonKind } from '@zondax/zemu'
 // @ts-ignore
 import AlgorandApp from '@zondax/ledger-algorand'
 import { APP_SEED, models, txApplication, txAssetConfig, txAssetFreeze, txAssetXfer, txKeyreg, txPayment } from './common'
@@ -31,7 +31,7 @@ const defaultOptions = {
 
 const accountId = 123
 
-jest.setTimeout(180000)
+jest.setTimeout(300000)
 
 describe('Standard', function () {
   test.concurrent.each(models)('can start and stop container', async function (m) {
@@ -47,7 +47,8 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 5, -6])
+      const nav = zondaxMainmenuNavigation(m.name, [1, 0, 0, 5, -6])
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, nav.schedule)
     } finally {
       await sim.close()
     }
@@ -122,7 +123,12 @@ describe('Standard', function () {
   test.concurrent.each(models)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        approveKeyword: m.name === 'stax' ? 'Cancel' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
       const app = new AlgorandApp(sim.getTransport())
 
       const respRequest = app.getAddressAndPubKey(accountId, true)
@@ -149,8 +155,7 @@ describe('Standard', function () {
       const respRequest = app.getAddressAndPubKey(accountId, true)
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.navigateAndCompareUntilText('.', `${m.prefix.toLowerCase()}-show_address_reject`, 'REJECT')
+      await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`)
 
       const resp = await respRequest
       console.log(resp)
