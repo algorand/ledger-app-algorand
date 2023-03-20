@@ -34,6 +34,19 @@
 static bool tx_initialized = false;
 static const unsigned char tmpBuff[] = {'T', 'X'};
 
+__Z_INLINE void extractHDPath() {
+    hdPath[0] = HDPATH_0_DEFAULT;
+    hdPath[1] = HDPATH_1_DEFAULT;
+    hdPath[3] = HDPATH_3_DEFAULT;
+    hdPath[4] = HDPATH_4_DEFAULT;
+
+    if (G_io_apdu_buffer[OFFSET_DATA_LEN] == 0) {
+        hdPath[2] = HDPATH_2_DEFAULT;
+    } else {
+        hdPath[2] = HDPATH_2_DEFAULT | U4BE(G_io_apdu_buffer, OFFSET_DATA);
+    }
+}
+
 __Z_INLINE uint8_t convertP1P2(const uint8_t p1, const uint8_t p2)
 {
     if (p1 <= P1_FIRST_ACCOUNT_ID && p2 == P2_MORE) {

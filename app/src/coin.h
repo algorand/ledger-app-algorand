@@ -57,6 +57,24 @@ extern "C" {
 #define REVIEW_SCREEN_TXN_VALUE "Transaction"
 #define REVIEW_SCREEN_ADDR_VALUE "address"
 
+#define APDU_MIN_LENGTH                 5
+#define ACCOUNT_ID_LENGTH               4
+
+#define P1_SINGLE_CHUNK                10  //< P1
+
+#define P1_FIRST 0x00
+#define P1_FIRST_ACCOUNT_ID 0x01
+#define P1_MORE  0x80
+#define P1_WITH_REQUEST_USER_APPROVAL  0x80
+
+#define P2_LAST  0x00
+#define P2_MORE  0x80
+
+#define INS_GET_VERSION     0x00
+#define INS_GET_PUBLIC_KEY  0x03
+#define INS_GET_ADDRESS     0x04
+#define INS_SIGN_MSGPACK    0x08
+
 #ifdef __cplusplus
 }
 #endif
