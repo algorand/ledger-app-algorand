@@ -36,6 +36,7 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(27165954, "PLANET",                    "PLANETS ",     6),
     ALGO_ASA(163650, "Asia Reserve Currency Coin",  "ARCC ",        6),
     ALGO_ASA(137594422, "HEADLINE",                 "HDL ",         6),
+    ALGO_ASA(922346083, "Nimble",                   "NIMBLE ",      6),
 };
 
 
