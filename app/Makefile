@@ -79,14 +79,10 @@ SDK_SOURCE_PATH += lib_u2f
 
 LDFLAGS  += -z muldefs
 APP_SOURCE_PATH += $(MY_DIR)/../deps/sha512
-CFLAGS += -Wvla
 
 .PHONY: rust
 rust:
 	@echo "No rust code"
-
-# Before linking, we need to be sure rust lib is there
-bin/app.elf: rust
 
 .PHONY: rust_clean
 rust_clean:

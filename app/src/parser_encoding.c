@@ -64,7 +64,7 @@ parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash,
     return parser_ok;
 }
 
-parser_error_t _toStringBalance(uint64_t* amount, uint8_t decimalPlaces, char postfix[], char prefix[],
+parser_error_t _toStringBalance(uint64_t* amount, uint8_t decimalPlaces, const char *postfix, const char *prefix,
                                 char* outValue, uint16_t outValueLen, uint8_t pageIdx, uint8_t* pageCount)
 {
     char bufferUI[200] = {0};

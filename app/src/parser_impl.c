@@ -34,7 +34,7 @@ DEC_READFIX_UNSIGNED(64);
 static parser_error_t addItem(uint8_t displayIdx);
 
 #define DISPLAY_ITEM(type, len, counter)        \
-    for(uint8_t i = 0; i < len; i++) {          \
+    for(uint8_t j = 0; j < len; j++) {          \
         CHECK_ERROR(addItem(type))              \
         counter++;                              \
     }
