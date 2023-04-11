@@ -721,3 +721,35 @@ parser_error_t parser_getItem(parser_context_t *ctx,
 
     return parser_display_idx_out_of_range;
 }
+
+parser_error_t parser_getTxnText(parser_context_t *ctx,
+                                 char *outVal, uint16_t outValLen) {
+    if (ctx == NULL || outVal == NULL) {
+        return parser_unexpected_error;
+    }
+
+    switch (ctx->parser_tx_obj->type) {
+        case TX_PAYMENT:
+            snprintf(outVal, outValLen, "Review payment");
+            break;
+        case TX_KEYREG:
+            snprintf(outVal, outValLen, "Review account\nregistration");
+            break;
+        case TX_ASSET_XFER:
+            snprintf(outVal, outValLen, "Review ASA transfer");
+            break;
+        case TX_ASSET_FREEZE:
+            snprintf(outVal, outValLen, "Review asset freeze");
+            break;
+        case TX_ASSET_CONFIG:
+            snprintf(outVal, outValLen, "Review asset\nconfiguration");
+            break;
+        case TX_APPLICATION:
+            snprintf(outVal, outValLen, "Review application call");
+            break;
+        default:
+            return parser_unknown_transaction;
+    }
+
+    return parser_ok;
+}

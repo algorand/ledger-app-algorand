@@ -46,6 +46,8 @@ parser_error_t parser_getItem(parser_context_t *ctx,
 
 parser_error_t getItem(uint8_t index, uint8_t* displayIdx);
 
+parser_error_t parser_getTxnText(parser_context_t *ctx, char *outVal, uint16_t outValLen);
+
 #ifdef __cplusplus
 }
 #endif
