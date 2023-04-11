@@ -43,7 +43,7 @@ parser_error_t parser_parse(parser_context_t *ctx,
 parser_error_t parser_validate(parser_context_t *ctx) {
     // Iterate through all items to check that all can be shown and are valid
     uint8_t numItems = 0;
-    CHECK_ERROR(parser_getNumItems(ctx, &numItems))
+    CHECK_ERROR(parser_getNumItems(&numItems))
 
     char tmpKey[40];
     char tmpVal[40];
@@ -55,7 +55,7 @@ parser_error_t parser_validate(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
+parser_error_t parser_getNumItems(uint8_t *num_items) {
     *num_items = _getNumItems();
     if(*num_items == 0) {
         return parser_unexpected_number_items;
@@ -63,7 +63,7 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
-parser_error_t parser_getCommonNumItems(const parser_context_t *ctx, uint8_t *common_num_items) {
+static parser_error_t parser_getCommonNumItems(uint8_t *common_num_items) {
     *common_num_items = _getCommonNumItems();
     if(*common_num_items == 0) {
         return parser_unexpected_number_items;
@@ -71,7 +71,7 @@ parser_error_t parser_getCommonNumItems(const parser_context_t *ctx, uint8_t *co
     return parser_ok;
 }
 
-parser_error_t parser_getTxNumItems(const parser_context_t *ctx, uint8_t *tx_num_items) {
+static parser_error_t parser_getTxNumItems(uint8_t *tx_num_items) {
     *tx_num_items = _getTxNumItems();
     return parser_ok;
 }
@@ -656,14 +656,14 @@ parser_error_t parser_getItem(parser_context_t *ctx,
     *pageCount = 0;
 
     uint8_t numItems = 0;
-    CHECK_ERROR(parser_getNumItems(ctx, &numItems))
+    CHECK_ERROR(parser_getNumItems(&numItems))
     CHECK_APP_CANARY()
 
     uint8_t commonItems = 0;
-    CHECK_ERROR(parser_getCommonNumItems(ctx, &commonItems))
+    CHECK_ERROR(parser_getCommonNumItems(&commonItems))
 
     uint8_t txItems = 0;
-    CHECK_ERROR(parser_getTxNumItems(ctx, &txItems))
+    CHECK_ERROR(parser_getTxNumItems(&txItems))
 
     CHECK_ERROR(checkSanity(numItems, displayIdx))
 
@@ -720,4 +720,36 @@ parser_error_t parser_getItem(parser_context_t *ctx,
     }
 
     return parser_display_idx_out_of_range;
+}
+
+parser_error_t parser_getTxnText(parser_context_t *ctx,
+                                 char *outVal, uint16_t outValLen) {
+    if (ctx == NULL || outVal == NULL) {
+        return parser_unexpected_error;
+    }
+
+    switch (ctx->parser_tx_obj->type) {
+        case TX_PAYMENT:
+            snprintf(outVal, outValLen, "Review payment");
+            break;
+        case TX_KEYREG:
+            snprintf(outVal, outValLen, "Review account\nregistration");
+            break;
+        case TX_ASSET_XFER:
+            snprintf(outVal, outValLen, "Review ASA transfer");
+            break;
+        case TX_ASSET_FREEZE:
+            snprintf(outVal, outValLen, "Review asset freeze");
+            break;
+        case TX_ASSET_CONFIG:
+            snprintf(outVal, outValLen, "Review asset\nconfiguration");
+            break;
+        case TX_APPLICATION:
+            snprintf(outVal, outValLen, "Review application call");
+            break;
+        default:
+            return parser_unknown_transaction;
+    }
+
+    return parser_ok;
 }

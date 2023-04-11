@@ -108,7 +108,7 @@ void tx_parse_reset()
 
 zxerr_t tx_getNumItems(uint8_t *num_items)
 {
-    parser_error_t err = parser_getNumItems(&ctx_parsed_tx, num_items);
+    parser_error_t err = parser_getNumItems(num_items);
     if (err != parser_ok) {
         return zxerr_unknown;
     }
@@ -121,6 +121,13 @@ zxerr_t tx_getItem(int8_t displayIdx,
                    uint8_t pageIdx, uint8_t *pageCount)
 {
     uint8_t numItems = 0;
+
+#if defined(TARGET_STAX)
+    if (displayIdx == -1) {
+        const parser_error_t tmpError = parser_getTxnText(&ctx_parsed_tx, outVal, outValLen);
+        return (tmpError == parser_ok ? zxerr_ok : zxerr_no_data);
+    }
+#endif
 
     CHECK_ZXERR(tx_getNumItems(&numItems))
 

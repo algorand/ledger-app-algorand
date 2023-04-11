@@ -24,7 +24,7 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
     auto answer = std::vector<std::string>();
 
     uint8_t numItems;
-    parser_error_t err = parser_getNumItems(ctx, &numItems);
+    parser_error_t err = parser_getNumItems(&numItems);
     if (err != parser_ok) {
         return answer;
     }

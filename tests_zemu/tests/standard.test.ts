@@ -126,7 +126,7 @@ describe('Standard', function () {
       await sim.start({
         ...defaultOptions,
         model: m.name,
-        approveKeyword: m.name === 'stax' ? 'Cancel' : '',
+        approveKeyword: m.name === 'stax' ? 'Show as QR' : '',
         approveAction: ButtonKind.ApproveTapButton,
       })
       const app = new AlgorandApp(sim.getTransport())
@@ -149,7 +149,11 @@ describe('Standard', function () {
   test.concurrent.each(models)('show address - reject', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        rejectKeyword: m.name === 'stax' ? 'Show as QR' : '',
+      })
       const app = new AlgorandApp(sim.getTransport())
 
       const respRequest = app.getAddressAndPubKey(accountId, true)
