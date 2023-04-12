@@ -28,6 +28,7 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(31566704, "USDC",                      "USDC ",        6),
     ALGO_ASA(6587142, "Meld Silver",                "MCAG ",        5),
     ALGO_ASA(6547014, "Meld Gold",                  "MCAU ",        5),
+    ALGO_ASA(470842789, "Defly",                    "DEFLY",        6),
     ALGO_ASA(2838934, "Credit Opportunities Fund I","VAL 1 ",       0),
     ALGO_ASA(2836760, "Liquid Mining Fund I",       "RHO 1 ",       0),
     ALGO_ASA(2757561, "realioUSD",                  "RUSD ",        7),
