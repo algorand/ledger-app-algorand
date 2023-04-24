@@ -745,7 +745,7 @@ parser_error_t parser_getTxnText(parser_context_t *ctx,
             snprintf(outVal, outValLen, "Review asset\nconfiguration");
             break;
         case TX_APPLICATION:
-            snprintf(outVal, outValLen, "Review application call");
+            snprintf(outVal, outValLen, "Review application\ncall");
             break;
         default:
             return parser_unknown_transaction;
