@@ -42,17 +42,16 @@ static parser_error_t addItem(uint8_t displayIdx);
 parser_error_t parser_init_context(parser_context_t *ctx,
                                    const uint8_t *buffer,
                                    uint16_t bufferSize) {
+    if (ctx == NULL || bufferSize == 0 || buffer == NULL) {
+         return parser_init_context_empty;
+    }
+
     ctx->offset = 0;
     ctx->buffer = NULL;
     ctx->bufferLen = 0;
     num_items = 0;
     common_num_items = 0;
     tx_num_items = 0;
-
-    if (bufferSize == 0 || buffer == NULL) {
-        // Not available, use defaults
-        return parser_init_context_empty;
-    }
 
     ctx->buffer = buffer;
     ctx->bufferLen = bufferSize;
@@ -105,6 +104,10 @@ static uint8_t getMsgPackType(uint8_t byte)
 
 parser_error_t _readMapSize(parser_context_t *c, uint16_t *mapItems)
 {
+    if (c == NULL || mapItems == NULL) {
+         return parser_unexpected_value;
+    }
+
     uint8_t byte = 0;
     CHECK_ERROR(_readUInt8(c, &byte))
 
@@ -603,6 +606,10 @@ parser_error_t _getAppArg(parser_context_t *c, uint8_t **args, uint16_t* args_le
     for(uint8_t i = 0; i < args_idx + 1; i++) {
         CHECK_ERROR(_verifyBin(c, args_len, max_args_len))
     }
+
+    if (c->offset < *args_len) {
+        return parser_unexpected_value;
+    }
     (*args) = (uint8_t*)(c->buffer + c->offset - *args_len);
     return parser_ok;
 }
@@ -758,6 +765,8 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
 {
     common_num_items = 0;
 
+    MEMZERO(v->rekey, sizeof(v->rekey));
+
     CHECK_ERROR(_findKey(c, KEY_COMMON_SENDER))
     CHECK_ERROR(_readBinFixed(c, v->sender, sizeof(v->sender)))
     DISPLAY_ITEM(IDX_COMMON_SENDER, 1, common_num_items)
@@ -837,6 +846,8 @@ parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const ui
 static parser_error_t _readTxPayment(parser_context_t *c, parser_tx_t *v)
 {
     tx_num_items = 0;
+    MEMZERO(v->payment.close, sizeof(v->payment.close));
+
     CHECK_ERROR(_findKey(c, KEY_PAY_RECEIVER))
     CHECK_ERROR(_readBinFixed(c, v->payment.receiver, sizeof(v->payment.receiver)))
     DISPLAY_ITEM(IDX_PAYMENT_RECEIVER, 1, tx_num_items)
@@ -876,9 +887,7 @@ static parser_error_t _readTxKeyreg(parser_context_t *c, parser_tx_t *v)
     if (_findKey(c, KEY_VOTE_FIRST) == parser_ok) {
         CHECK_ERROR(_readInteger(c, &v->keyreg.voteFirst))
         DISPLAY_ITEM(IDX_KEYREG_VOTE_FIRST, 1, tx_num_items)
-    }
 
-    if (_findKey(c, KEY_VOTE_FIRST) == parser_ok) {
         CHECK_ERROR(_findKey(c, KEY_VOTE_LAST))
         CHECK_ERROR(_readInteger(c, &v->keyreg.voteLast))
         DISPLAY_ITEM(IDX_KEYREG_VOTE_LAST, 1, tx_num_items)
@@ -900,6 +909,8 @@ static parser_error_t _readTxKeyreg(parser_context_t *c, parser_tx_t *v)
 static parser_error_t _readTxAssetXfer(parser_context_t *c, parser_tx_t *v)
 {
     tx_num_items = 0;
+    MEMZERO(v->asset_xfer.close, sizeof(v->asset_xfer.close));
+
     CHECK_ERROR(_findKey(c, KEY_XFER_ID))
     CHECK_ERROR(_readInteger(c, &v->asset_xfer.id))
     DISPLAY_ITEM(IDX_XFER_ASSET_ID, 1, tx_num_items)
@@ -973,6 +984,9 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
     application->num_accounts = 0;
     application->num_app_args = 0;
     application->extra_pages = 0;
+    application->oncompletion = NOOPOC;
+    application->aprog_len = 0;
+    application->cprog_len = 0;
 
     if (_findKey(c, KEY_APP_ID) == parser_ok) {
         CHECK_ERROR(_readInteger(c, &application->id))
@@ -1070,7 +1084,7 @@ parser_error_t _readArray_args(parser_context_t *c, uint8_t args[][MAX_ARGLEN], 
     }
 
     for (size_t i = 0; i < *argsSize; i++) {
-        CHECK_ERROR(_readBin(c, args[i], (uint16_t*)&args_len[i], sizeof(args[0])))
+        CHECK_ERROR(_readBin(c, args[i], (uint16_t*)&args_len[i], sizeof(args[i])))
     }
     return parser_ok;
 }

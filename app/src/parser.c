@@ -563,6 +563,8 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
 
         case IDX_BOXES: {
             const uint8_t tmpIdx = displayIdx -  IDX_BOXES;
+            // Check max index
+            if (tmpIdx >= MAX_FOREIGN_APPS) return parser_unexpected_value;
             if (tmpIdx == 0){
                 snprintf(outKey, outKeyLen, "Box");
             }
@@ -576,6 +578,8 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
 
         case IDX_FOREIGN_APP: {
             const uint8_t tmpIdx = (displayIdx - (application->num_boxes)) - IDX_BOXES;
+            // Check max index
+            if (tmpIdx >= MAX_FOREIGN_APPS) return parser_unexpected_value;
             snprintf(outKey, outKeyLen, "Foreign app %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_apps[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -584,7 +588,9 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
         }
 
         case IDX_FOREIGN_ASSET: {
-            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps- application->num_boxes) - IDX_BOXES;
+            const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_boxes) - IDX_BOXES;
+            // Check max index
+            if (tmpIdx >= MAX_FOREIGN_ASSETS) return parser_unexpected_value;
             snprintf(outKey, outKeyLen, "Foreign asset %d", tmpIdx);
             if (uint64_to_str(outVal, outValLen, application->foreign_assets[tmpIdx]) != NULL) {
                 return parser_unexpected_error;
@@ -606,6 +612,8 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
 
         case IDX_APP_ARGS: {
             const uint8_t tmpIdx = (displayIdx - application->num_foreign_apps - application->num_foreign_assets - application->num_accounts - application->num_boxes) - IDX_BOXES;
+            // Check max index
+            if (tmpIdx >= MAX_ARG) return parser_unexpected_value;
             snprintf(outKey, outKeyLen, "App arg %d", tmpIdx);
             uint8_t* app_args_ptr = NULL;
             CHECK_ERROR(_getAppArg(ctx, &app_args_ptr, &application->app_args_len[tmpIdx], tmpIdx, MAX_ARGLEN, MAX_ARG))
@@ -652,6 +660,10 @@ parser_error_t parser_getItem(parser_context_t *ctx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
+    if (ctx == NULL || outKey == NULL || outVal == NULL || pageCount == NULL) {
+        return parser_unexpected_value;
+    }
+
     cleanOutput(outKey, outKeyLen, outVal, outValLen);
     *pageCount = 0;
 
