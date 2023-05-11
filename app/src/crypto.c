@@ -32,7 +32,7 @@ zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen)
         return zxerr_invalid_crypto_settings;
     }
 
-    zxerr_t err = zxerr_ok;
+    zxerr_t err = zxerr_unknown;
     BEGIN_TRY
     {
         TRY
@@ -48,12 +48,15 @@ zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen)
             cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &cx_privateKey);
             cx_ecfp_init_public_key(CX_CURVE_Ed25519, NULL, 0, &cx_publicKey);
             cx_ecfp_generate_pair(CX_CURVE_Ed25519, &cx_publicKey, &cx_privateKey, 1);
+
+            // Reversing the public key and changing the last byte
             for (unsigned int i = 0; i < PK_LEN_25519; i++) {
                 pubKey[i] = cx_publicKey.W[64 - i];
             }
             if ((cx_publicKey.W[PK_LEN_25519] & 1) != 0) {
                 pubKey[31] |= 0x80;
             }
+            err = zxerr_ok;
         }
         CATCH_ALL
         {
@@ -70,12 +73,16 @@ zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen)
     return err;
 }
 
-zxerr_t crypto_sign(uint8_t *signature, uint16_t signatureMaxlen, const uint8_t *message, uint16_t messageLen)
-{
-    cx_ecfp_private_key_t cx_privateKey;
-    uint8_t privateKeyData[SK_LEN_25519];
+zxerr_t crypto_sign(uint8_t *signature, uint16_t signatureMaxlen, const uint8_t *message, uint16_t messageLen) {
 
-    zxerr_t err = zxerr_ok;
+    if (message == NULL || messageLen == 0) {
+        return zxerr_no_data;
+    }
+
+    cx_ecfp_private_key_t cx_privateKey;
+    uint8_t privateKeyData[SK_LEN_25519] = {0};
+
+    zxerr_t err = zxerr_unknown;
     BEGIN_TRY
     {
         TRY
@@ -102,6 +109,7 @@ zxerr_t crypto_sign(uint8_t *signature, uint16_t signatureMaxlen, const uint8_t 
                           signatureMaxlen,
                           NULL);
 
+            err = zxerr_ok;
         }
         CATCH_ALL
         {
@@ -127,11 +135,11 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrRe
     MEMZERO(buffer, bufferLen);
     CHECK_ZXERR(crypto_extractPublicKey(buffer, bufferLen))
 
-    size_t outLen = encodePubKey(buffer + PK_LEN_25519,
-                                 bufferLen - PK_LEN_25519,
-                                 buffer);
+    const uint32_t outLen = encodePubKey(buffer + PK_LEN_25519,
+                                         bufferLen - PK_LEN_25519,
+                                         buffer);
 
-    if (outLen == 0) {
+    if (outLen == 0 || (outLen + PK_LEN_25519) > UINT16_MAX) {
         MEMZERO(buffer, bufferLen);
         return zxerr_encoding_failed;
     }

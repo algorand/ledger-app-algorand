@@ -30,7 +30,7 @@
 
 #endif
 
-uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicKey)
+uint32_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicKey)
 {
     if(bufferLen < (2 * PK_LEN_25519 + 1)) {
         return 0;
@@ -38,7 +38,7 @@ uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicK
     uint8_t messageDigest[CX_SHA512_SIZE];
     SHA512_256(publicKey, 32, messageDigest);
 
-    uint8_t checksummed[36];
+    uint8_t checksummed[36] = {0};
     memmove(&checksummed[0], publicKey, 32);
     memmove(&checksummed[32], &messageDigest[28], 4);
 
