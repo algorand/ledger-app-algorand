@@ -54,7 +54,7 @@ uint32_t base32_encode(const uint8_t *data,
     if (count < resultLen) {
         result[count] = '\000';
     } else{
-        count = -1;
+        count = 0;
     }
     return count;
 }

@@ -93,8 +93,8 @@ parser_error_t _toStringAddress(uint8_t* address, char* outValue, uint16_t outVa
         *pageCount = 1;
     } else {
         char buff[65] = {0};
-        if (!encodePubKey((uint8_t*)buff, sizeof(buff), address)){
-            return parser_unexpected_buffer_end;
+        if (encodePubKey((uint8_t*)buff, sizeof(buff), address) == 0) {
+            return parser_unexpected_value;
         }
         pageString(outValue, outValueLen, buff, pageIdx, pageCount);
     }

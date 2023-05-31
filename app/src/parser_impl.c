@@ -1070,25 +1070,6 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
     return parser_ok;
 }
 
-parser_error_t _readArray_args(parser_context_t *c, uint8_t args[][MAX_ARGLEN], size_t args_len[], uint8_t *argsSize, uint8_t maxArgs)
-{
-    uint8_t byte = 0;
-    CHECK_ERROR(_readUInt8(c, &byte))
-    if (byte < FIXARR_0 || byte > FIXARR_15) {
-        return parser_msgpack_array_unexpected_size;
-    }
-    *argsSize = byte - FIXARR_0;
-
-    if(*argsSize > maxArgs) {
-        return parser_msgpack_array_too_big;
-    }
-
-    for (size_t i = 0; i < *argsSize; i++) {
-        CHECK_ERROR(_readBin(c, args[i], (uint16_t*)&args_len[i], sizeof(args[i])))
-    }
-    return parser_ok;
-}
-
 parser_error_t _read(parser_context_t *c, parser_tx_t *v)
 {
     uint16_t keyLen = 0;
