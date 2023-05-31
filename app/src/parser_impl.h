@@ -66,7 +66,6 @@ parser_error_t _readArraySize(parser_context_t *c, uint8_t *mapItems);
 parser_error_t _readString(parser_context_t *c, uint8_t *buff, uint16_t buffLen);
 parser_error_t _readInteger(parser_context_t *c, uint64_t* value);
 parser_error_t _readBool(parser_context_t *c, uint8_t *value);
-parser_error_t _readArray_args(parser_context_t *c, uint8_t args[][MAX_ARGLEN], size_t args_len[], uint8_t *argsSize, uint8_t maxArgs);
 parser_error_t _readBinFixed(parser_context_t *c, uint8_t *buff, uint16_t bufferLen);
 parser_error_t _findKey(parser_context_t *c, const char *key);
 parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const uint16_t searchOffset);
