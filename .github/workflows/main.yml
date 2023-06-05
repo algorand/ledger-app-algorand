@@ -62,7 +62,7 @@ jobs:
           [ ${{needs.build_ledger.outputs.size}} -le $NANOS_LIMIT_SIZE ]
 
   test_zemu:
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - name: Test

@@ -134,7 +134,7 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
     switch (displayIdx) {
         case IDX_COMMON_SENDER:
             snprintf(outKey, outKeyLen, "Sender");
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), parser_tx_obj->sender)) {
+            if (encodePubKey((uint8_t*) buff, sizeof(buff), parser_tx_obj->sender) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -145,7 +145,7 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
             const char warning[9] = "WARNING: ";
             const uint8_t warning_size = strnlen(warning, 9);
             MEMCPY(buff, warning, warning_size);
-            if (!encodePubKey((uint8_t*) (buff + warning_size), sizeof(buff) - warning_size, parser_tx_obj->rekey)) {
+            if (encodePubKey((uint8_t*) (buff + warning_size), sizeof(buff) - warning_size, parser_tx_obj->rekey) == 0) {
                  return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -218,7 +218,7 @@ static parser_error_t parser_printTxPayment(const txn_payment *payment,
     switch (displayIdx) {
         case IDX_PAYMENT_RECEIVER:
             snprintf(outKey, outKeyLen, "Receiver");
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), payment->receiver)) {
+            if (encodePubKey((uint8_t*) buff, sizeof(buff), payment->receiver) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -232,7 +232,7 @@ static parser_error_t parser_printTxPayment(const txn_payment *payment,
 
         case IDX_PAYMENT_CLOSE_TO:
             snprintf(outKey, outKeyLen, "Close to");
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), payment->close)) {
+            if (encodePubKey((uint8_t*) buff, sizeof(buff), payment->close) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -354,7 +354,7 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
 
         case IDX_XFER_SOURCE:
             snprintf(outKey, outKeyLen, "Asset src");
-            if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->sender)) {
+            if (encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->sender) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
@@ -362,7 +362,7 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
 
         case IDX_XFER_DESTINATION:
             snprintf(outKey, outKeyLen, "Asset dst");
-            if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->receiver)) {
+            if (encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->receiver) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
@@ -370,7 +370,7 @@ static parser_error_t parser_printTxAssetXfer(const txn_asset_xfer *asset_xfer,
 
         case IDX_XFER_CLOSE:
             snprintf(outKey, outKeyLen, "Asset close");
-            if (!encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->close)) {
+            if (encodePubKey((uint8_t*) tmpBuff.buff, sizeof(tmpBuff.buff), asset_xfer->close) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, tmpBuff.buff, pageIdx, pageCount);
@@ -401,7 +401,7 @@ static parser_error_t parser_printTxAssetFreeze(const txn_asset_freeze *asset_fr
 
         case IDX_FREEZE_ACCOUNT:
             snprintf(outKey, outKeyLen, "Asset account");
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), asset_freeze->account)) {
+            if (encodePubKey((uint8_t*) buff, sizeof(buff), asset_freeze->account) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
@@ -603,7 +603,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
             uint8_t account[ACCT_SIZE] = {0};
             snprintf(outKey, outKeyLen, "Account %d", tmpIdx);
             CHECK_ERROR(_getAccount(ctx, account, tmpIdx, application->num_accounts))
-            if (!encodePubKey((uint8_t*) buff, sizeof(buff), account)) {
+            if (encodePubKey((uint8_t*) buff, sizeof(buff), account) == 0) {
                 return parser_unexpected_buffer_end;
             }
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
