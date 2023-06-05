@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "clean": "ts-node tests/pullImageKillOld.ts",
-    "test": "yarn clean && jest"
+    "test": "yarn clean && jest --maxConcurrency 4"
   },
   "dependencies": {
     "@zondax/ledger-algorand": "../js",
