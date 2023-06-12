@@ -51,8 +51,11 @@ typedef enum {
     parser_unexpected_chain,
     parser_missing_field,
     parser_query_no_results,
+    parser_program_fields_too_long,
+    parser_too_many_extra_pages,
+    parser_buffer_too_small,
 
-    paser_unknown_transaction,
+    parser_unknown_transaction,
 
     parser_key_not_found,
 
@@ -60,7 +63,7 @@ typedef enum {
     parser_msgpack_unexpected_type,
     parser_msgpack_unexpected_key,
 
-    parser_msgpack_map_type_expected,       //33
+    parser_msgpack_map_type_expected,
     parser_msgpack_map_type_not_supported,
 
     parser_msgpack_str_type_expected,

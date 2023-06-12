@@ -23,14 +23,14 @@
 #include "base32.h"
 #define CX_SHA512_SIZE 64
 
- #if defined(TARGET_NANOS) || defined(TARGET_NANOS2) || defined(TARGET_NANOX)
+ #if defined(TARGET_NANOS) || defined(TARGET_NANOS2) || defined(TARGET_NANOX) || defined(TARGET_STAX)
 
 #else
 #include "picohash.h"
 
 #endif
 
-uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicKey)
+uint32_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicKey)
 {
     if(bufferLen < (2 * PK_LEN_25519 + 1)) {
         return 0;
@@ -38,7 +38,7 @@ uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicK
     uint8_t messageDigest[CX_SHA512_SIZE];
     SHA512_256(publicKey, 32, messageDigest);
 
-    uint8_t checksummed[36];
+    uint8_t checksummed[36] = {0};
     memmove(&checksummed[0], publicKey, 32);
     memmove(&checksummed[32], &messageDigest[28], 4);
 
@@ -48,7 +48,7 @@ uint8_t encodePubKey(uint8_t *buffer, uint16_t bufferLen, const uint8_t *publicK
 parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash, size_t b64hashLen)
 {
     unsigned char hash[32];
-#if defined(TARGET_NANOS) || defined(TARGET_NANOS2) || defined(TARGET_NANOX)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOS2) || defined(TARGET_NANOX) || defined(TARGET_STAX)
     // Hash program and b64 encode for display
     cx_sha256_t ctx;
     memset(&ctx, 0, sizeof(ctx));
@@ -64,7 +64,7 @@ parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash,
     return parser_ok;
 }
 
-parser_error_t _toStringBalance(uint64_t* amount, uint8_t decimalPlaces, char postfix[], char prefix[],
+parser_error_t _toStringBalance(uint64_t* amount, uint8_t decimalPlaces, const char *postfix, const char *prefix,
                                 char* outValue, uint16_t outValueLen, uint8_t pageIdx, uint8_t* pageCount)
 {
     char bufferUI[200] = {0};
@@ -93,8 +93,8 @@ parser_error_t _toStringAddress(uint8_t* address, char* outValue, uint16_t outVa
         *pageCount = 1;
     } else {
         char buff[65] = {0};
-        if (!encodePubKey((uint8_t*)buff, sizeof(buff), address)){
-            return parser_unexpected_buffer_end;
+        if (encodePubKey((uint8_t*)buff, sizeof(buff), address) == 0) {
+            return parser_unexpected_value;
         }
         pageString(outValue, outValueLen, buff, pageIdx, pageCount);
     }
