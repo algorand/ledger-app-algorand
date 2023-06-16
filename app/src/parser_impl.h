@@ -67,8 +67,6 @@ parser_error_t _readString(parser_context_t *c, uint8_t *buff, uint16_t buffLen)
 parser_error_t _readInteger(parser_context_t *c, uint64_t* value);
 parser_error_t _readBool(parser_context_t *c, uint8_t *value);
 parser_error_t _readBinFixed(parser_context_t *c, uint8_t *buff, uint16_t bufferLen);
-parser_error_t _findKey(parser_context_t *c, const char *key);
-parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const uint16_t searchOffset);
 
 parser_error_t _getAccount(parser_context_t *c, uint8_t* account, uint8_t account_idx, uint8_t num_accounts);
 parser_error_t _getAppArg(parser_context_t *c, uint8_t **args, uint16_t* args_len, uint8_t args_idx, uint16_t max_args_len, uint8_t max_array_len);

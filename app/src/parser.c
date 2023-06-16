@@ -123,6 +123,38 @@ static parser_error_t parser_printTxType(const parser_context_t *ctx, char *outK
     return parser_ok;
 }
 
+static parser_error_t parser_printBoxes(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t displayIdx,
+                                        uint8_t pageIdx, uint8_t *pageCount, txn_application *application) {
+    if (outKey == NULL || outVal == NULL || application ==NULL) {
+        return parser_unexpected_error;
+    }
+
+    const uint8_t tmpIdx = displayIdx -  IDX_BOXES;
+    if (tmpIdx >= MAX_FOREIGN_APPS) return parser_unexpected_value;
+
+    snprintf(outKey, outKeyLen, "Box %d", application->boxes[tmpIdx].i);
+
+    if (application->boxes[tmpIdx].n != NULL && application->boxes[tmpIdx].n_len > 0) {
+
+        bool printable = true;
+        for (uint16_t j = 0; j < application->boxes[tmpIdx].n_len; j++) {
+            printable &= IS_PRINTABLE(*(application->boxes[tmpIdx].n + j));
+        }
+
+        if (printable) {
+            pageStringExt(outVal, outValLen, (const char*) application->boxes[tmpIdx].n,
+                        application->boxes[tmpIdx].n_len, pageIdx, pageCount);
+        } else {
+            base64_encode((char*) application->boxes[tmpIdx].n, application->boxes[tmpIdx].n_len, outVal, outValLen);
+        }
+    } else {
+        char null_box[8] = {0};
+        base64_encode(null_box, sizeof(null_box), outVal, outValLen);
+    }
+
+    return parser_ok;
+}
+
 static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
                                                uint8_t displayIdx,
                                                char *outKey, uint16_t outKeyLen,
@@ -562,18 +594,7 @@ static parser_error_t parser_printTxApplication(parser_context_t *ctx,
             return parser_ok;
 
         case IDX_BOXES: {
-            const uint8_t tmpIdx = displayIdx -  IDX_BOXES;
-            // Check max index
-            if (tmpIdx >= MAX_FOREIGN_APPS) return parser_unexpected_value;
-            if (tmpIdx == 0){
-                snprintf(outKey, outKeyLen, "Box");
-            }
-            else{
-                snprintf(outKey, outKeyLen, "Box %d", tmpIdx);
-            }
-            b64hash_data((unsigned char*) application->boxes[tmpIdx].n, application->boxes[tmpIdx].n_len, buff, sizeof(buff));
-            pageString(outVal, outValLen, buff, pageIdx, pageCount);
-            return parser_ok;
+            return parser_printBoxes(outKey, outKeyLen, outVal, outValLen, displayIdx, pageIdx, pageCount, application);
         }
 
         case IDX_FOREIGN_APP: {

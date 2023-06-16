@@ -107,6 +107,8 @@ typedef enum tx_type_e {
 #define KEY_SCHEMA_NUI            "nui"
 #define KEY_SCHEMA_NBS            "nbs"
 
+#define BOX_NAME_MAX_LENGTH       64
+
 
 typedef enum oncompletion {
   NOOPOC       = 0,
