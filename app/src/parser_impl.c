@@ -32,6 +32,7 @@ DEC_READFIX_UNSIGNED(32);
 DEC_READFIX_UNSIGNED(64);
 
 static parser_error_t addItem(uint8_t displayIdx);
+static parser_error_t _findKey(parser_context_t *c, const char *key);
 
 #define DISPLAY_ITEM(type, len, counter)        \
     for(uint8_t j = 0; j < len; j++) {          \
@@ -696,65 +697,68 @@ parser_error_t _readArrayU64(parser_context_t *c, uint64_t elements[], uint8_t *
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t _readBoxElement(parser_context_t *c, box *box) {
+
+    uint8_t key[2] = {0};
+    uint16_t mapSize = 0;
+    CHECK_ERROR(_readMapSize(c, &mapSize))
+    box->i = 0;
+    box->n_len = 0;
+    box->n = NULL;
+
+    for (uint16_t index = 0; index < mapSize; index++) {
+        CHECK_ERROR(_readString(c, key, sizeof(key)))
+        if (strncmp((char*)key, KEY_APP_BOX_INDEX, sizeof(KEY_APP_BOX_INDEX)) == 0) {
+            CHECK_ERROR(_readUInt8(c, &box->i))
+
+        } else if (strncmp((char*)key, KEY_APP_BOX_NAME, sizeof(KEY_APP_BOX_NAME)) == 0) {
+            CHECK_ERROR(_getPointerBin(c, &box->n, &box->n_len))
+
+            if (box->n_len > BOX_NAME_MAX_LENGTH) {
+                return parser_value_out_of_range;
+            }
+        } else {
+            return parser_unexpected_error;
+        }
+    }
+
+    return parser_ok;
+}
+
 parser_error_t _readBoxes(parser_context_t *c, box boxes[], uint8_t *num_elements)
 {
     CHECK_ERROR(_readArraySize(c, num_elements))
     if (*num_elements > MAX_FOREIGN_APPS) {
         return parser_msgpack_array_too_big;
     }
-    uint16_t previous_offset = c->offset;
+
     for (size_t j = 0; j < *num_elements; j++) {
-        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_INDEX, previous_offset))
-        previous_offset = c->offset;
-        CHECK_ERROR(_readUInt8(c, &boxes[j].i))
-        CHECK_ERROR(_findKeyFromOffset(c, KEY_APP_BOX_NAME, previous_offset))
-        CHECK_ERROR(_getPointerBin(c, &boxes[j].n, &boxes[j].n_len))
-        previous_offset = c->offset;
+        CHECK_ERROR(_readBoxElement(c, &boxes[j]))
     }
+
     return parser_ok;
 }
 
 static parser_error_t _readTxType(parser_context_t *c, parser_tx_t *v)
 {
-    uint8_t buff[100] = {0};
-    uint8_t buffLen = sizeof(buff);
-    uint8_t typeStr[50] = {0};
-    uint8_t typeStrLen = sizeof(typeStr);
-    uint16_t currentOffset = c->offset;
-    c->offset = 0;
+    char typeStr[10] = {0};
+    CHECK_ERROR(_findKey(c, KEY_COMMON_TYPE))
+    CHECK_ERROR(_readString(c, (uint8_t*) typeStr, sizeof(typeStr)))
 
-    for (size_t offset = 0; offset < c->bufferLen; offset++) {
-        if (_readString(c, buff, buffLen) == parser_ok) {
-            if (strncmp((char*)buff, KEY_COMMON_TYPE, sizeof(KEY_COMMON_TYPE)) == 0) {
-                if (_readString(c, typeStr, typeStrLen) == parser_ok) {
-                    if (strncmp((char *) typeStr, KEY_TX_PAY, sizeof(KEY_TX_PAY)) == 0) {
-                        v->type = TX_PAYMENT;
-                        break;
-                    } else if (strncmp((char *) typeStr, KEY_TX_KEYREG, sizeof(KEY_TX_KEYREG)) == 0) {
-                        v->type = TX_KEYREG;
-                        break;
-                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_XFER, sizeof(KEY_TX_ASSET_XFER)) == 0) {
-                        v->type = TX_ASSET_XFER;
-                        break;
-                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_FREEZE, sizeof(KEY_TX_ASSET_FREEZE)) == 0) {
-                        v->type = TX_ASSET_FREEZE;
-                        break;
-                    } else if (strncmp((char *) typeStr, KEY_TX_ASSET_CONFIG, sizeof(KEY_TX_ASSET_CONFIG)) == 0) {
-                        v->type = TX_ASSET_CONFIG;
-                        break;
-                    } else if (strncmp((char *) typeStr, KEY_TX_APPLICATION, sizeof(KEY_TX_APPLICATION)) == 0) {
-                        v->type = TX_APPLICATION;
-                        break;
-                    }
-                }
-            }
-        }
-        c->offset = offset + 1;
-    }
-
-    if(v->type == TX_UNKNOWN) {
-        // Return buffer to previous offset if key is not found
-        c->offset = currentOffset;
+    if (strncmp(typeStr, KEY_TX_PAY, sizeof(KEY_TX_PAY)) == 0) {
+        v->type = TX_PAYMENT;
+    } else if (strncmp(typeStr, KEY_TX_KEYREG, sizeof(KEY_TX_KEYREG)) == 0) {
+        v->type = TX_KEYREG;
+    } else if (strncmp(typeStr, KEY_TX_ASSET_XFER, sizeof(KEY_TX_ASSET_XFER)) == 0) {
+        v->type = TX_ASSET_XFER;
+    } else if (strncmp(typeStr, KEY_TX_ASSET_FREEZE, sizeof(KEY_TX_ASSET_FREEZE)) == 0) {
+        v->type = TX_ASSET_FREEZE;
+    } else if (strncmp(typeStr, KEY_TX_ASSET_CONFIG, sizeof(KEY_TX_ASSET_CONFIG)) == 0) {
+        v->type = TX_ASSET_CONFIG;
+    } else if (strncmp(typeStr, KEY_TX_APPLICATION, sizeof(KEY_TX_APPLICATION)) == 0) {
+        v->type = TX_APPLICATION;
+    } else {
+        v->type = TX_UNKNOWN;
         return parser_no_data;
     }
 
@@ -819,27 +823,81 @@ static parser_error_t _readTxCommonParams(parser_context_t *c, parser_tx_t *v)
     return parser_ok;
 }
 
-parser_error_t _findKey(parser_context_t *c, const char *key)
-{
-    return _findKeyFromOffset(c, key, 0);
-}
+static parser_error_t _verifyValue(parser_context_t *c) {
+    if (c == NULL) return parser_unexpected_error;
 
-parser_error_t _findKeyFromOffset(parser_context_t *c, const char *key, const uint16_t searchOffset)
-{
-    uint8_t buff[100] = {0};
-    uint8_t buffLen = sizeof(buff);
-    uint16_t currentOffset = c->offset;
-    c->offset = 0;
-    for (size_t offset = searchOffset; offset < c->bufferLen; offset++) {
-        if (_readString(c, buff, buffLen) == parser_ok) {
-            if (strlen((char*)buff) == strlen(key) && strncmp((char*)buff, key, strlen(key)) == 0) {
-                return parser_ok;
-            }
+    CHECK_APP_CANARY()
+
+    union {
+        uint8_t u8_number;
+        uint16_t u16_number;
+        uint64_t u64_number;
+    } tmp;
+
+    uint8_t valueType = 0;
+    CHECK_ERROR(_readUInt8(c, &valueType))
+
+    // Point to where value type is defined
+    c->offset--;
+
+    if (valueType <= FIXINT_127 || (valueType >= UINT8 && valueType <= UINT64)) {
+        CHECK_ERROR(_readInteger(c, &tmp.u64_number))
+
+    } else if (valueType <= FIXMAP_15 || valueType == MAP16) {
+        CHECK_ERROR(_readMapSize(c, &tmp.u16_number))
+        const uint16_t mapLen = tmp.u16_number;
+        for (uint16_t i = 0; i < mapLen; i++) {
+            // Check key
+            CHECK_ERROR(_verifyValue(c))
+            // Check value
+            CHECK_ERROR(_verifyValue(c))
         }
-        c->offset = offset + 1;
+
+    } else if (valueType <= FIXARR_15 || valueType == ARR16) {
+        CHECK_ERROR(_readArraySize(c, &tmp.u8_number))
+        const uint8_t arrLen = tmp.u8_number;
+        for (uint8_t i = 0; i < arrLen; i++) {
+            CHECK_ERROR(_verifyValue(c))
+        }
+
+    } else if (valueType <= FIXSTR_31) {
+        c->offset++;
+        const uint8_t strLen = valueType - FIXSTR_0;
+        CHECK_ERROR(_verifyBytes(c, strLen))
+
+    } else if (valueType == STR8) {
+        c->offset++;
+        uint8_t strLen = 0;
+        CHECK_ERROR(_readUInt8(c, &strLen))
+        CHECK_ERROR(_verifyBytes(c, strLen))
+
+    } else if (valueType == BOOL_FALSE || valueType == BOOL_TRUE) {
+        CHECK_ERROR(_readBool(c, &tmp.u8_number))
+
+    } else if (valueType == BIN8 || valueType == BIN16) {
+        CHECK_ERROR(_verifyBin(c, &tmp.u16_number, UINT16_MAX))
+
+    } else {
+        return parser_unexpected_value;
     }
-    // Return buffer to previous offset if key is not found
-    c->offset = currentOffset;
+
+    return parser_ok;
+}
+parser_error_t _findKey(parser_context_t *c, const char *key) {
+    uint8_t tmpKey[20] = {0};
+
+    // Process buffer from start
+    c->offset = 0;
+    uint16_t keysLen = 0;
+    CHECK_ERROR(_readMapSize(c, &keysLen))
+    for (uint16_t i = 0; i < keysLen; i++) {
+        CHECK_ERROR(_readString(c, tmpKey, sizeof(tmpKey)))
+        if (strncmp((char*)tmpKey, key, strlen(key)) == 0) {
+            return parser_ok;
+        }
+        CHECK_ERROR(_verifyValue(c))
+    }
+
     return parser_no_data;
 }
 
