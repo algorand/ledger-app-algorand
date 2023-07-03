@@ -22,108 +22,87 @@
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
-zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen)
-{
-    cx_ecfp_public_key_t cx_publicKey;
-    cx_ecfp_private_key_t cx_privateKey;
-    uint8_t privateKeyData[SK_LEN_25519];
-
-    if (pubKeyLen < PK_LEN_25519) {
+zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen) {
+    if (pubKey == NULL || pubKeyLen < PK_LEN_25519) {
         return zxerr_invalid_crypto_settings;
     }
 
-    zxerr_t err = zxerr_unknown;
-    BEGIN_TRY
-    {
-        TRY
-        {
-            // Generate keys
-            os_perso_derive_node_bip32(
-                    CX_CURVE_Ed25519,
-                    hdPath,
-                    HDPATH_LEN_DEFAULT,
-                    privateKeyData,
-                    NULL);
+    zxerr_t error = zxerr_unknown;
+    cx_ecfp_public_key_t cx_publicKey;
+    cx_ecfp_private_key_t cx_privateKey;
+    uint8_t privateKeyData[SK_LEN_25519] = {0};
 
-            cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, 32, &cx_privateKey);
-            cx_ecfp_init_public_key(CX_CURVE_Ed25519, NULL, 0, &cx_publicKey);
-            cx_ecfp_generate_pair(CX_CURVE_Ed25519, &cx_publicKey, &cx_privateKey, 1);
+    // Generate keys
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL,
+                                                     CX_CURVE_Ed25519,
+                                                     hdPath,
+                                                     HDPATH_LEN_DEFAULT,
+                                                     privateKeyData,
+                                                     NULL,
+                                                     NULL,
+                                                     0))
 
-            // Reversing the public key and changing the last byte
-            for (unsigned int i = 0; i < PK_LEN_25519; i++) {
-                pubKey[i] = cx_publicKey.W[64 - i];
-            }
-            if ((cx_publicKey.W[PK_LEN_25519] & 1) != 0) {
-                pubKey[31] |= 0x80;
-            }
-            err = zxerr_ok;
-        }
-        CATCH_ALL
-        {
-            err = zxerr_ledger_api_error;
-        }
-        FINALLY
-        {
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, SK_LEN_25519);
-        }
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519, privateKeyData, 32, &cx_privateKey))
+    CATCH_CXERROR(cx_ecfp_init_public_key_no_throw(CX_CURVE_Ed25519, NULL, 0, &cx_publicKey))
+    CATCH_CXERROR(cx_ecfp_generate_pair_no_throw(CX_CURVE_Ed25519, &cx_publicKey, &cx_privateKey, 1))
+
+    for (unsigned int i = 0; i < PK_LEN_25519; i++) {
+        pubKey[i] = cx_publicKey.W[64 - i];
     }
-    END_TRY;
 
-    return err;
+    if ((cx_publicKey.W[PK_LEN_25519] & 1) != 0) {
+        pubKey[31] |= 0x80;
+    }
+    error = zxerr_ok;
+
+catch_cx_error:
+    MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+    MEMZERO(privateKeyData, SK_LEN_25519);
+
+    if (error != zxerr_ok) {
+        MEMZERO(pubKey, pubKeyLen);
+    }
+
+    return error;
 }
 
 zxerr_t crypto_sign(uint8_t *signature, uint16_t signatureMaxlen, const uint8_t *message, uint16_t messageLen) {
-
-    if (message == NULL || messageLen == 0) {
-        return zxerr_no_data;
+    if (signature == NULL || message == NULL || signatureMaxlen < ED25519_SIGNATURE_SIZE || messageLen == 0) {
+        return zxerr_unknown;
     }
 
     cx_ecfp_private_key_t cx_privateKey;
     uint8_t privateKeyData[SK_LEN_25519] = {0};
 
-    zxerr_t err = zxerr_unknown;
-    BEGIN_TRY
-    {
-        TRY
-        {
-            // Generate keys
-            os_perso_derive_node_bip32(
-                    CX_CURVE_Ed25519,
-                    hdPath,
-                    HDPATH_LEN_DEFAULT,
-                    privateKeyData,
-                    NULL);
+    zxerr_t error = zxerr_unknown;
 
-            cx_ecfp_init_private_key(CX_CURVE_Ed25519, privateKeyData, SCALAR_LEN_ED25519, &cx_privateKey);
+    CATCH_CXERROR(os_derive_bip32_with_seed_no_throw(HDW_NORMAL,
+                                                     CX_CURVE_Ed25519,
+                                                     hdPath,
+                                                     HDPATH_LEN_DEFAULT,
+                                                     privateKeyData,
+                                                     NULL,
+                                                     NULL,
+                                                     0))
 
-            // Sign
-            cx_eddsa_sign(&cx_privateKey,
-                          CX_LAST,
-                          CX_SHA512,
-                          message,
-                          messageLen,
-                          NULL,
-                          0,
-                          signature,
-                          signatureMaxlen,
-                          NULL);
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_Ed25519, privateKeyData, 32, &cx_privateKey))
+    CATCH_CXERROR(cx_eddsa_sign_no_throw(&cx_privateKey,
+                                         CX_SHA512,
+                                         message,
+                                         messageLen,
+                                         signature,
+                                         signatureMaxlen))
+    error = zxerr_ok;
 
-            err = zxerr_ok;
-        }
-        CATCH_ALL
-        {
-            err = zxerr_unknown;
-        }
-        FINALLY
-        {
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, SK_LEN_25519);
-        }
+catch_cx_error:
+    MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+    MEMZERO(privateKeyData, SK_LEN_25519);
+
+    if (error != zxerr_ok) {
+        MEMZERO(signature, signatureMaxlen);
     }
-    END_TRY;
 
-    return err;
+    return error;
 }
 
 zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrResponseLen)

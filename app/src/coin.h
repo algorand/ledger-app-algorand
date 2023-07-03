@@ -36,7 +36,7 @@ extern "C" {
 
 #define SK_LEN_25519 64u
 #define SCALAR_LEN_ED25519 32u
-#define SIG_PLUS_TYPE_LEN 65u
+#define ED25519_SIGNATURE_SIZE 64u
 
 #define PK_LEN_25519 32u
 #define SS58_ADDRESS_MAX_LEN 60u
