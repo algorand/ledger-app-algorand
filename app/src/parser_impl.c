@@ -1121,7 +1121,8 @@ static parser_error_t _readTxApplication(parser_context_t *c, parser_tx_t *v)
        DISPLAY_ITEM(IDX_CLEAR, 1, tx_num_items)
    }
 
-    if (application->cprog_len + application->aprog_len > PAGE_LEN *(1+application->extra_pages)){
+    if (application->id == 0 && application->cprog_len + application->aprog_len > PAGE_LEN *(1+application->extra_pages)){
+        // ExtraPages needs to be checked only on application creation
         return parser_program_fields_too_long;
     }
 
