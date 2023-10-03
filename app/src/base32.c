@@ -25,8 +25,9 @@ uint32_t base32_encode(const uint8_t *data,
                        uint32_t length,
                        char *result,
                        uint32_t resultLen) {
-    if (length < 0 || length > (1 << 28)) {
-        return -1;
+    if (data == NULL || result == NULL ||
+        length > (1 << 28) || length == 0 || resultLen == 0) {
+        return 0;
     }
     uint32_t count = 0;
     if (length > 0) {
@@ -52,8 +53,8 @@ uint32_t base32_encode(const uint8_t *data,
     }
     if (count < resultLen) {
         result[count] = '\000';
-    }else{
-        count = -1;
+    } else{
+        count = 0;
     }
     return count;
 }

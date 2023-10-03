@@ -36,6 +36,21 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(27165954, "PLANET",                    "PLANETS ",     6),
     ALGO_ASA(163650, "Asia Reserve Currency Coin",  "ARCC ",        6),
     ALGO_ASA(137594422, "HEADLINE",                 "HDL ",         6),
+    ALGO_ASA(922346083, "Nimble",                   "NIMBLE ",      6),
+    ALGO_ASA(470842789, "Defly",                    "DEFLY ",       6),
+    ALGO_ASA(408898501, "Loot Box ASA",             "LTBX ",        1),
+    ALGO_ASA(1003833031, "CollecteursX",            "CLTR ",        6),
+    ALGO_ASA(230946361, "AlgoGems",                 "GEMS ",        6),
+    ALGO_ASA(226701642, "Yieldly",                  "YLDY ",        6),
+    ALGO_ASA(300208676, "Smile Coin",               "SMILE ",       6),
+    ALGO_ASA(287867876, "Opulous",                  "OPUL ",       10),
+    ALGO_ASA(213345970, "Exodus",                   "EXIT ",        8),
+    ALGO_ASA(297995609, "Choice Coin",              "CHOICE ",      2),
+    ALGO_ASA(386192725, "goBTC",                    "goBTC ",       8),
+    ALGO_ASA(386195940, "goETH",                    "goETH ",       8),
+    ALGO_ASA(441139422, "goMINT",                   "goMINT ",      6),
+    ALGO_ASA(403499324, "NEXUS",                    "GP ",          0),
+    ALGO_ASA(142838028, "AlgoFam",                  "FAME",         6),
 };
 
 

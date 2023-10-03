@@ -34,6 +34,19 @@
 static bool tx_initialized = false;
 static const unsigned char tmpBuff[] = {'T', 'X'};
 
+__Z_INLINE void extractHDPath() {
+    hdPath[0] = HDPATH_0_DEFAULT;
+    hdPath[1] = HDPATH_1_DEFAULT;
+    hdPath[3] = HDPATH_3_DEFAULT;
+    hdPath[4] = HDPATH_4_DEFAULT;
+
+    if (G_io_apdu_buffer[OFFSET_DATA_LEN] == 0) {
+        hdPath[2] = HDPATH_2_DEFAULT;
+    } else {
+        hdPath[2] = HDPATH_2_DEFAULT | U4BE(G_io_apdu_buffer, OFFSET_DATA);
+    }
+}
+
 __Z_INLINE uint8_t convertP1P2(const uint8_t p1, const uint8_t p2)
 {
     if (p1 <= P1_FIRST_ACCOUNT_ID && p2 == P2_MORE) {
@@ -72,6 +85,11 @@ __Z_INLINE bool process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_t rx)
                 accountIdSize = ACCOUNT_ID_LENGTH;
             }
             tx_append((unsigned char*)tmpBuff, 2);
+
+            if (rx < (OFFSET_DATA + accountIdSize)) {
+                THROW(APDU_CODE_WRONG_LENGTH);
+            }
+
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA + accountIdSize]), rx - (OFFSET_DATA + accountIdSize));
             if (added != rx - (OFFSET_DATA + accountIdSize)) {
                 tx_initialized = false;
@@ -97,10 +115,8 @@ __Z_INLINE bool process_chunk(__Z_UNUSED volatile uint32_t *tx, uint32_t rx)
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             tx_initialized = false;
             if (added != rx - OFFSET_DATA) {
-                tx_initialized = false;
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
             }
-            tx_initialized = false;
             return true;
 
         case P1_SINGLE_CHUNK:
@@ -143,7 +159,7 @@ __Z_INLINE void handle_sign_msgpack(volatile uint32_t *flags, volatile uint32_t 
     *flags |= IO_ASYNCH_REPLY;
 }
 
-__Z_INLINE void handle_get_public_key(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx)
+__Z_INLINE void handle_get_public_key(volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx)
 {
     const uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
     const bool u2f_compatibility = G_io_apdu_buffer[OFFSET_INS] == INS_GET_PUBLIC_KEY;
@@ -170,7 +186,7 @@ __Z_INLINE void handle_get_public_key(volatile uint32_t *flags, volatile uint32_
     THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handle_getversion(volatile uint32_t *flags, volatile uint32_t *tx)
+__Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx)
 {
     G_io_apdu_buffer[0] = 0;
 
@@ -253,7 +269,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
             }
             G_io_apdu_buffer[*tx] = sw >> 8;
-            G_io_apdu_buffer[*tx + 1] = sw;
+            G_io_apdu_buffer[*tx + 1] = sw & 0xFF;
             *tx += 2;
         }
         FINALLY

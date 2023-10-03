@@ -14,7 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { DEFAULT_START_OPTIONS } from '@zondax/zemu'
+import Zemu, { zondaxMainmenuNavigation, DEFAULT_START_OPTIONS, ButtonKind } from '@zondax/zemu'
 // @ts-ignore
 import AlgorandApp from '@zondax/ledger-algorand'
 import { APP_SEED, models, txApplication, txAssetConfig, txAssetFreeze, txAssetXfer, txKeyreg, txPayment } from './common'
@@ -31,14 +31,10 @@ const defaultOptions = {
 
 const accountId = 123
 
-jest.setTimeout(60000)
-
-beforeAll(async () => {
-  await Zemu.checkAndPullImage()
-})
+jest.setTimeout(300000)
 
 describe('Standard', function () {
-  test.each(models)('can start and stop container', async function (m) {
+  test.concurrent.each(models)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -47,17 +43,18 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('main menu', async function (m) {
+  test.concurrent.each(models)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 5, -6])
+      const nav = zondaxMainmenuNavigation(m.name, [1, 0, 0, 5, -6])
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, nav.schedule)
     } finally {
       await sim.close()
     }
   })
 
-  test.each(models)('get app version', async function (m) {
+  test.concurrent.each(models)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -77,7 +74,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('get address', async function (m) {
+  test.concurrent.each(models)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -102,7 +99,7 @@ describe('Standard', function () {
   })
 
   // Legacy
-  test.each(models)('get pubkey', async function (m) {
+  test.concurrent.each(models)('get pubkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -118,16 +115,20 @@ describe('Standard', function () {
 
       const expected_pk = '0dfdbcdb8eebed628cfb4ef70207b86fd0deddca78e90e8c59d6f441e383b377'
       expect(resp.publicKey).toEqual(expected_pk)
-
     } finally {
       await sim.close()
     }
   })
 
-  test.each(models)('show address', async function (m) {
+  test.concurrent.each(models)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        approveKeyword: m.name === 'stax' ? 'Show as QR' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
       const app = new AlgorandApp(sim.getTransport())
 
       const respRequest = app.getAddressAndPubKey(accountId, true)
@@ -145,17 +146,20 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('show address - reject', async function (m) {
+  test.concurrent.each(models)('show address - reject', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({
+        ...defaultOptions,
+        model: m.name,
+        rejectKeyword: m.name === 'stax' ? 'Show as QR' : '',
+      })
       const app = new AlgorandApp(sim.getTransport())
 
       const respRequest = app.getAddressAndPubKey(accountId, true)
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.navigateAndCompareUntilText('.', `${m.prefix.toLowerCase()}-show_address_reject`, 'REJECT')
+      await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`)
 
       const resp = await respRequest
       console.log(resp)
@@ -167,7 +171,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign asset freeze normal', async function (m) {
+  test.concurrent.each(models)('sign asset freeze normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -191,7 +195,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
@@ -199,7 +203,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign asset transfer normal', async function (m) {
+  test.concurrent.each(models)('sign asset transfer normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -224,7 +228,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
@@ -232,7 +236,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign asset config normal', async function (m) {
+  test.concurrent.each(models)('sign asset config normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -257,7 +261,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
@@ -265,7 +269,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign keyreg normal', async function (m) {
+  test.concurrent.each(models)('sign keyreg normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -290,7 +294,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
@@ -298,7 +302,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign payment normal', async function (m) {
+  test.concurrent.each(models)('sign payment normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -323,7 +327,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {
@@ -331,7 +335,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign application normal', async function (m) {
+  test.concurrent.each(models)('sign application normal', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
@@ -356,7 +360,7 @@ describe('Standard', function () {
       expect(signatureResponse.error_message).toEqual('No errors')
 
       // Now verify the signature
-      const prehash = Buffer.concat([Buffer.from('TX'), txBlob]);
+      const prehash = Buffer.concat([Buffer.from('TX'), txBlob])
       const valid = ed25519.verify(signatureResponse.signature, prehash, pubKey)
       expect(valid).toEqual(true)
     } finally {

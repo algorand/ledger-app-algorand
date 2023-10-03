@@ -42,6 +42,7 @@ typedef enum tx_type_e {
 #define KEY_TX_APPLICATION        "appl"
 
 #define KEY_COMMON_SENDER         "snd"
+#define KEY_COMMON_LEASE          "lx"
 #define KEY_COMMON_REKEY          "rekey"
 #define KEY_COMMON_FEE            "fee"
 #define KEY_COMMON_FIRST_VALID    "fv"
@@ -78,6 +79,7 @@ typedef enum tx_type_e {
 
 #define KEY_APP_ID                "apid"
 #define KEY_APP_ARGS              "apaa"
+#define KEY_APP_EXTRA_PAGES       "apep"
 #define KEY_APP_APROG_LEN         "apap"
 #define KEY_APP_CPROG_LEN         "apsu"
 #define KEY_APP_ONCOMPLETION      "apan"
@@ -86,6 +88,9 @@ typedef enum tx_type_e {
 #define KEY_APP_GLOBAL_SCHEMA     "apgs"
 #define KEY_APP_FOREIGN_APPS      "apfa"
 #define KEY_APP_FOREIGN_ASSETS    "apas"
+#define KEY_APP_BOXES             "apbx"
+#define KEY_APP_BOX_INDEX         "i"
+#define KEY_APP_BOX_NAME          "n"
 
 #define KEY_APARAMS_TOTAL         "t"
 #define KEY_APARAMS_DECIMALS      "dc"
@@ -101,6 +106,8 @@ typedef enum tx_type_e {
 
 #define KEY_SCHEMA_NUI            "nui"
 #define KEY_SCHEMA_NBS            "nbs"
+
+#define BOX_NAME_MAX_LENGTH       64
 
 
 typedef enum oncompletion {
@@ -169,6 +176,12 @@ typedef struct {
 } txn_asset_xfer;
 
 typedef struct {
+    uint8_t i;
+    const uint8_t* n; // max size 64
+    uint16_t n_len;
+}box;
+
+typedef struct {
   uint64_t id;
   uint8_t account[32];
   uint8_t flag;
@@ -183,7 +196,9 @@ typedef struct {
   uint8_t num_accounts;
   uint8_t num_foreign_apps;
   uint8_t num_foreign_assets;
+  uint8_t num_boxes;
   uint8_t num_app_args;
+  uint8_t extra_pages;
   uint16_t aprog_len;
   uint16_t cprog_len;
   uint64_t id;
@@ -191,12 +206,13 @@ typedef struct {
   state_schema local_schema;
   state_schema global_schema;
 
-  uint8_t aprog[MAX_APPROV_LEN];
-  uint8_t cprog[MAX_CLEAR_LEN];
+  const uint8_t* aprog;
+  const uint8_t* cprog;
   uint16_t app_args_len[MAX_ARG];
 
   uint64_t foreign_apps[MAX_FOREIGN_APPS];
   uint64_t foreign_assets[MAX_FOREIGN_ASSETS];
+  box boxes[MAX_FOREIGN_APPS];
 
 } txn_application;
 
@@ -222,6 +238,7 @@ typedef struct{
   char genesisID[32];
   uint8_t genesisHash[32];
   uint8_t groupID[32];
+  uint8_t lease[32];
 
   uint16_t note_len;
 } parser_tx_t;
@@ -230,6 +247,7 @@ typedef parser_tx_t txn_t;
 
 typedef enum {
   IDX_COMMON_SENDER = 0,
+  IDX_COMMON_LEASE,
   IDX_COMMON_FEE,
   IDX_COMMON_GEN_HASH,
   IDX_COMMON_GEN_ID,
@@ -288,17 +306,20 @@ typedef enum {
 typedef enum {
   IDX_APP_ID = 0,
   IDX_ON_COMPLETION,
+  IDX_BOXES,
   IDX_FOREIGN_APP,
   IDX_FOREIGN_ASSET,
   IDX_ACCOUNTS,
   IDX_APP_ARGS,
   IDX_GLOBAL_SCHEMA,
   IDX_LOCAL_SCHEMA,
+  IDX_EXTRA_PAGES,
   IDX_APPROVE,
   IDX_CLEAR,
 } txn_application_index_e;
 
 #define MAX_NOTE_LEN 1024
+#define PAGE_LEN 2048
 
 #ifdef __cplusplus
 }
