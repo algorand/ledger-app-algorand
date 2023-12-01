@@ -145,11 +145,11 @@ static parser_error_t parser_printBoxes(char *outKey, uint16_t outKeyLen, char *
             pageStringExt(outVal, outValLen, (const char*) application->boxes[tmpIdx].n,
                         application->boxes[tmpIdx].n_len, pageIdx, pageCount);
         } else {
-            base64_encode((char*) application->boxes[tmpIdx].n, application->boxes[tmpIdx].n_len, outVal, outValLen);
+            base64_encode(outVal, outValLen, (const uint8_t*) application->boxes[tmpIdx].n, application->boxes[tmpIdx].n_len);
         }
     } else {
         char null_box[8] = {0};
-        base64_encode(null_box, sizeof(null_box), outVal, outValLen);
+        base64_encode(outVal, outValLen, (const uint8_t*) null_box, sizeof(null_box));
     }
 
     return parser_ok;
@@ -196,19 +196,19 @@ static parser_error_t parser_printCommonParams(const parser_tx_t *parser_tx_obj,
 
         case IDX_COMMON_LEASE:
             snprintf(outKey, outKeyLen, "Lease");
-            base64_encode((const char*) parser_tx_obj->lease, sizeof(parser_tx_obj->lease), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) parser_tx_obj->lease, sizeof(parser_tx_obj->lease));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
         case IDX_COMMON_GEN_HASH:
             snprintf(outKey, outKeyLen, "Genesis hash");
-            base64_encode((const char*) parser_tx_obj->genesisHash, sizeof(parser_tx_obj->genesisHash), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) parser_tx_obj->genesisHash, sizeof(parser_tx_obj->genesisHash));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
         case IDX_COMMON_GROUP_ID:
             snprintf(outKey, outKeyLen, "Group ID");
-            base64_encode((const char*) parser_tx_obj->groupID, sizeof(parser_tx_obj->groupID), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) parser_tx_obj->groupID, sizeof(parser_tx_obj->groupID));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
@@ -289,20 +289,20 @@ static parser_error_t parser_printTxKeyreg(const txn_keyreg *keyreg,
     switch (displayIdx) {
         case IDX_KEYREG_VOTE_PK:
             snprintf(outKey, outKeyLen, "Vote PK");
-            base64_encode((const char*) keyreg->votepk, sizeof(keyreg->votepk), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) keyreg->votepk, sizeof(keyreg->votepk));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
         case IDX_KEYREG_VRF_PK:
             snprintf(outKey, outKeyLen, "VRF PK");
-            base64_encode((const char*) keyreg->vrfpk, sizeof(keyreg->vrfpk), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) keyreg->vrfpk, sizeof(keyreg->vrfpk));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 
         case IDX_KEYREG_SPRF_PK: {
             snprintf(outKey, outKeyLen, "SPRF PK");
             char tmpBuff[90];
-            base64_encode((const char*) keyreg->sprfkey, sizeof(keyreg->sprfkey), tmpBuff, sizeof(tmpBuff));
+            base64_encode(tmpBuff, sizeof(tmpBuff), (const uint8_t*) keyreg->sprfkey, sizeof(keyreg->sprfkey));
             pageString(outVal, outValLen, tmpBuff, pageIdx, pageCount);
             return parser_ok;
         }
@@ -519,7 +519,7 @@ static parser_error_t parser_printTxAssetConfig(const txn_asset_config *asset_co
 
         case IDX_CONFIG_METADATA_HASH:
             snprintf(outKey, outKeyLen, "Metadata hash");
-            base64_encode((const char*) asset_config->params.metadata_hash, sizeof(asset_config->params.metadata_hash), buff, sizeof(buff));
+            base64_encode(buff, sizeof(buff), (const uint8_t*) asset_config->params.metadata_hash, sizeof(asset_config->params.metadata_hash));
             pageString(outVal, outValLen, buff, pageIdx, pageCount);
             return parser_ok;
 

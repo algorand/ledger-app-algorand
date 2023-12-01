@@ -60,7 +60,7 @@ parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash,
     picohash_update(&ctx, data, data_len);
     picohash_final(&ctx, hash);
 #endif
-    base64_encode((const char *)hash, sizeof(hash), b64hash, b64hashLen);
+    base64_encode(b64hash, b64hashLen, (const uint8_t *)hash, sizeof(hash));
     return parser_ok;
 }
 

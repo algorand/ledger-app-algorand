@@ -105,6 +105,7 @@ add_definitions(
 #  static libs
 file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/app_mode.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/base64.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/base58.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/bignum.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/hexutils.c
@@ -115,7 +116,6 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_encoding.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/algo_asa.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base64.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/sha512/sha512.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base32.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/picohash/
