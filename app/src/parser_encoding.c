@@ -53,14 +53,17 @@ parser_error_t b64hash_data(unsigned char *data, size_t data_len, char *b64hash,
     cx_sha256_t ctx;
     memset(&ctx, 0, sizeof(ctx));
     cx_sha256_init(&ctx);
-    cx_hash_no_throw(&ctx.header, CX_LAST, data, data_len, hash, sizeof(hash));
+    
+    if (cx_hash_no_throw(&ctx.header, CX_LAST, data, data_len, hash, sizeof(hash)) != CX_OK) {
+        return parser_unexpected_error;
+    }
 #else
     picohash_ctx_t ctx;
     picohash_init_sha256(&ctx);
     picohash_update(&ctx, data, data_len);
     picohash_final(&ctx, hash);
 #endif
-    base64_encode((const char *)hash, sizeof(hash), b64hash, b64hashLen);
+    base64_encode(b64hash, b64hashLen, (const uint8_t *)hash, sizeof(hash));
     return parser_ok;
 }
 

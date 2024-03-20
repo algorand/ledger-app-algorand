@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@zondax/ledger-algorand": "../js",
-    "@zondax/zemu": "^0.44.2"
+    "@zondax/zemu": "^0.46.2"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
@@ -27,7 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.2",
     "@typescript-eslint/parser": "^6.7.2",
     "blakejs": "^1.1.1",
-    "crypto-js": "4.1.1",
+    "crypto-js": "4.2.0",
     "ed25519-supercop": "^2.0.1",
     "eslint": "^8.34.0",
     "eslint-config-prettier": "^9.0.0",

@@ -2,8 +2,6 @@
 #include "stdint.h"
 #include <stdio.h>
 
-
-
 #define ARRAY_SIZE(__arr)   (sizeof(__arr) / sizeof(__arr[0]))
 
 #define ALGO_ASA(__id, __name, __unit, __decimals) { \
@@ -12,7 +10,6 @@
         .unit     = __unit, \
         .name     = __name, \
     }
-
 
 static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(438840, "Micro-Tesla",                 "M-TSLA ",      0),
@@ -28,8 +25,8 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(31566704, "USDC",                      "USDC ",        6),
     ALGO_ASA(6587142, "Meld Silver",                "MCAG ",        5),
     ALGO_ASA(6547014, "Meld Gold",                  "MCAU ",        5),
-    ALGO_ASA(2838934, "Credit Opportunities Fund I","VAL 1 ",       0),
-    ALGO_ASA(2836760, "Liquid Mining Fund I",       "RHO 1 ",       0),
+    ALGO_ASA(2838934, "Credit Opportunities Fund I","VAL-I ",       0),
+    ALGO_ASA(2836760, "Liquid Mining Fund I",       "RHO-I ",       0),
     ALGO_ASA(2757561, "realioUSD",                  "RUSD ",        7),
     ALGO_ASA(2751733, "Realio Token",               "RIO ",         7),
     ALGO_ASA(2725935, "Realio Security Token",      "RST ",         7),
@@ -50,7 +47,7 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(386195940, "goETH",                    "goETH ",       8),
     ALGO_ASA(441139422, "goMINT",                   "goMINT ",      6),
     ALGO_ASA(403499324, "NEXUS",                    "GP ",          0),
-    ALGO_ASA(142838028, "AlgoFam",                  "FAME",         6),
+    ALGO_ASA(142838028, "AlgoFam",                  "FAME ",         6),
 };
 
 
