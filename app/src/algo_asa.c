@@ -48,6 +48,7 @@ static const algo_asset_info_t algo_assets[] = {
     ALGO_ASA(441139422, "goMINT",                   "goMINT ",      6),
     ALGO_ASA(403499324, "NEXUS",                    "GP ",          0),
     ALGO_ASA(142838028, "AlgoFam",                  "FAME ",         6),
+    ALGO_ASA(1138500612, "GORA",                    "GORA ",        9),
 };
 
 
